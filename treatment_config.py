@@ -174,7 +174,7 @@ def get_treatment_train_config(ffp_scenario, desal_type):
                 "brine": "Brine disposal"
             },
             "Agricultural use": {
-                "pretreatment": ["3-phase separator", "Floc n Drop", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
+                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
                 "desalination": ["MD"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment"],
                 "brine": "Brine valorization"
@@ -220,7 +220,7 @@ def get_treatment_train_config(ffp_scenario, desal_type):
                 "brine": "Brine disposal"
             },
             "Agricultural use": {
-                "pretreatment": ["3-phase separator", "Floc n Drop", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
+                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
                 "desalination": ["LSRRO"],
                 "posttreatment": ["Boron-selective IX", "Blending / remineralization", "pH adjustment"],
                 "brine": "Brine valorization"
