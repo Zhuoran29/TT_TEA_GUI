@@ -1,6 +1,6 @@
 # GUI for Water Treatment Train Techno‑Economic Analysis
 
-Run the simple homepage locally with:
+Run the GUI locally with:
 
 ```bash
 pip install -r requirements.txt
