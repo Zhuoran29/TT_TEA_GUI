@@ -603,7 +603,7 @@ UNIT_REMOVAL_RATES = {
 
 # Default values for sidebar inputs
 SIDEBAR_DEFAULTS = {
-    "pH": 6.5,
+    "pH": 6.4,
     "Oil": 100.0,
     "TDS": 180000.0,
     "Conductivity": 250000.0,
