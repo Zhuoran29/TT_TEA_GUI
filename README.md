@@ -1,4 +1,4 @@
-# Produced Water Techno‑Economic Analysis — Streamlit Homepage
+# Water Treatment Train Techno‑Economic Analysis
 
 Run the simple homepage locally with:
 
@@ -6,5 +6,3 @@ Run the simple homepage locally with:
 pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
-
-This app is a starting point showing project inputs, a quick CAPEX/OPEX estimate, and a CSV export of inputs + results.
