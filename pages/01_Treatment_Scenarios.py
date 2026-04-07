@@ -55,8 +55,8 @@ st.markdown("##### Fit‑for‑purpose scenario")
 ffp = st.selectbox(
     "Fit‑for‑purpose scenario",
     [
-        "Surface water discharge",
         "Agricultural use",
+        "Surface water discharge",
         "Powerplant cooling water",
         "Data center cooling water",
         "Feedwater to UPW production",
