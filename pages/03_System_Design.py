@@ -72,5 +72,5 @@ for section, units in sections:
 
 # Save button
 if st.button("TEA Results →", type="primary"):
-    st.success("✓ System design 参数已保存")
+    st.success("✓ System design parameters saved!")
     st.switch_page("pages/04_TEA_Results.py")

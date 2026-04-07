@@ -25,7 +25,7 @@ st.markdown("""
 st.header("Step 4 — TEA results")
 
 if "treatment_train" not in st.session_state:
-    st.warning("请先完成前面的步骤并保存（Home -> Treatment Train -> System Design）。")
+    st.warning("Please complete the previous steps and save (Home -> Treatment Train -> System Design).")
 else:
     flow = st.session_state.get("wq_flow", 1000.0)
     days_per_year = st.sidebar.number_input("Operating days/year", min_value=1, value=330, key="tea_days")
