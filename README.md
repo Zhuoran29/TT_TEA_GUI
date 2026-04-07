@@ -1,4 +1,4 @@
-# Water Treatment Train Techno‑Economic Analysis
+# GUI for Water Treatment Train Techno‑Economic Analysis
 
 Run the simple homepage locally with:
 
