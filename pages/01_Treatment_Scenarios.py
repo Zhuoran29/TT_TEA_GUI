@@ -32,7 +32,7 @@ if "influent_type" not in st.session_state:
 if "ffp_scenarios" not in st.session_state:
     st.session_state.ffp_scenarios = ["Surface water discharge"]
 if "desal_type" not in st.session_state:
-    st.session_state.desal_type = "Thermal"
+    st.session_state.desal_type = "Mechanical Vapor Compression (MVC)"
 
 # Display selection options
 st.markdown("##### Influent type")

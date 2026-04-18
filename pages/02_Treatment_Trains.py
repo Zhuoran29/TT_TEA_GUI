@@ -30,7 +30,7 @@ if "influent_type" not in st.session_state:
 if "ffp_scenarios" not in st.session_state:
     st.session_state.ffp_scenarios = ["Surface water discharge"]
 if "desal_type" not in st.session_state:
-    st.session_state.desal_type = "Thermal"
+    st.session_state.desal_type = "Mechanical Vapor Compression (MVC)"
 
 # Display water quality requirements in a box
 influent = st.session_state.influent_type
@@ -227,8 +227,10 @@ PARAM_TO_SIDEBAR_KEY = {
     "Selenium": "wq_selenium",
     "BTEX": "wq_btex",
     "PAHs": "wq_pahs",
-    "Gross alpha": "wq_gross_alpha",
-    "Gross beta": "wq_gross_beta",
+    "Gross Alpha": "wq_gross_alpha",
+    "Gross Beta": "wq_gross_beta",
+    "Radium-226": "wq_radium_226",
+    "Radium-228": "wq_radium_228",
 }
 
 # Display flowchart and requirements side-by-side
@@ -250,19 +252,60 @@ if requirements:
     # Get feed concentration from sidebar or use default
     feed_conc = None
     if tracked_const != "None":
-        # Try to get from sidebar key mapping
+        # Try to get from sidebar key mapping first
         sidebar_key = PARAM_TO_SIDEBAR_KEY.get(tracked_const)
         if sidebar_key and sidebar_key in st.session_state:
             feed_conc = st.session_state[sidebar_key]
         else:
-            # Use default limit from ALL_WATER_QUALITY_PARAMS
-            feed_conc = ALL_WATER_QUALITY_PARAMS.get(tracked_const, {}).get("limit", 0.0)
+            # Try to get from additional_input (sidebar additional parameters)
+            additional_input_key = f"additional_input_{tracked_const}".replace(" ", "_")
+            if additional_input_key in st.session_state:
+                feed_conc = st.session_state[additional_input_key]
+            else:
+                # Try to get from wq_target (water quality requirements)
+                wq_target_key = f"wq_target_{tracked_const}".replace(" ", "_")
+                if wq_target_key in st.session_state:
+                    feed_conc = st.session_state[wq_target_key]
+                else:
+                    # Use default limit from ALL_WATER_QUALITY_PARAMS
+                    feed_conc = ALL_WATER_QUALITY_PARAMS.get(tracked_const, {}).get("limit", 0.0)
         
         # with track_col2:
         #     source = "sidebar" if sidebar_key and sidebar_key in st.session_state else "default"
         #     st.metric("Feed conc.", f"{feed_conc:.2f}", source)
     
-    chart_col, req_col = st.columns([1.5, 1])
+    chart_col, design_col, req_col = st.columns([1.5, 1, 1])
+    
+    # Check if desal_type has changed, if so reinitialize treatment units
+    if "current_desal_type" not in st.session_state:
+        st.session_state.current_desal_type = desal
+    
+    if st.session_state.current_desal_type != desal:
+        # Desal type has changed, reinitialize everything
+        st.session_state.current_desal_type = desal
+        st.session_state.treatment_pretreatment = pretreatment.copy()
+        st.session_state.treatment_desalination = desalination.copy()
+        st.session_state.treatment_posttreatment = posttreatment.copy()
+        st.session_state.treatment_brine = brine_option
+        st.session_state.reset_counter = 0
+    
+    # Initialize session state for editable treatment units BEFORE using them
+    if "treatment_pretreatment" not in st.session_state:
+        st.session_state.treatment_pretreatment = pretreatment.copy()
+    if "treatment_desalination" not in st.session_state:
+        st.session_state.treatment_desalination = desalination.copy()
+    if "treatment_posttreatment" not in st.session_state:
+        st.session_state.treatment_posttreatment = posttreatment.copy()
+    if "treatment_brine" not in st.session_state:
+        st.session_state.treatment_brine = brine_option
+    if "reset_counter" not in st.session_state:
+        st.session_state.reset_counter = 0
+    
+    # Use session state values for display and editing
+    pretreatment = st.session_state.treatment_pretreatment
+    desalination = st.session_state.treatment_desalination
+    posttreatment = st.session_state.treatment_posttreatment
+    brine_option = st.session_state.treatment_brine
     
     with chart_col:
         if tracked_const != "None":
@@ -280,6 +323,124 @@ if requirements:
             st.success("✓ Treatment train configuration saved! Moving to System Design...")
             st.switch_page("pages/03_System_Design.py")
     
+    with design_col:
+        with st.container(border=True):
+            st.markdown(f"<h5 style='margin-top: 0;'>Treatment Chain Design</h5>", unsafe_allow_html=True)
+            
+            # Get all available units from UNIT_REMOVAL_RATES
+            all_units = list(UNIT_REMOVAL_RATES.keys())
+            
+            # Display and edit pretreatment
+            st.markdown("**Pretreatment**")
+            for i, unit in enumerate(st.session_state.treatment_pretreatment):
+                col_select, col_remove = st.columns([8, 1])
+                with col_select:
+                    new_unit = st.selectbox(
+                        "Unit type",
+                        all_units,
+                        index=all_units.index(unit) if unit in all_units else 0,
+                        key=f"pretreat_{i}_{st.session_state.reset_counter}",
+                        label_visibility="collapsed"
+                    )
+                    if new_unit != unit:
+                        st.session_state.treatment_pretreatment[i] = new_unit
+                        st.rerun()
+                
+                with col_remove:
+                    if st.button("✕", key=f"remove_pretreat_{i}", use_container_width=True):
+                        st.session_state.treatment_pretreatment.pop(i)
+                        st.rerun()
+            
+            # Add button for pretreatment
+            if st.button("➕", key="add_pretreat", use_container_width=True):
+                st.session_state.treatment_pretreatment.append(all_units[0])
+                st.rerun()
+            
+            # Display and edit desalination
+            st.markdown("**Desalination**")
+            for i, unit in enumerate(st.session_state.treatment_desalination):
+                col_select, col_remove = st.columns([8, 1])
+                with col_select:
+                    new_unit = st.selectbox(
+                        "Unit type",
+                        all_units,
+                        index=all_units.index(unit) if unit in all_units else 0,
+                        key=f"desal_{i}_{st.session_state.reset_counter}",
+                        label_visibility="collapsed"
+                    )
+                    if new_unit != unit:
+                        st.session_state.treatment_desalination[i] = new_unit
+                        st.rerun()
+                
+                with col_remove:
+                    if st.button("✕", key=f"remove_desal_{i}", use_container_width=True):
+                        st.session_state.treatment_desalination.pop(i)
+                        st.rerun()
+            
+            # Add button for desalination
+            if st.button("➕", key="add_desal", use_container_width=True):
+                st.session_state.treatment_desalination.append(all_units[0])
+                st.rerun()
+            
+            # Display and edit posttreatment
+            st.markdown("**Posttreatment**")
+            for i, unit in enumerate(st.session_state.treatment_posttreatment):
+                col_select, col_remove = st.columns([8, 1])
+                with col_select:
+                    new_unit = st.selectbox(
+                        "Unit type",
+                        all_units,
+                        index=all_units.index(unit) if unit in all_units else 0,
+                        key=f"posttreat_{i}_{st.session_state.reset_counter}",
+                        label_visibility="collapsed"
+                    )
+                    if new_unit != unit:
+                        st.session_state.treatment_posttreatment[i] = new_unit
+                        st.rerun()
+                
+                with col_remove:
+                    if st.button("✕", key=f"remove_posttreat_{i}", use_container_width=True):
+                        st.session_state.treatment_posttreatment.pop(i)
+                        st.rerun()
+            
+            # Add button for posttreatment
+            if st.button("➕", key="add_posttreat", use_container_width=True):
+                st.session_state.treatment_posttreatment.append(all_units[0])
+                st.rerun()
+            
+            # Display and edit brine
+            st.markdown("**Brine Management**")
+            col_select, col_remove = st.columns([8, 1])
+            with col_select:
+                new_brine = st.selectbox(
+                    "Brine type",
+                    all_units,
+                    index=all_units.index(st.session_state.treatment_brine) if st.session_state.treatment_brine in all_units else 0,
+                    key=f"brine_unit_{st.session_state.reset_counter}",
+                    label_visibility="collapsed"
+                )
+                if new_brine != st.session_state.treatment_brine:
+                    st.session_state.treatment_brine = new_brine
+                    st.rerun()
+            
+            # Reset button
+            st.markdown("---")
+            if st.button("🔄 Reset to Default", use_container_width=True):
+                # Get default config from treatment_config
+                default_config = get_treatment_train_config(ffp_primary, desal)
+                
+                # Reset to default values from get_treatment_train_config
+                st.session_state.treatment_pretreatment = default_config["pretreatment"].copy()
+                st.session_state.treatment_desalination = default_config["desalination"].copy()
+                st.session_state.treatment_posttreatment = default_config["posttreatment"].copy()
+                st.session_state.treatment_brine = default_config["brine"]
+                
+                # Increment reset counter to force selectbox re-render
+                st.session_state.reset_counter += 1
+                
+                st.rerun()
+
+
     with req_col:
         with st.container(border=True):
             st.markdown(f"<h5 style='margin-top: 0;'>{ffp_primary} - Water Quality Requirements</h5>", unsafe_allow_html=True)
@@ -485,20 +646,74 @@ with col2:
     )
 
 # Then create inputs for each parameter - create new columns for each row
+conc_lvl = st.session_state.conc_level
+add_param = []
 for param, param_info in ALL_WATER_QUALITY_PARAMS.items():
-    sidebar_key = PARAM_TO_SIDEBAR_KEY.get(param)
-    if sidebar_key:
-        default_value = SIDEBAR_DEFAULTS.get(param, param_info["limit"])
-        # Create new columns for each parameter row
-        col1, col2 = st.sidebar.columns([1.5, 1], gap="small")
-        with col1:
-            st.markdown(f"<div style='font-size: 13px; font-weight: 500;'>{param}<br/><span style='font-size: 11px; color: #888;'>({param_info['unit']})</span></div>", unsafe_allow_html=True)
-        with col2:
+    if param in SIDEBAR_DEFAULTS[conc_lvl].keys():
+        sidebar_key = PARAM_TO_SIDEBAR_KEY.get(param)
+        if sidebar_key:
+            default_value = SIDEBAR_DEFAULTS[conc_lvl].get(param, param_info["limit"])
+            # Create new columns for each parameter row
+            col1, col2 = st.sidebar.columns([1.5, 1], gap="small")
+            with col1:
+                st.markdown(f"<div style='font-size: 13px; font-weight: 500;'>{param}<br/><span style='font-size: 11px; color: #888;'>({param_info['unit']})</span></div>", unsafe_allow_html=True)
+            with col2:
+                st.number_input(
+                    f"{param}",
+                    min_value=0.0,
+                    value=float(default_value),
+                    key=sidebar_key,
+                    label_visibility="collapsed"
+                )
+    else:
+        add_param.append(param)
+ 
+# Allow additional input parameters from the users
+if 'additional_input_params_added' not in st.session_state:
+    st.session_state.additional_input_params_added = []
+st.sidebar.markdown("**Additional Input Parameters:**")
+add_input_col1, add_input_col2 = st.sidebar.columns([2.1, 0.6])
+with add_input_col1:
+    selected_additional = set(st.session_state.additional_input_params_added) if 'additional_input_params_added' in st.session_state else set()
+    available_additional_params = [p for p in add_param if p not in selected_additional]
+    
+    if available_additional_params:
+        new_additional_param = st.selectbox(
+            "Add additional param",
+            available_additional_params,
+            key="select_new_additional_param",
+            label_visibility="collapsed",
+        )
+    else:
+        new_additional_param = None
+
+with add_input_col2:
+    if available_additional_params and st.button("➕", key="btn_add_additional_param", use_container_width=True):
+        if new_additional_param and new_additional_param not in st.session_state.additional_input_params_added:
+            st.session_state.additional_input_params_added.append(new_additional_param)
+            st.rerun()
+
+# Display added additional input parameters
+if st.session_state.additional_input_params_added:
+
+    for added_additional_param in st.session_state.additional_input_params_added:
+        info = ALL_WATER_QUALITY_PARAMS.get(added_additional_param, {})
+        session_key = f"additional_input_{added_additional_param}".replace(" ", "_")
+        if session_key not in st.session_state:
+            st.session_state[session_key] = info.get("limit", 0.0)
+        
+        col_label, col_input, col_remove = st.sidebar.columns([2.1, 1, 0.6])
+        with col_label:
+            st.markdown(f"<div style='font-size: 13px; font-weight: 500;'>{added_additional_param}<br/><span style='font-size: 11px; color: #888;'>({info.get('unit', '')})</span></div>", unsafe_allow_html=True)
+        with col_input:
             st.number_input(
-                f"{param}",
+                "Value",
                 min_value=0.0,
-                value=float(default_value),
-                key=sidebar_key,
+                value=float(st.session_state.get(session_key, info.get("limit", 0.0))),
+                key=session_key,
                 label_visibility="collapsed"
             )
-                    
+        with col_remove:
+            if st.button("✕", key=f"remove_additional_{added_additional_param}", use_container_width=True):
+                st.session_state.additional_input_params_added.remove(added_additional_param)
+                st.rerun()
