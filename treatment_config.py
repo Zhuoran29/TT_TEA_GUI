@@ -11,7 +11,10 @@ WATER_QUALITY_REQUIREMENTS = {
         "Notes": "Surface water discharge requirements are governed by a hierarchical regulatory framework consisting \
                   of the U.S. Clean Water Act, EPA water quality standards, and state-specific regulations. \
                   \\n Discharge limits are ultimately defined through permit systems (e.g., NPDES/TPDES), which incorporate \
-                both technology-based and water-quality-based criteria depending on receiving water conditions.",
+                 both technology-based and water-quality-based criteria depending on receiving water conditions. \
+                 \\n For produced water discharges, while currently not allowed by regulations, this tool provides \
+                  technology-based effluent limits that are typically established \
+                  based on the best available technology (BAT) for the specific industry and discharge type. ",
         "url": {"EPA NPDES Program": "https://www.epa.gov/npdes",
                 "EPA Water Quality Standards": "https://www.epa.gov/wqs-tech/water-quality-standards",
                 "State-specific regulations": "https://www.epa.gov/wqs-tech/state-water-quality-standards",
@@ -122,9 +125,9 @@ def get_treatment_train_config(ffp_scenario, desal_type):
     if desal_type == "Mechanical Vapor Compression (MVC)":
         configs = {
             "Surface water discharge": {
-                "pretreatment": ["DAF", "Walnut shell filtration"],
+                "pretreatment": ["3-phase separator","DAF", "Ultrafiltration"],
                 "desalination": ["MVC"],
-                "posttreatment": ["Ammonia stripping", "GAC", "Zeolite"],
+                "posttreatment": ["GAC", "Zeolite"],
                 "brine": "Brine disposal"
             },
             "Agricultural use": {
@@ -168,9 +171,9 @@ def get_treatment_train_config(ffp_scenario, desal_type):
     elif desal_type == "Membrane desalination (MD)":  # Membrane desalination
         configs = {
             "Surface water discharge": {
-                "pretreatment": ["DAF", "Walnut shell filtration"],
+                "pretreatment": ["3-phase separator","DAF", "Ultrafiltration", "Antiscalant / pH adjustment"],
                 "desalination": ["MD"],
-                "posttreatment": ["Ammonia stripping", "GAC", "Zeolite"],
+                "posttreatment": ["GAC", "Zeolite"],
                 "brine": "Brine disposal"
             },
             "Agricultural use": {
@@ -214,9 +217,9 @@ def get_treatment_train_config(ffp_scenario, desal_type):
     else: # LSRRO
         configs = {
             "Surface water discharge": {
-                "pretreatment": ["DAF", "Walnut shell filtration"],
+                "pretreatment": ["3-phase separator","DAF", "Ultrafiltration", "Antiscalant / pH adjustment"],
                 "desalination": ["LSRRO"],
-                "posttreatment": ["Ammonia stripping", "GAC", "Zeolite"],
+                "posttreatment": ["GAC", "Zeolite"],
                 "brine": "Brine disposal"
             },
             "Agricultural use": {

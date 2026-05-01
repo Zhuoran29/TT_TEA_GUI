@@ -31,6 +31,8 @@ if "ffp_scenarios" not in st.session_state:
     st.session_state.ffp_scenarios = ["Surface water discharge"]
 if "desal_type" not in st.session_state:
     st.session_state.desal_type = "Mechanical Vapor Compression (MVC)"
+if "conc_level" not in st.session_state:
+    st.session_state.conc_level = "High"
 
 # Display water quality requirements in a box
 influent = st.session_state.influent_type
