@@ -1,9 +1,9 @@
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
-st.set_page_config(page_title="14_TEA_Results", layout="wide")
 
-# Apple-style CSS
+st.set_page_config(page_title="04_TEA_Results", layout="wide")
+
 st.markdown("""
 <style>
     * {
@@ -22,42 +22,48 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.header("Step 4 — TEA results")
+st.header("TEA results")
 
-if "treatment_train" not in st.session_state:
-    st.warning("Please complete the previous steps and save (Home -> Treatment Train -> System Design).")
-else:
-    flow = st.session_state.get("wq_flow", 1000.0)
-    days_per_year = st.sidebar.number_input("Operating days/year", min_value=1, value=330, key="tea_days")
-    amort_years = st.sidebar.number_input("Amortization (years)", min_value=1, value=10, key="tea_amort")
+if "tea_results" not in st.session_state:
+    st.warning("Please run the TEA calculation on the System Design page first.")
+    if st.button("Back to System Design"):
+        st.switch_page("pages/03_System_Design.py")
+    st.stop()
 
-    train = st.session_state.treatment_train
-    units = []
-    total_capex = 0.0
-    total_opex_annual = 0.0
+results = st.session_state.tea_results
+context = st.session_state.get("tea_context", {})
 
-    for section, us in [("Pretreatment", train["pretreatment"]), ("Desalination", train["desalination"]), ("Post‑treatment", train["posttreatment"]), ("Brine management", [train["brine"]])]:
-        for u in us:
-            key_prefix = f"unit_{section}_{u}".replace(" ", "_")
-            capex_per_m3 = st.session_state.get(key_prefix + "_capex", 50.0)
-            opex_pct = st.session_state.get(key_prefix + "_opex_pct", 5.0)
-            eff = st.session_state.get(key_prefix + "_eff", 0.95)
-            # approximate: capex scales with capacity (flow m3/day)
-            capex_unit = capex_per_m3 * flow
-            opex_annual = capex_unit * (opex_pct / 100.0) * days_per_year
-            total_capex += capex_unit
-            total_opex_annual += opex_annual
-            units.append({"section": section, "unit": u, "capex_estimated_$": capex_unit, "opex_annual_$": opex_annual, "efficiency": eff})
+metric_cols = st.columns(4)
+with metric_cols[0]:
+    st.metric("Total CAPEX", f"${results['total_capital_cost']:,.0f}")
+with metric_cols[1]:
+    st.metric("Annual OPEX", f"${results['total_annual_operating_cost']:,.0f}/yr")
+with metric_cols[2]:
+    st.metric("Product flow", f"{results['final_product_flow']:,.1f} m3/day")
+with metric_cols[3]:
+    st.metric("LCOW", f"${results['levelized_cost_of_water']:,.2f}/m3")
 
-    annualized_capex = total_capex / amort_years
-    total_annual_cost = annualized_capex + total_opex_annual
-    cost_per_m3 = total_annual_cost / (flow * days_per_year)
+st.subheader("Calculation context")
+st.dataframe(pd.DataFrame([context]), use_container_width=True)
 
-    st.metric("Total CAPEX (approx $)", f"{total_capex:,.0f}")
-    st.metric("Total OPEX /yr (approx $)", f"{total_opex_annual:,.0f}")
-    st.metric("Levelized cost /m3 ($)", f"{cost_per_m3:.2f}")
+st.subheader("Unit process results")
+unit_results = pd.DataFrame([
+    {k: v for k, v in row.items() if k not in ["technical_results", "cost_results"]}
+    for row in results["unit_results"]
+])
+st.dataframe(unit_results, use_container_width=True)
 
-    df = pd.DataFrame(units)
-    st.dataframe(df)
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button("Download unit costs CSV", csv, file_name="tea_unit_costs.csv", mime="text/csv")
+st.subheader("Results CSV")
+results_table = pd.DataFrame(results.get("results_csv_rows", []))
+st.dataframe(results_table, use_container_width=True)
+
+csv = st.session_state.get(
+    "tea_results_csv",
+    results_table.to_csv(index=False).encode("utf-8"),
+)
+st.download_button(
+    "Download TEA results CSV",
+    csv,
+    file_name="tea_results.csv",
+    mime="text/csv",
+)

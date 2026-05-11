@@ -1,0 +1,5 @@
+unit_process,sub_section,parameter,value,unit,description
+DEFAULT,Hydraulics,recovery,0.95,fraction,Fraction of inlet flow recovered as product from this unit
+DEFAULT,Performance,removal_efficiency,0.0,fraction,Generic constituent removal efficiency placeholder
+DEFAULT,Energy,energy_intensity,0.0,kWh/m3,Electricity demand per cubic meter treated
+DEFAULT,Chemicals,chemical_dose,0.0,kg/m3,Chemical dose per cubic meter treated

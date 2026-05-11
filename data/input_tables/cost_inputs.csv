@@ -1,0 +1,5 @@
+unit_process,sub_section,parameter,value,unit,description
+DEFAULT,Capital,capex_per_flow,50.0,$/(m3/day),Installed capital cost per unit daily capacity
+DEFAULT,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX
+DEFAULT,Variable O&M,variable_opex_per_m3,0.0,$/m3,Variable operating cost per cubic meter treated
+DEFAULT,Utilities,electricity_price,0.08,$/kWh,Electricity price used with technical energy intensity

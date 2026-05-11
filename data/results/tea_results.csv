@@ -1,0 +1,115 @@
+sequence,section,unit_process,model_type,result_name,value,unit
+1,Pretreatment,3-phase separator,technical,inlet_flow,158.987294928,m3/day
+1,Pretreatment,3-phase separator,technical,outlet_flow,151.03793018160002,m3/day
+1,Pretreatment,3-phase separator,technical,brine_flow,7.9493647463999935,m3/day
+1,Pretreatment,3-phase separator,technical,water_recovery,0.95,fraction
+1,Pretreatment,3-phase separator,technical,energy_intensity,0.0,kWh/m3
+1,Pretreatment,3-phase separator,technical,constituent_removal_efficiency,0.0,fraction
+1,Pretreatment,3-phase separator,technical,chemical_dose,0.0,kg/m3
+1,Pretreatment,3-phase separator,cost,installed_capital_cost,7949.3647464000005,USD
+1,Pretreatment,3-phase separator,cost,fixed_operating_cost,397.46823732000007,USD/year
+1,Pretreatment,3-phase separator,cost,variable_operating_cost,0.0,USD/year
+1,Pretreatment,3-phase separator,cost,energy_operating_cost,0.0,USD/year
+1,Pretreatment,3-phase separator,cost,total_annual_operating_cost,397.46823732000007,USD/year
+2,Pretreatment,DAF,technical,inlet_flow,151.03793018160002,m3/day
+2,Pretreatment,DAF,technical,outlet_flow,143.48603367252002,m3/day
+2,Pretreatment,DAF,technical,brine_flow,7.551896509079995,m3/day
+2,Pretreatment,DAF,technical,water_recovery,0.95,fraction
+2,Pretreatment,DAF,technical,energy_intensity,0.0,kWh/m3
+2,Pretreatment,DAF,technical,constituent_removal_efficiency,0.0,fraction
+2,Pretreatment,DAF,technical,chemical_dose,0.0,kg/m3
+2,Pretreatment,DAF,cost,installed_capital_cost,7551.896509080001,USD
+2,Pretreatment,DAF,cost,fixed_operating_cost,377.5948254540001,USD/year
+2,Pretreatment,DAF,cost,variable_operating_cost,0.0,USD/year
+2,Pretreatment,DAF,cost,energy_operating_cost,0.0,USD/year
+2,Pretreatment,DAF,cost,total_annual_operating_cost,377.5948254540001,USD/year
+3,Pretreatment,Ultrafiltration,technical,inlet_flow,143.48603367252002,m3/day
+3,Pretreatment,Ultrafiltration,technical,outlet_flow,136.31173198889402,m3/day
+3,Pretreatment,Ultrafiltration,technical,brine_flow,7.174301683625998,m3/day
+3,Pretreatment,Ultrafiltration,technical,water_recovery,0.95,fraction
+3,Pretreatment,Ultrafiltration,technical,energy_intensity,0.0,kWh/m3
+3,Pretreatment,Ultrafiltration,technical,constituent_removal_efficiency,0.0,fraction
+3,Pretreatment,Ultrafiltration,technical,chemical_dose,0.0,kg/m3
+3,Pretreatment,Ultrafiltration,cost,installed_capital_cost,7174.301683626001,USD
+3,Pretreatment,Ultrafiltration,cost,fixed_operating_cost,358.7150841813001,USD/year
+3,Pretreatment,Ultrafiltration,cost,variable_operating_cost,0.0,USD/year
+3,Pretreatment,Ultrafiltration,cost,energy_operating_cost,0.0,USD/year
+3,Pretreatment,Ultrafiltration,cost,total_annual_operating_cost,358.7150841813001,USD/year
+4,Pretreatment,Softening / silica control,technical,inlet_flow,136.31173198889402,m3/day
+4,Pretreatment,Softening / silica control,technical,outlet_flow,129.4961453894493,m3/day
+4,Pretreatment,Softening / silica control,technical,brine_flow,6.815586599444714,m3/day
+4,Pretreatment,Softening / silica control,technical,water_recovery,0.95,fraction
+4,Pretreatment,Softening / silica control,technical,energy_intensity,0.0,kWh/m3
+4,Pretreatment,Softening / silica control,technical,constituent_removal_efficiency,0.0,fraction
+4,Pretreatment,Softening / silica control,technical,chemical_dose,0.0,kg/m3
+4,Pretreatment,Softening / silica control,cost,installed_capital_cost,6815.586599444701,USD
+4,Pretreatment,Softening / silica control,cost,fixed_operating_cost,340.7793299722351,USD/year
+4,Pretreatment,Softening / silica control,cost,variable_operating_cost,0.0,USD/year
+4,Pretreatment,Softening / silica control,cost,energy_operating_cost,0.0,USD/year
+4,Pretreatment,Softening / silica control,cost,total_annual_operating_cost,340.7793299722351,USD/year
+5,Pretreatment,Antiscalant / pH adjustment,technical,inlet_flow,129.4961453894493,m3/day
+5,Pretreatment,Antiscalant / pH adjustment,technical,outlet_flow,123.02133811997683,m3/day
+5,Pretreatment,Antiscalant / pH adjustment,technical,brine_flow,6.474807269472478,m3/day
+5,Pretreatment,Antiscalant / pH adjustment,technical,water_recovery,0.95,fraction
+5,Pretreatment,Antiscalant / pH adjustment,technical,energy_intensity,0.0,kWh/m3
+5,Pretreatment,Antiscalant / pH adjustment,technical,constituent_removal_efficiency,0.0,fraction
+5,Pretreatment,Antiscalant / pH adjustment,technical,chemical_dose,0.0,kg/m3
+5,Pretreatment,Antiscalant / pH adjustment,cost,installed_capital_cost,6474.807269472465,USD
+5,Pretreatment,Antiscalant / pH adjustment,cost,fixed_operating_cost,323.7403634736233,USD/year
+5,Pretreatment,Antiscalant / pH adjustment,cost,variable_operating_cost,0.0,USD/year
+5,Pretreatment,Antiscalant / pH adjustment,cost,energy_operating_cost,0.0,USD/year
+5,Pretreatment,Antiscalant / pH adjustment,cost,total_annual_operating_cost,323.7403634736233,USD/year
+6,Desalination,MVC,technical,inlet_flow,123.02133811997683,m3/day
+6,Desalination,MVC,technical,outlet_flow,116.87027121397799,m3/day
+6,Desalination,MVC,technical,brine_flow,6.151066905998846,m3/day
+6,Desalination,MVC,technical,water_recovery,0.95,fraction
+6,Desalination,MVC,technical,energy_intensity,0.0,kWh/m3
+6,Desalination,MVC,technical,constituent_removal_efficiency,0.0,fraction
+6,Desalination,MVC,technical,chemical_dose,0.0,kg/m3
+6,Desalination,MVC,cost,installed_capital_cost,6151.066905998841,USD
+6,Desalination,MVC,cost,fixed_operating_cost,307.55334529994207,USD/year
+6,Desalination,MVC,cost,variable_operating_cost,0.0,USD/year
+6,Desalination,MVC,cost,energy_operating_cost,0.0,USD/year
+6,Desalination,MVC,cost,total_annual_operating_cost,307.55334529994207,USD/year
+7,Post-treatment,Blending / remineralization,technical,inlet_flow,116.87027121397799,m3/day
+7,Post-treatment,Blending / remineralization,technical,outlet_flow,111.02675765327908,m3/day
+7,Post-treatment,Blending / remineralization,technical,brine_flow,5.843513560698909,m3/day
+7,Post-treatment,Blending / remineralization,technical,water_recovery,0.95,fraction
+7,Post-treatment,Blending / remineralization,technical,energy_intensity,0.0,kWh/m3
+7,Post-treatment,Blending / remineralization,technical,constituent_removal_efficiency,0.0,fraction
+7,Post-treatment,Blending / remineralization,technical,chemical_dose,0.0,kg/m3
+7,Post-treatment,Blending / remineralization,cost,installed_capital_cost,5843.5135606989,USD
+7,Post-treatment,Blending / remineralization,cost,fixed_operating_cost,292.175678034945,USD/year
+7,Post-treatment,Blending / remineralization,cost,variable_operating_cost,0.0,USD/year
+7,Post-treatment,Blending / remineralization,cost,energy_operating_cost,0.0,USD/year
+7,Post-treatment,Blending / remineralization,cost,total_annual_operating_cost,292.175678034945,USD/year
+8,Post-treatment,pH adjustment,technical,inlet_flow,111.02675765327908,m3/day
+8,Post-treatment,pH adjustment,technical,outlet_flow,105.47541977061512,m3/day
+8,Post-treatment,pH adjustment,technical,brine_flow,5.551337882663958,m3/day
+8,Post-treatment,pH adjustment,technical,water_recovery,0.95,fraction
+8,Post-treatment,pH adjustment,technical,energy_intensity,0.0,kWh/m3
+8,Post-treatment,pH adjustment,technical,constituent_removal_efficiency,0.0,fraction
+8,Post-treatment,pH adjustment,technical,chemical_dose,0.0,kg/m3
+8,Post-treatment,pH adjustment,cost,installed_capital_cost,5551.337882663954,USD
+8,Post-treatment,pH adjustment,cost,fixed_operating_cost,277.5668941331977,USD/year
+8,Post-treatment,pH adjustment,cost,variable_operating_cost,0.0,USD/year
+8,Post-treatment,pH adjustment,cost,energy_operating_cost,0.0,USD/year
+8,Post-treatment,pH adjustment,cost,total_annual_operating_cost,277.5668941331977,USD/year
+9,Brine management,Brine disposal,technical,inlet_flow,105.47541977061512,m3/day
+9,Brine management,Brine disposal,technical,outlet_flow,100.20164878208436,m3/day
+9,Brine management,Brine disposal,technical,brine_flow,5.273770988530757,m3/day
+9,Brine management,Brine disposal,technical,water_recovery,0.95,fraction
+9,Brine management,Brine disposal,technical,energy_intensity,0.0,kWh/m3
+9,Brine management,Brine disposal,technical,constituent_removal_efficiency,0.0,fraction
+9,Brine management,Brine disposal,technical,chemical_dose,0.0,kg/m3
+9,Brine management,Brine disposal,cost,installed_capital_cost,5273.770988530756,USD
+9,Brine management,Brine disposal,cost,fixed_operating_cost,263.6885494265378,USD/year
+9,Brine management,Brine disposal,cost,variable_operating_cost,0.0,USD/year
+9,Brine management,Brine disposal,cost,energy_operating_cost,0.0,USD/year
+9,Brine management,Brine disposal,cost,total_annual_operating_cost,263.6885494265378,USD/year
+,Project,Overall system,project_summary,total_capital_cost,58785.64614591562,USD
+,Project,Overall system,project_summary,annualized_capital_cost,5878.564614591562,USD/year
+,Project,Overall system,project_summary,total_annual_operating_cost,2939.2823072957817,USD/year
+,Project,Overall system,project_summary,total_annual_cost,8817.846921887343,USD/year
+,Project,Overall system,project_summary,final_product_flow,100.20164878208436,m3/day
+,Project,Overall system,project_summary,levelized_cost_of_water,0.266669746186063,USD/m3
