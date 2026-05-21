@@ -7,3 +7,7 @@ __pycache__/
 
 # macOS
 .DS_Store
+
+# Generated results
+results/
+data/results/

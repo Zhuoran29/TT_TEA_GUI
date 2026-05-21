@@ -34,13 +34,29 @@ RESULTS_OUTPUT_PATH = APP_ROOT / "data" / "results" / "tea_results.csv"
 BBL_TO_M3 = 0.158987294928
 
 
+def safe_project_filename(project_name):
+    """Return a filesystem-friendly filename prefix for project outputs."""
+    cleaned = []
+    for char in project_name.strip():
+        if char.isalnum():
+            cleaned.append(char)
+        else:
+            cleaned.append("_")
+    filename = "_".join(part for part in "".join(cleaned).split("_") if part)
+    return filename or "tea_project"
+
+
 def get_ordered_unit_processes(train):
     """Flatten the page 02 treatment train into the execution order for page 03."""
+    brine_units = train.get("brine", [])
+    if isinstance(brine_units, str):
+        brine_units = [brine_units]
+
     sections = [
         ("Pretreatment", train.get("pretreatment", [])),
         ("Desalination", train.get("desalination", [])),
         ("Post-treatment", train.get("posttreatment", [])),
-        ("Brine management", [train.get("brine")] if train.get("brine") else []),
+        (f"Brine management - {train.get('brine_category', 'Brine management')}", brine_units),
     ]
 
     ordered_units = []
@@ -74,15 +90,13 @@ def get_inputs_for_unit(table, unit_process):
     if unit_rows.empty:
         rows = default_rows
         rows["unit_process"] = unit_process
-        return rows.reset_index(drop=True)
+        return rows.reset_index(drop=True)[
+            ["unit_process", "sub_section", "parameter", "value", "unit", "description"]
+        ]
 
-    merged = default_rows.set_index("parameter")
-    overrides = unit_rows.set_index("parameter")
-    merged.update(overrides)
-    additional_rows = overrides[~overrides.index.isin(merged.index)]
-    rows = pd.concat([merged, additional_rows]).reset_index()
-    rows["unit_process"] = unit_process
-    return rows[["unit_process", "sub_section", "parameter", "value", "unit", "description"]]
+    return unit_rows.reset_index(drop=True)[
+        ["unit_process", "sub_section", "parameter", "value", "unit", "description"]
+    ]
 
 
 def render_grouped_input_tables(rows, key_prefix):
@@ -93,15 +107,18 @@ def render_grouped_input_tables(rows, key_prefix):
     for sub_section in subsection_names:
         subsection_rows = rows[rows["sub_section"].fillna("General") == sub_section].copy()
         st.markdown(f"_{sub_section}_")
+        display_rows = subsection_rows[["description", "value", "unit"]].copy()
         edited = st.data_editor(
-            subsection_rows,
+            display_rows,
             key=f"{key_prefix}_{sub_section}",
             hide_index=True,
-            disabled=["unit_process", "sub_section", "parameter", "unit", "description"],
+            disabled=["description", "unit"],
             num_rows="fixed",
             use_container_width=True,
         )
-        edited_sections.append(edited)
+        merged_rows = subsection_rows.reset_index(drop=True).copy()
+        merged_rows["value"] = edited["value"].reset_index(drop=True)
+        edited_sections.append(merged_rows)
 
     if not edited_sections:
         return rows
@@ -207,6 +224,7 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, context):
     unit_results = []
     total_capital_cost = 0.0
     total_annual_operating_cost = 0.0
+    project_life_years = float(context["project_life_years"])
 
     for unit in ordered_units:
         unit_process = unit["unit_process"]
@@ -217,6 +235,7 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, context):
         cost_result = run_cost_model(unit_process, technical_result, cost_inputs, context)
 
         capital_cost = result_value(cost_result, "installed_capital_cost")
+        annualized_capital_cost = capital_cost / project_life_years
         annual_operating_cost = result_value(cost_result, "total_annual_operating_cost")
         outlet_flow = result_value(technical_result, "outlet_flow")
 
@@ -238,18 +257,29 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, context):
             "energy_intensity_unit": result_unit(technical_result, "energy_intensity"),
             "installed_capital_cost": capital_cost,
             "installed_capital_cost_unit": result_unit(cost_result, "installed_capital_cost"),
+            "annualized_capital_cost": annualized_capital_cost,
+            "annualized_capital_cost_unit": "USD/year",
             "total_annual_operating_cost": annual_operating_cost,
             "total_annual_operating_cost_unit": result_unit(cost_result, "total_annual_operating_cost"),
             "technical_results": technical_result,
             "cost_results": cost_result,
         })
 
-    project_life_years = float(context["project_life_years"])
     operating_days = float(context["operating_days_per_year"])
     annualized_capital_cost = total_capital_cost / project_life_years
     total_annual_cost = annualized_capital_cost + total_annual_operating_cost
     annual_product_volume = max(stream["flow_m3_day"] * operating_days, 1e-9)
     lcow = total_annual_cost / annual_product_volume
+
+    for unit_result in unit_results:
+        unit_result["capital_lcow_contribution"] = (
+            unit_result["annualized_capital_cost"] / annual_product_volume
+        )
+        unit_result["capital_lcow_contribution_unit"] = "USD/m3"
+        unit_result["opex_lcow_contribution"] = (
+            unit_result["total_annual_operating_cost"] / annual_product_volume
+        )
+        unit_result["opex_lcow_contribution_unit"] = "USD/m3"
 
     results = {
         "total_capital_cost": total_capital_cost,
@@ -265,6 +295,9 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, context):
 
 
 st.header("System design & unit assumptions")
+
+project_name = st.session_state.get("project_name", "TEA project")
+st.caption(f"Project: {project_name}")
 
 if "treatment_train" not in st.session_state:
     st.warning("Please save the Treatment Train on the previous page before proceeding.")
@@ -334,7 +367,8 @@ if st.button("Run TEA Calculation", type="primary"):
     results = calculate_lcow(ordered_units, technical_tables, cost_tables, context)
     results_table = pd.DataFrame(results["results_csv_rows"])
     RESULTS_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    results_table.to_csv(RESULTS_OUTPUT_PATH, index=False)
+    results_filename = f"{safe_project_filename(project_name)}_tea_results.csv"
+    results_table.to_csv(RESULTS_OUTPUT_PATH.parent / results_filename, index=False)
     st.session_state.tea_context = context
     st.session_state.tea_unit_inputs = {
         "technical": {k: v.to_dict("records") for k, v in technical_tables.items()},
@@ -342,6 +376,7 @@ if st.button("Run TEA Calculation", type="primary"):
     }
     st.session_state.tea_results = results
     st.session_state.tea_results_csv = results_table.to_csv(index=False).encode("utf-8")
+    st.session_state.tea_results_filename = results_filename
     st.success("TEA calculation completed.")
 
 if "tea_results" in st.session_state:
@@ -365,7 +400,7 @@ if "tea_results" in st.session_state:
     st.download_button(
         "Download TEA results CSV",
         st.session_state.get("tea_results_csv", b""),
-        file_name="tea_results.csv",
+        file_name=st.session_state.get("tea_results_filename", f"{safe_project_filename(project_name)}_tea_results.csv"),
         mime="text/csv",
     )
 

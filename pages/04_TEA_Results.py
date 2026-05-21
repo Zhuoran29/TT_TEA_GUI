@@ -1,5 +1,7 @@
 import pandas as pd
 import streamlit as st
+from matplotlib import pyplot as plt
+from matplotlib.patches import Patch
 
 
 st.set_page_config(page_title="04_TEA_Results", layout="wide")
@@ -23,6 +25,21 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.header("TEA results")
+
+project_name = st.session_state.get("project_name", "TEA project")
+st.caption(f"Project: {project_name}")
+
+
+def safe_project_filename(project_name):
+    """Return a filesystem-friendly filename prefix for project outputs."""
+    cleaned = []
+    for char in project_name.strip():
+        if char.isalnum():
+            cleaned.append(char)
+        else:
+            cleaned.append("_")
+    filename = "_".join(part for part in "".join(cleaned).split("_") if part)
+    return filename or "tea_project"
 
 if "tea_results" not in st.session_state:
     st.warning("Please run the TEA calculation on the System Design page first.")
@@ -53,6 +70,62 @@ unit_results = pd.DataFrame([
 ])
 st.dataframe(unit_results, use_container_width=True)
 
+st.subheader("LCOW cost breakdown")
+cost_breakdown = unit_results.sort_values("sequence").copy()
+fig, ax = plt.subplots(figsize=(12, 3.8))
+palette = list(plt.get_cmap("tab20").colors)
+bottom = 0.0
+unit_handles = []
+
+for idx, (_, row) in enumerate(cost_breakdown.iterrows()):
+    color = palette[idx % len(palette)]
+    unit_label = f"{int(row['sequence'])}. {row['unit_process']}"
+    capex_contribution = float(row["capital_lcow_contribution"])
+    ax.bar(
+        ["LCOW"],
+        [capex_contribution],
+        bottom=bottom,
+        color=color,
+        edgecolor="white",
+        linewidth=0.8,
+    )
+    bottom += capex_contribution
+    unit_handles.append(Patch(facecolor=color, edgecolor="white", label=unit_label))
+
+for idx, (_, row) in enumerate(cost_breakdown.iterrows()):
+    color = palette[idx % len(palette)]
+    opex_contribution = float(row["opex_lcow_contribution"])
+    ax.bar(
+        ["LCOW"],
+        [opex_contribution],
+        bottom=bottom,
+        color=color,
+        edgecolor="#333333",
+        linewidth=0.8,
+        hatch="///",
+    )
+    bottom += opex_contribution
+
+style_handles = [
+    Patch(facecolor="#d9d9d9", edgecolor="white", label="CAPEX contribution"),
+    Patch(facecolor="#d9d9d9", edgecolor="#333333", hatch="///", label="OPEX contribution"),
+]
+
+ax.set_ylabel("LCOW contribution (USD/m3)")
+ax.set_ylim(0, max(bottom * 1.12, 0.01))
+ax.grid(axis="y", alpha=0.2)
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.legend(
+    handles=style_handles + unit_handles,
+    loc="upper left",
+    bbox_to_anchor=(1.01, 1.0),
+    frameon=False,
+)
+fig.tight_layout()
+st.pyplot(fig, use_container_width=True)
+plt.close(fig)
+
 st.subheader("Results CSV")
 results_table = pd.DataFrame(results.get("results_csv_rows", []))
 st.dataframe(results_table, use_container_width=True)
@@ -64,6 +137,6 @@ csv = st.session_state.get(
 st.download_button(
     "Download TEA results CSV",
     csv,
-    file_name="tea_results.csv",
+    file_name=st.session_state.get("tea_results_filename", f"{safe_project_filename(project_name)}_tea_results.csv"),
     mime="text/csv",
 )

@@ -33,8 +33,18 @@ if "ffp_scenarios" not in st.session_state:
     st.session_state.ffp_scenarios = ["Surface water discharge"]
 if "desal_type" not in st.session_state:
     st.session_state.desal_type = "Mechanical Vapor Compression (MVC)"
+if "project_name" not in st.session_state:
+    st.session_state.project_name = "TEA project"
 
 # Display selection options
+st.markdown("##### Project name")
+project_name = st.text_input(
+    "Project name",
+    value=st.session_state.project_name,
+    label_visibility="collapsed",
+    placeholder="Enter project name",
+)
+
 st.markdown("##### Influent type")
 influent = st.selectbox(
     "Influent type", 
@@ -56,6 +66,7 @@ ffp = st.selectbox(
     "Fit‑for‑purpose scenario",
     [
         "Agricultural use",
+        "Municipal drinking water",
         "Surface water discharge",
         "Powerplant cooling water",
         "Data center cooling water",
@@ -69,11 +80,12 @@ ffp = st.selectbox(
 
 st.markdown("##### Primary desalination type")
 desal = st.selectbox("Primary desalination type", 
-                    ["Mechanical Vapor Compression (MVC)", "Membrane desalination (MD)", "Low-salt rejection reverse osmosis (LSRRO)"],
+                    ["Mechanical Vapor Compression (MVC)", "Membrane desalination (MD)", "Low-salt rejection reverse osmosis (LSRRO)", "Reverse osmosis (RO)"],
                     index=0, label_visibility="collapsed")
 
 # Next button with automatic session state save
 if st.button("Configure Treatment Train →", type="primary"):
+    st.session_state.project_name = project_name.strip() or "TEA project"
     st.session_state.influent_type = influent
     st.session_state.ffp_scenarios = [ffp]
     st.session_state.desal_type = desal

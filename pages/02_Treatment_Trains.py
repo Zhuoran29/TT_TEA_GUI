@@ -1,5 +1,5 @@
 import streamlit as st
-from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_config, UNIT_REMOVAL_RATES, ALL_WATER_QUALITY_PARAMS, SIDEBAR_DEFAULTS
+from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_config, UNIT_REMOVAL_RATES, ALL_WATER_QUALITY_PARAMS, SIDEBAR_DEFAULTS, BRINE_MANAGEMENT_OPTIONS
 
 st.set_page_config(page_title="02_Treatment_Train", layout="wide")
 
@@ -33,6 +33,10 @@ if "desal_type" not in st.session_state:
     st.session_state.desal_type = "Mechanical Vapor Compression (MVC)"
 if "conc_level" not in st.session_state:
     st.session_state.conc_level = "High"
+if "project_name" not in st.session_state:
+    st.session_state.project_name = "TEA project"
+
+st.caption(f"Project: {st.session_state.project_name}")
 
 # Display water quality requirements in a box
 influent = st.session_state.influent_type
@@ -41,25 +45,27 @@ ffp_primary = st.session_state.ffp_scenarios[0] if st.session_state.ffp_scenario
 
 # Get water quality requirements and treatment train config
 requirements = WATER_QUALITY_REQUIREMENTS.get(ffp_primary, {})
-train_config = get_treatment_train_config(ffp_primary, desal)
+train_config = get_treatment_train_config(ffp_primary, desal, influent)
 
 pretreatment = train_config["pretreatment"]
 desalination = train_config["desalination"]
 posttreatment = train_config["posttreatment"]
 brine_default = train_config["brine"]
+brine_category_default = train_config.get("brine_category", "Brine disposal")
 
 # Set default brine option
 brine_option = brine_default
+brine_category = brine_category_default
 
 if requirements:
     # Brine management radio button
     st.markdown("##### Brine management approach")
-    brine_options = ["Brine disposal", "Brine valorization"]
+    brine_options = list(BRINE_MANAGEMENT_OPTIONS.keys())
     try:
-        default_index = brine_options.index(brine_default)
+        default_index = brine_options.index(brine_category_default)
     except ValueError:
         default_index = 0
-    brine_option = st.radio("", brine_options, index=default_index, label_visibility="collapsed", horizontal=True)
+    brine_category = st.radio("", brine_options, index=default_index, label_visibility="collapsed", horizontal=True)
 
 # Helper function to parse removal rates from string
 def parse_removal_rate(rate_str):
@@ -92,6 +98,12 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
     """Generate a graphviz flowchart that adapts to the number of units in each stage"""
     
     constituent_unit = ALL_WATER_QUALITY_PARAMS.get(tracked_constituent, {}).get("unit", "")
+    if isinstance(brine_name, list):
+        brine_list = brine_name
+    elif brine_name:
+        brine_list = [brine_name]
+    else:
+        brine_list = ["No brine unit selected"]
 
     # Helper function to create nodes and connections for a stage
     def create_stage_nodes(stage_prefix, stage_name, unit_list, color, current_conc=None):
@@ -177,8 +189,9 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
     post_dot, post_nodes, current_conc = create_stage_nodes("PST", "Post-treatment", posttreat_list, "lightcyan", current_conc)
     dot += post_dot
     
-    # Brine management - positioned to the right of first desalination unit
-    dot += f' Brine [label="{brine_name}", fillcolor=lightcoral];\n'
+    # Brine management stage
+    brine_dot, brine_nodes, _ = create_stage_nodes("B", "Brine management", brine_list, "lightcoral", None)
+    dot += brine_dot
     
     # Add Product Water label with final concentration if tracking
     if tracked_constituent and current_conc is not None:
@@ -191,13 +204,25 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
     else:
         dot += f' Product_Water [label="Product Water", fillcolor=lightgreen];\n'
     
-    # Flow connections
+    # Flow connections. Empty stages are allowed and skipped.
     dot += "\n // Flow connections\n"
-    dot += f" Influent -> {pre_nodes[0]};\n"
-    dot += f" {pre_nodes[-1]} -> {desal_nodes[0]};\n"
-    dot += f" {desal_nodes[-1]} -> {post_nodes[0]};\n"
-    dot += f" {desal_nodes[0]} -> Brine [style=dashed];\n"
-    dot += f" {post_nodes[-1]} -> Product_Water;\n"
+    stage_nodes = [pre_nodes, desal_nodes, post_nodes]
+    non_empty_stages = [nodes for nodes in stage_nodes if nodes]
+
+    if non_empty_stages:
+        dot += f" Influent -> {non_empty_stages[0][0]};\n"
+        for current_stage, next_stage in zip(non_empty_stages, non_empty_stages[1:]):
+            dot += f" {current_stage[-1]} -> {next_stage[0]};\n"
+        dot += f" {non_empty_stages[-1][-1]} -> Product_Water;\n"
+    else:
+        dot += " Influent -> Product_Water;\n"
+
+    if desal_nodes:
+        dot += f" {desal_nodes[0]} -> {brine_nodes[0]} [style=dashed];\n"
+    elif non_empty_stages:
+        dot += f" {non_empty_stages[-1][-1]} -> {brine_nodes[0]} [style=dashed];\n"
+    else:
+        dot += f" Influent -> {brine_nodes[0]} [style=dashed];\n"
     dot += "}\n"
     return dot
 
@@ -219,6 +244,7 @@ PARAM_TO_SIDEBAR_KEY = {
     "Chloride": "wq_chloride",
     "Silica": "wq_silica",
     "Iron": "wq_iron",
+    "Magnesium": "wq_magnesium",
     "Manganese": "wq_manganese",
     "Calcium": "wq_calcium",
     "Barium": "wq_barium",
@@ -226,6 +252,9 @@ PARAM_TO_SIDEBAR_KEY = {
     "Strontium": "wq_strontium",
     "Sulfate": "wq_sulfate",
     "Bicarbonate": "wq_bicarbonate",
+    "Fluoride": "wq_fluoride",
+    "Uranium": "wq_uranium",
+    "SAR": "wq_sar",
     "Selenium": "wq_selenium",
     "BTEX": "wq_btex",
     "PAHs": "wq_pahs",
@@ -278,18 +307,33 @@ if requirements:
     
     chart_col, design_col, req_col = st.columns([1.5, 1, 1])
     
-    # Check if desal_type has changed, if so reinitialize treatment units
-    if "current_desal_type" not in st.session_state:
-        st.session_state.current_desal_type = desal
-    
-    if st.session_state.current_desal_type != desal:
-        # Desal type has changed, reinitialize everything
-        st.session_state.current_desal_type = desal
+    # Reset editable train state when the selected scenario or default config changes.
+    # This prevents stale units from older defaults from lingering in the UI.
+    TRAIN_CONFIG_VERSION = 2
+    scenario_signature = (influent, ffp_primary, desal)
+
+    def _as_unit_list(value):
+        if isinstance(value, list):
+            return value.copy()
+        if value:
+            return [value]
+        return []
+
+    def _load_default_treatment_train():
+        st.session_state.current_scenario_signature = scenario_signature
+        st.session_state.treatment_config_version = TRAIN_CONFIG_VERSION
         st.session_state.treatment_pretreatment = pretreatment.copy()
         st.session_state.treatment_desalination = desalination.copy()
         st.session_state.treatment_posttreatment = posttreatment.copy()
-        st.session_state.treatment_brine = brine_option
-        st.session_state.reset_counter = 0
+        st.session_state.treatment_brine = _as_unit_list(brine_option)
+        st.session_state.treatment_brine_category = brine_category
+        st.session_state.reset_counter = st.session_state.get("reset_counter", 0) + 1
+
+    if (
+        st.session_state.get("current_scenario_signature") != scenario_signature
+        or st.session_state.get("treatment_config_version") != TRAIN_CONFIG_VERSION
+    ):
+        _load_default_treatment_train()
     
     # Initialize session state for editable treatment units BEFORE using them
     if "treatment_pretreatment" not in st.session_state:
@@ -299,15 +343,26 @@ if requirements:
     if "treatment_posttreatment" not in st.session_state:
         st.session_state.treatment_posttreatment = posttreatment.copy()
     if "treatment_brine" not in st.session_state:
-        st.session_state.treatment_brine = brine_option
+        st.session_state.treatment_brine = _as_unit_list(brine_option)
+    if isinstance(st.session_state.treatment_brine, str):
+        st.session_state.treatment_brine = [st.session_state.treatment_brine]
+    if "treatment_brine_category" not in st.session_state:
+        st.session_state.treatment_brine_category = brine_category
     if "reset_counter" not in st.session_state:
         st.session_state.reset_counter = 0
+
+    if st.session_state.treatment_brine_category != brine_category:
+        st.session_state.treatment_brine_category = brine_category
+        default_units = BRINE_MANAGEMENT_OPTIONS.get(brine_category, ["Brine disposal"])
+        st.session_state.treatment_brine = [default_units[0]]
+        st.rerun()
     
     # Use session state values for display and editing
     pretreatment = st.session_state.treatment_pretreatment
     desalination = st.session_state.treatment_desalination
     posttreatment = st.session_state.treatment_posttreatment
     brine_option = st.session_state.treatment_brine
+    brine_category = st.session_state.treatment_brine_category
     
     with chart_col:
         if tracked_const != "None":
@@ -320,6 +375,7 @@ if requirements:
                 "pretreatment": pretreatment,
                 "desalination": desalination,
                 "posttreatment": posttreatment,
+                "brine_category": brine_category,
                 "brine": brine_option,
             }
             st.success("✓ Treatment train configuration saved! Moving to System Design...")
@@ -411,31 +467,45 @@ if requirements:
                 st.rerun()
             
             # Display and edit brine
-            st.markdown("**Brine Management**")
-            col_select, col_remove = st.columns([8, 1])
-            with col_select:
-                new_brine = st.selectbox(
-                    "Brine type",
-                    all_units,
-                    index=all_units.index(st.session_state.treatment_brine) if st.session_state.treatment_brine in all_units else 0,
-                    key=f"brine_unit_{st.session_state.reset_counter}",
-                    label_visibility="collapsed"
-                )
-                if new_brine != st.session_state.treatment_brine:
-                    st.session_state.treatment_brine = new_brine
-                    st.rerun()
+            st.markdown(f"**Brine Management: {st.session_state.treatment_brine_category}**")
+            brine_units = BRINE_MANAGEMENT_OPTIONS.get(st.session_state.treatment_brine_category, ["Brine disposal"])
+            for i, unit in enumerate(st.session_state.treatment_brine):
+                col_select, col_remove = st.columns([8, 1])
+                with col_select:
+                    new_brine = st.selectbox(
+                        "Brine type",
+                        brine_units,
+                        index=brine_units.index(unit) if unit in brine_units else 0,
+                        key=f"brine_unit_{i}_{st.session_state.reset_counter}",
+                        label_visibility="collapsed"
+                    )
+                    if new_brine != unit:
+                        st.session_state.treatment_brine[i] = new_brine
+                        st.rerun()
+
+                with col_remove:
+                    if st.button("✕", key=f"remove_brine_{i}", use_container_width=True):
+                        st.session_state.treatment_brine.pop(i)
+                        st.rerun()
+
+            if st.button("➕", key="add_brine", use_container_width=True):
+                st.session_state.treatment_brine.append(brine_units[0])
+                st.rerun()
             
             # Reset button
             st.markdown("---")
             if st.button("🔄 Reset to Default", use_container_width=True):
                 # Get default config from treatment_config
-                default_config = get_treatment_train_config(ffp_primary, desal)
+                default_config = get_treatment_train_config(ffp_primary, desal, influent)
                 
                 # Reset to default values from get_treatment_train_config
                 st.session_state.treatment_pretreatment = default_config["pretreatment"].copy()
                 st.session_state.treatment_desalination = default_config["desalination"].copy()
                 st.session_state.treatment_posttreatment = default_config["posttreatment"].copy()
-                st.session_state.treatment_brine = default_config["brine"]
+                st.session_state.treatment_brine = _as_unit_list(default_config["brine"])
+                st.session_state.treatment_brine_category = default_config["brine_category"]
+                st.session_state.current_scenario_signature = scenario_signature
+                st.session_state.treatment_config_version = TRAIN_CONFIG_VERSION
                 
                 # Increment reset counter to force selectbox re-render
                 st.session_state.reset_counter += 1
@@ -592,6 +662,7 @@ else:
             "pretreatment": pretreatment,
             "desalination": desalination,
             "posttreatment": posttreatment,
+            "brine_category": brine_category,
             "brine": brine_option,
         }
         st.success("✓ Treatment train configuration saved! Moving to System Design...")
@@ -649,12 +720,14 @@ with col2:
 
 # Then create inputs for each parameter - create new columns for each row
 conc_lvl = st.session_state.conc_level
+sidebar_defaults_for_water = SIDEBAR_DEFAULTS.get(st.session_state.influent_type, SIDEBAR_DEFAULTS)
+sidebar_defaults_for_level = sidebar_defaults_for_water.get(conc_lvl, {})
 add_param = []
 for param, param_info in ALL_WATER_QUALITY_PARAMS.items():
-    if param in SIDEBAR_DEFAULTS[conc_lvl].keys():
+    if param in sidebar_defaults_for_level.keys():
         sidebar_key = PARAM_TO_SIDEBAR_KEY.get(param)
         if sidebar_key:
-            default_value = SIDEBAR_DEFAULTS[conc_lvl].get(param, param_info["limit"])
+            default_value = sidebar_defaults_for_level.get(param, param_info["limit"])
             # Create new columns for each parameter row
             col1, col2 = st.sidebar.columns([1.5, 1], gap="small")
             with col1:

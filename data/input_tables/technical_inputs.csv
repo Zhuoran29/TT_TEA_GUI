@@ -1,5 +1,15 @@
 unit_process,sub_section,parameter,value,unit,description
 DEFAULT,Hydraulics,recovery,0.95,fraction,Fraction of inlet flow recovered as product from this unit
-DEFAULT,Performance,removal_efficiency,0.0,fraction,Generic constituent removal efficiency placeholder
-DEFAULT,Energy,energy_intensity,0.0,kWh/m3,Electricity demand per cubic meter treated
-DEFAULT,Chemicals,chemical_dose,0.0,kg/m3,Chemical dose per cubic meter treated
+DEFAULT,Performance,removal_efficiency,0,fraction,Generic constituent removal efficiency placeholder
+DEFAULT,Energy,energy_intensity,0,kWh/m3,Electricity demand per cubic meter treated
+DEFAULT,Chemicals,chemical_dose,0,kg/m3,Chemical dose per cubic meter treated
+MVC,Pumps,pump_eff,0.8,,Pump efficiency 
+MVC,Pumps,feed_pump_pres,7000,Pa,Feed Pump pressure change
+MVC,Pumps,distillate_pump_pres,40000,Pa,Distillate pump pressure change
+MVC,Heat exchangers,hx_coeff,2000,W/K-m2,Heat exchanger heat transfer coefficiency
+MVC,Heat exchangers,brine_hx_cold_pres,7000,Pa,Brine HX cold side pressure change
+MVC,Heat exchangers,brine_hx_hot_pres,7000,Pa,Brine HX hot side pressure change
+MVC,Heat exchangers,distillate_hx_cold_pres,7000,Pa,Distillate HX cold side pressure change
+MVC,Heat exchangers,distillate_hx_hot_pres,7000,Pa,Distillate HX hot side pressure change
+MVC,Compressor,comp_eff,0.8,,Compressor efficiency
+MVC,Evaporator,evap_coeff,3000,W/K-m2,Evaporator heat transfer coefficient
