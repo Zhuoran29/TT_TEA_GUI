@@ -4,6 +4,10 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
+.venv/
+.venv-local/
+.uv-cache/
+.uv-python/
 
 # macOS
 .DS_Store
