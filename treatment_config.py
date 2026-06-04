@@ -2,12 +2,20 @@
 # Combined requirement specifications with detailed parameters, units, and limits
 WATER_QUALITY_REQUIREMENTS = {
     "Surface water discharge": {
-        "TSS": {"unit": "mg/L", "limit": 30.0},
-        "NH4-N": {"unit": "mg/L", "limit": 1.0},
+        "pH": {"unit": "-", "range": "6.5-8.5"},
+        "Conductivity": {"unit": "µS/cm", "limit": 900.0},
+        "DO": {"unit": "mg/L", "limit": 4.0},
+        "TDS": {"unit": "mg/L", "limit": 500.0},
+        "TOC": {"unit": "mg/L", "limit": 5.0},
+        "NH4-N": {"unit": "mg/L", "limit": 0.5},
         "Oil": {"unit": "mg/L", "limit": 10.0},
-        "TOC": {"unit": "mg/L", "limit": 10.0},
+        "Boron": {"unit": "mg/L", "limit": 4.0},
+        "Chloride": {"unit": "mg/L", "limit": 250.0},
+        "Hardness": {"unit": "mg/L as CaCO3", "limit": 150.0},
+        "BTEX": {"unit": "mg/L", "limit": 2.0},
+        "PAHs": {"unit": "mg/L", "limit": 0.2},
         "Gross Alpha": {"unit": "pCi/L", "limit": 15.0},
-        "Gross Beta": {"unit": "pCi/L", "limit": 50.0},
+        "Gross Beta": {"unit": "pCi/L", "limit": 15.0},
         "Notes": "Surface water discharge requirements are governed by a hierarchical regulatory framework consisting \
                   of the U.S. Clean Water Act, EPA water quality standards, and state-specific regulations. \
                   \\n Discharge limits are ultimately defined through permit systems (e.g., NPDES/TPDES), which incorporate \
@@ -626,23 +634,25 @@ UNIT_REMOVAL_RATES = {
         "TOC": "20-80%",
         "NH4-N": "30-90%",
         "Boron": "99%+",
-        "Sodium": "99%+",
-        "Chloride": "99%+",
+        "Sodium": "99.9%+",
+        "Chloride": "99.9%+",
         "Silica": "95-99%",
-        "Iron": "99%+",
-        "Manganese": "99%+",
-        "Calcium": "99%+",
-        "Barium": "99%+",
+        "Iron": "99.9%+",
+        "Manganese": "99.9%+",
+        "Calcium": "99.9%+",
+        "Barium": "99.9%+",
         "Lithium": "90-99%",
-        "Strontium": "99%+",
+        "Strontium": "99.9%+",
         "Arsenic": "95-99%",
         "Selenium": "95-99%",
-        "Sulfate": "99%+",
+        "Sulfate": "99.9%+",
         "Bicarbonate": "90-99%",
         "BTEX": "50-90%",
         "PAHs": "50-90%",
         "Gross Alpha": "95-99%",
-        "Gross Beta": "95-99%"
+        "Gross Beta": "95-99%",
+        "Radium-226": "90-99%",
+        "Radium-228": "90-99%"
     },
 
     "MD": {
@@ -671,7 +681,7 @@ UNIT_REMOVAL_RATES = {
         "Sulfate": "95-99%",
         "Bicarbonate": "80-95%",
         "Gross Alpha": "95-99%",
-        "Gross Beta": "95-99%"
+        "Gross Beta": "95-99%",
     },
 
     # =========================================================
@@ -797,11 +807,13 @@ UNIT_REMOVAL_RATES = {
         "NH4-N": "90-99%"
     },
     "GAC": {
-        "TOC": "50-90%",
-        "Oil": "10-40%"
+        "TOC": "90-99%",
+        "Oil": "10-40%",
+        "BTEX": "90-99%",
+        "PAHs": "90-99%"
     },
     "Zeolite": {
-        "NH4-N": "60-90%",
+        "NH4-N": "90-99%",
         "Iron": "10-40%",
         "Manganese": "10-40%"
     },

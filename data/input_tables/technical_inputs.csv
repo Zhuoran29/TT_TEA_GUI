@@ -3,6 +3,9 @@ DEFAULT,Hydraulics,recovery,0.95,fraction,Fraction of inlet flow recovered as pr
 DEFAULT,Performance,removal_efficiency,0,fraction,Generic constituent removal efficiency placeholder
 DEFAULT,Energy,energy_intensity,0,kWh/m3,Electricity demand per cubic meter treated
 DEFAULT,Chemicals,chemical_dose,0,kg/m3,Chemical dose per cubic meter treated
+MVC,Feed,feed_tds_mass_fraction,0.154,fraction,Feed TDS mass fraction
+MVC,Feed,feed_temperature,25,deg C,Feed temperature
+MVC,Feed,recovery,0.45,fraction,Recovery ratio
 MVC,Pumps,pump_eff,0.8,,Pump efficiency 
 MVC,Pumps,feed_pump_pres,7000,Pa,Feed Pump pressure change
 MVC,Pumps,distillate_pump_pres,40000,Pa,Distillate pump pressure change
@@ -13,3 +16,30 @@ MVC,Heat exchangers,distillate_hx_cold_pres,7000,Pa,Distillate HX cold side pres
 MVC,Heat exchangers,distillate_hx_hot_pres,7000,Pa,Distillate HX hot side pressure change
 MVC,Compressor,comp_eff,0.8,,Compressor efficiency
 MVC,Evaporator,evap_coeff,3000,W/K-m2,Evaporator heat transfer coefficient
+3-phase separator,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered after oil/water separation
+3-phase separator,Hydraulics,hydraulic_retention_time,30,min,Separator hydraulic retention time
+3-phase separator,Hydraulics,design_factor,1.2,fraction,Oversizing factor applied to separator volume
+3-phase separator,Energy,energy_intensity,0.03,kWh/m3,Pumping and controls electricity demand
+DAF,Hydraulics,recovery,0.98,fraction,Fraction of inlet flow recovered after flotation
+DAF,Hydraulics,surface_loading_rate,8,m/h,DAF surface overflow loading rate
+DAF,Hydraulics,recycle_ratio,0.15,fraction,Pressurized recycle flow as fraction of inlet flow
+DAF,Energy,energy_intensity,0.08,kWh/m3,DAF pumps and air saturation electricity demand
+DAF,Chemicals,chemical_dose,0.03,kg/m3,Coagulant or polymer dose
+Ultrafiltration,Hydraulics,recovery,0.96,fraction,Net UF filtrate recovery after backwash
+Ultrafiltration,Membrane,membrane_flux,45,L/m2-h,Average UF operating flux
+Ultrafiltration,Membrane,backwash_fraction,0.04,fraction,Backwash and cleaning waste fraction
+Ultrafiltration,Energy,energy_intensity,0.12,kWh/m3,UF feed/backwash pumping electricity demand
+Ultrafiltration,Chemicals,chemical_dose,0.005,kg/m3,Cleaning chemical dose normalized to feed flow
+GAC,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through GAC contactors
+GAC,Media,empty_bed_contact_time,10,min,GAC empty bed contact time
+GAC,Media,media_bulk_density,480,kg/m3,GAC bulk density
+GAC,Energy,energy_intensity,0.03,kWh/m3,GAC headloss pumping electricity demand
+Zeolite,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through zeolite beds
+Zeolite,Media,empty_bed_contact_time,8,min,Zeolite empty bed contact time
+Zeolite,Media,media_bulk_density,700,kg/m3,Zeolite bulk density
+Zeolite,Energy,energy_intensity,0.04,kWh/m3,Zeolite bed headloss pumping electricity demand
+Evaporation pond,Hydraulics,recovery,1.0,fraction,Pass-through factor for current sequential brine-management placeholder
+Evaporation pond,Pond sizing,net_evaporation_rate,1.0,m/year,Net evaporation rate after rainfall credit
+Evaporation pond,Pond sizing,operating_depth,1.5,m,Operating liquid depth
+Evaporation pond,Pond sizing,freeboard,0.5,m,Freeboard allowance
+Evaporation pond,Energy,energy_intensity,0,kWh/m3,Evaporation pond electricity demand

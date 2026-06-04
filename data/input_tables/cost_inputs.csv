@@ -3,3 +3,37 @@ DEFAULT,Capital,capex_per_flow,50.0,$/(m3/day),Installed capital cost per unit d
 DEFAULT,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX
 DEFAULT,Variable O&M,variable_opex_per_m3,0.0,$/m3,Variable operating cost per cubic meter treated
 DEFAULT,Utilities,electricity_price,0.08,$/kWh,Electricity price used with technical energy intensity
+3-phase separator,Capital,capex_per_flow,180,$/(m3/day),Installed separator capital cost per unit daily capacity
+3-phase separator,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX
+3-phase separator,Variable O&M,variable_opex_per_m3,0.01,$/m3,Variable separator operating cost per cubic meter treated
+3-phase separator,Utilities,electricity_price,0.08,$/kWh,Electricity price used with technical energy intensity
+DAF,Capital,capex_per_flow,320,$/(m3/day),Installed DAF capital cost per unit daily capacity
+DAF,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX
+DAF,Variable O&M,variable_opex_per_m3,0.03,$/m3,Variable DAF operating cost per cubic meter treated
+DAF,Utilities,electricity_price,0.08,$/kWh,Electricity price used with technical energy intensity
+DAF,Chemicals,chemical_price,1.2,$/kg,Chemical price for coagulant/polymer
+Ultrafiltration,Capital,capex_per_flow,500,$/(m3/day),Installed UF capital cost per unit daily capacity
+Ultrafiltration,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX
+Ultrafiltration,Variable O&M,variable_opex_per_m3,0.04,$/m3,Variable UF operating cost per cubic meter treated
+Ultrafiltration,Utilities,electricity_price,0.08,$/kWh,Electricity price used with technical energy intensity
+Ultrafiltration,Chemicals,chemical_price,1.0,$/kg,Cleaning chemical price
+Ultrafiltration,Replacement,media_replacement_price,35,$/m2,Membrane replacement cost placeholder
+Ultrafiltration,Replacement,media_replacement_fraction,0.12,fraction/yr,Annual membrane replacement fraction placeholder
+GAC,Capital,capex_per_flow,260,$/(m3/day),Installed GAC contactor capital cost per unit daily capacity
+GAC,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX
+GAC,Variable O&M,variable_opex_per_m3,0.02,$/m3,Variable GAC operating cost per cubic meter treated
+GAC,Utilities,electricity_price,0.08,$/kWh,Electricity price used with technical energy intensity
+GAC,Replacement,media_replacement_price,2.5,$/kg,GAC media replacement cost
+GAC,Replacement,media_replacement_fraction,1.0,fraction/yr,Annual GAC replacement fraction
+Zeolite,Capital,capex_per_flow,220,$/(m3/day),Installed zeolite bed capital cost per unit daily capacity
+Zeolite,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX
+Zeolite,Variable O&M,variable_opex_per_m3,0.02,$/m3,Variable zeolite operating cost per cubic meter treated
+Zeolite,Utilities,electricity_price,0.08,$/kWh,Electricity price used with technical energy intensity
+Zeolite,Replacement,media_replacement_price,0.8,$/kg,Zeolite media replacement cost
+Zeolite,Replacement,media_replacement_fraction,0.5,fraction/yr,Annual zeolite replacement fraction
+Evaporation pond,Capital,capex_per_flow,20,$/(m3/day),Installed pond inlet/distribution capital per unit daily capacity
+Evaporation pond,Capital,land_cost_per_m2,2,$/m2,Land acquisition or use cost
+Evaporation pond,Capital,liner_cost_per_m2,12,$/m2,Liner and earthwork cost per pond area
+Evaporation pond,Fixed O&M,fixed_opex_fraction,0.03,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX
+Evaporation pond,Variable O&M,variable_opex_per_m3,0.01,$/m3,Variable pond management cost per cubic meter handled
+Evaporation pond,Utilities,electricity_price,0.08,$/kWh,Electricity price used with technical energy intensity

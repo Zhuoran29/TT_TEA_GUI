@@ -12,6 +12,7 @@ st.markdown(
     - **Treatment Train**: Configure treatment train
     - **System Design**: Set up unit parameters
     - **TEA Results**: View cost analysis
+    - **Extensions**: Explore planned GIS, socio-economic, optimization, and sensitivity modules
     
 
     """

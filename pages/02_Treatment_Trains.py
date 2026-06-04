@@ -1,5 +1,6 @@
 import streamlit as st
 from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_config, UNIT_REMOVAL_RATES, ALL_WATER_QUALITY_PARAMS, SIDEBAR_DEFAULTS, BRINE_MANAGEMENT_OPTIONS
+from tea_models.water_quality import collect_feedwater_quality
 
 st.set_page_config(page_title="02_Treatment_Train", layout="wide")
 
@@ -707,26 +708,28 @@ st.sidebar.markdown("""
 # Create sidebar inputs from ALL_WATER_QUALITY_PARAMS - Flow first
 sidebar_key = "wq_flow"
 col1, col2 = st.sidebar.columns([1.5, 1], gap="small")
-with col1:
-    st.markdown(f"<div style='font-size: 13px; font-weight: 500;'>Flow (bbl/day)<br/><span style='font-size: 11px; color: #888;'>(bbl/day)</span></div>", unsafe_allow_html=True)
-with col2:
-    st.number_input(
-        "Flow (bbl/day)",
-        min_value=0.0,
-        value=1000.0,
-        key=sidebar_key,
-        label_visibility="collapsed"
-    )
+# with col1:
+#     st.markdown(f"<div style='font-size: 13px; font-weight: 500;'>Flow (bbl/day)<br/><span style='font-size: 11px; color: #888;'>(bbl/day)</span></div>", unsafe_allow_html=True)
+# with col2:
+#     st.number_input(
+#         "Flow (bbl/day)",
+#         min_value=0.0,
+#         value=1000.0,
+#         key=sidebar_key,
+#         label_visibility="collapsed"
+#     )
 
 # Then create inputs for each parameter - create new columns for each row
 conc_lvl = st.session_state.conc_level
 sidebar_defaults_for_water = SIDEBAR_DEFAULTS.get(st.session_state.influent_type, SIDEBAR_DEFAULTS)
 sidebar_defaults_for_level = sidebar_defaults_for_water.get(conc_lvl, {})
 add_param = []
+current_feedwater_params = []
 for param, param_info in ALL_WATER_QUALITY_PARAMS.items():
     if param in sidebar_defaults_for_level.keys():
         sidebar_key = PARAM_TO_SIDEBAR_KEY.get(param)
         if sidebar_key:
+            current_feedwater_params.append(param)
             default_value = sidebar_defaults_for_level.get(param, param_info["limit"])
             # Create new columns for each parameter row
             col1, col2 = st.sidebar.columns([1.5, 1], gap="small")
@@ -772,6 +775,7 @@ with add_input_col2:
 if st.session_state.additional_input_params_added:
 
     for added_additional_param in st.session_state.additional_input_params_added:
+        current_feedwater_params.append(added_additional_param)
         info = ALL_WATER_QUALITY_PARAMS.get(added_additional_param, {})
         session_key = f"additional_input_{added_additional_param}".replace(" ", "_")
         if session_key not in st.session_state:
@@ -792,3 +796,9 @@ if st.session_state.additional_input_params_added:
             if st.button("✕", key=f"remove_additional_{added_additional_param}", use_container_width=True):
                 st.session_state.additional_input_params_added.remove(added_additional_param)
                 st.rerun()
+
+st.session_state.feedwater_quality_params = current_feedwater_params
+st.session_state.feedwater_quality = collect_feedwater_quality(
+    st.session_state,
+    current_feedwater_params,
+)

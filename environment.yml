@@ -1,0 +1,12 @@
+name: tea-gui
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - reaktoro
+  - streamlit>=1.37
+  - pandas
+  - numpy
+  - openpyxl
+  - matplotlib
+  - pip

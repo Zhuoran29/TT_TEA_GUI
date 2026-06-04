@@ -1,9 +1,16 @@
 from pathlib import Path
+import copy
 
 import pandas as pd
 import streamlit as st
 
 from tea_models.registry import run_cost_model, run_technical_model
+from tea_models.water_quality import (
+    apply_removal_overrides,
+    collect_feedwater_quality,
+    get_default_removal_efficiencies,
+    make_stream,
+)
 
 
 st.set_page_config(page_title="03_System_Design", layout="wide")
@@ -23,6 +30,44 @@ st.markdown("""
     [data-testid="stContainer"] {
         border-radius: 12px;
     }
+    .assumption-table {
+        border: 1px solid #D9E2EC;
+        border-radius: 8px;
+        padding: 14px 16px 16px;
+        background: #FFFFFF;
+    }
+    .assumption-title {
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+    .assumption-header {
+        color: #5F6C7B;
+        font-size: 0.82rem;
+        font-weight: 700;
+        border-bottom: 1px solid #E6ECF2;
+        padding-bottom: 6px;
+        margin-bottom: 4px;
+    }
+    .feed-quality-tab {
+        background: #1F6FEB;
+        color: #FFFFFF;
+        font-weight: 700;
+        border-radius: 8px 8px 0 0;
+        padding: 8px 12px;
+        margin-top: 18px;
+        margin-bottom: 0;
+    }
+    div[data-testid="stNumberInput"] button {
+        display: none;
+    }
+    div[data-testid="stNumberInput"] input[type="number"]::-webkit-outer-spin-button,
+    div[data-testid="stNumberInput"] input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    div[data-testid="stNumberInput"] input[type="number"] {
+        -moz-appearance: textfield;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -32,6 +77,7 @@ TECHNICAL_INPUT_PATH = APP_ROOT / "data" / "input_tables" / "technical_inputs.cs
 COST_INPUT_PATH = APP_ROOT / "data" / "input_tables" / "cost_inputs.csv"
 RESULTS_OUTPUT_PATH = APP_ROOT / "data" / "results" / "tea_results.csv"
 BBL_TO_M3 = 0.158987294928
+M3_TO_BBL = 1 / BBL_TO_M3
 
 
 def safe_project_filename(project_name):
@@ -44,6 +90,51 @@ def safe_project_filename(project_name):
             cleaned.append("_")
     filename = "_".join(part for part in "".join(cleaned).split("_") if part)
     return filename or "tea_project"
+
+
+def calculate_crf(discount_rate_percent, project_life_years):
+    """Return the capital recovery factor matching Excel PMT rate logic."""
+    project_life_years = max(float(project_life_years or 0.0), 1.0)
+    rate = float(discount_rate_percent or 0.0) / 100.0
+    if abs(rate) < 1e-12:
+        return 1.0 / project_life_years
+    factor = (1.0 + rate) ** project_life_years
+    return rate * factor / (factor - 1.0)
+
+
+def display_flow_value(flow_m3_day, display_unit):
+    """Return flow in the same daily unit selected by the user."""
+    if display_unit == "bbl/day":
+        return float(flow_m3_day) * M3_TO_BBL
+    return float(flow_m3_day)
+
+
+def feed_lcow_unit(display_unit):
+    """Return the LCOW unit for feed-volume normalization."""
+    if display_unit == "bbl/day":
+        return "$/bbl feed"
+    return "$/m3 feed"
+
+
+def format_lcow(value, unit):
+    """Format LCOW as a currency value with its feed-normalized denominator."""
+    if str(unit).startswith("$/"):
+        return f"${value:,.2f}/{str(unit)[2:]}"
+    return f"${value:,.2f} {unit}"
+
+
+def sync_feed_flow_display_unit():
+    """Convert the displayed feed-flow value when the user switches units."""
+    current_unit = st.session_state.get("tea_feed_flow_unit", "bbl/day")
+    previous_unit = st.session_state.get("tea_previous_feed_flow_unit", current_unit)
+    current_value = float(st.session_state.get("tea_feed_flow_value", 25000.0) or 0.0)
+
+    if current_unit != previous_unit:
+        if current_unit == "m3/day" and previous_unit == "bbl/day":
+            st.session_state.tea_feed_flow_value = current_value * BBL_TO_M3
+        elif current_unit == "bbl/day" and previous_unit == "m3/day":
+            st.session_state.tea_feed_flow_value = current_value * M3_TO_BBL
+        st.session_state.tea_previous_feed_flow_unit = current_unit
 
 
 def get_ordered_unit_processes(train):
@@ -137,6 +228,52 @@ def table_to_input_dict(table):
     return values
 
 
+def current_removal_efficiencies(unit, feedwater_quality):
+    """Return editable constituent removals for one unit process."""
+    quality = feedwater_quality.get("water_quality", {})
+    defaults = get_default_removal_efficiencies(unit["unit_process"], quality)
+    if not defaults:
+        return {}
+
+    override_store = st.session_state.setdefault("unit_removal_overrides", {})
+    sequence_key = str(unit["sequence"])
+    current_overrides = override_store.get(sequence_key, {})
+    return apply_removal_overrides(defaults, current_overrides)
+
+
+@st.dialog("Removal efficiencies")
+def show_removal_efficiency_dialog(unit, feedwater_quality):
+    """Edit removal efficiencies in a modal dialog."""
+    quality = feedwater_quality.get("water_quality", {})
+    defaults = get_default_removal_efficiencies(unit["unit_process"], quality)
+    merged = current_removal_efficiencies(unit, feedwater_quality)
+    override_store = st.session_state.setdefault("unit_removal_overrides", {})
+    sequence_key = str(unit["sequence"])
+
+    st.markdown(f"**{unit['sequence']}. {unit['unit_process']}**")
+    removal_rows = pd.DataFrame([
+        {
+            "parameter": parameter,
+            "removal_efficiency": merged.get(parameter, 0.0),
+        }
+        for parameter in quality
+        if parameter in defaults
+    ])
+    edited = st.data_editor(
+        removal_rows,
+        key=f"removal_efficiencies_{unit['sequence']}_{unit['unit_process']}",
+        hide_index=True,
+        disabled=["parameter"],
+        num_rows="fixed",
+        use_container_width=True,
+    )
+    edited_values = {
+        str(row["parameter"]): max(0.0, min(float(row["removal_efficiency"] or 0.0), 1.0))
+        for _, row in edited.iterrows()
+    }
+    override_store[sequence_key] = edited_values
+
+
 def result_value(result, name, default=0.0):
     """Read a numeric value from a model result entry with value/unit fields."""
     entry = result.get(name, {})
@@ -157,7 +294,7 @@ def flatten_model_results(sequence, section, unit_process, model_type, model_res
     """Convert nested model outputs into rows for the results CSV."""
     rows = []
     for result_name, result in model_results.items():
-        if not isinstance(result, dict):
+        if not isinstance(result, dict) or "value" not in result:
             continue
         rows.append({
             "sequence": sequence,
@@ -195,8 +332,8 @@ def build_results_csv_rows(results):
         ("annualized_capital_cost", results["annualized_capital_cost"], "USD/year"),
         ("total_annual_operating_cost", results["total_annual_operating_cost"], "USD/year"),
         ("total_annual_cost", results["total_annual_cost"], "USD/year"),
-        ("final_product_flow", results["final_product_flow"], "m3/day"),
-        ("levelized_cost_of_water", results["levelized_cost_of_water"], "USD/m3"),
+        ("final_product_flow", results["final_product_flow"], results["final_product_flow_unit"]),
+        ("levelized_cost_of_water", results["levelized_cost_of_water"], results["levelized_cost_unit"]),
     ]
     for result_name, value, unit in project_rows:
         rows.append({
@@ -212,7 +349,7 @@ def build_results_csv_rows(results):
     return rows
 
 
-def calculate_lcow(ordered_units, technical_tables, cost_tables, context):
+def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables, context, feedwater_quality):
     """Run the modular TEA calculation across all unit processes.
 
     Each unit process first calls a technical model from
@@ -220,28 +357,61 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, context):
     model from tea_models/cost_models. If no unit-specific model exists, the
     default model in each folder is used.
     """
-    stream = {"flow_m3_day": float(context["feed_flow_m3_day"])}
+    stream = make_stream(feedwater_quality, context["feed_flow_m3_day"])
+    brine_stream = None
+    water_quality_trace = [{
+        "sequence": 0,
+        "section": "Feedwater",
+        "unit_process": "Feedwater",
+        "flow_m3_day": stream["flow_m3_day"],
+        "water_quality": stream.get("water_quality", {}),
+    }]
     unit_results = []
     total_capital_cost = 0.0
     total_annual_operating_cost = 0.0
-    project_life_years = float(context["project_life_years"])
+    crf = float(context["capital_recovery_factor"])
 
     for unit in ordered_units:
         unit_process = unit["unit_process"]
+        is_brine_management = unit["section"].startswith("Brine management")
         technical_inputs = table_to_input_dict(technical_tables[unit["sequence"]])
+        technical_inputs["removal_efficiencies"] = removal_tables.get(unit["sequence"], {})
         cost_inputs = table_to_input_dict(cost_tables[unit["sequence"]])
 
-        technical_result = run_technical_model(unit_process, technical_inputs, stream)
+        model_stream = brine_stream if is_brine_management and brine_stream is not None else stream
+        technical_result = run_technical_model(unit_process, technical_inputs, model_stream)
         cost_result = run_cost_model(unit_process, technical_result, cost_inputs, context)
 
         capital_cost = result_value(cost_result, "installed_capital_cost")
-        annualized_capital_cost = capital_cost / project_life_years
+        annualized_capital_cost = capital_cost * crf
         annual_operating_cost = result_value(cost_result, "total_annual_operating_cost")
         outlet_flow = result_value(technical_result, "outlet_flow")
 
         total_capital_cost += capital_cost
         total_annual_operating_cost += annual_operating_cost
-        stream = {"flow_m3_day": outlet_flow}
+        brine_flow = result_value(technical_result, "brine_flow")
+        if brine_flow > 0.0 and unit["section"] == "Desalination":
+            brine_stream = {
+                "flow_m3_day": brine_flow,
+                "water_quality": {},
+            }
+        if is_brine_management:
+            brine_stream = technical_result.get("outlet_stream", {
+                "flow_m3_day": outlet_flow,
+                "water_quality": {},
+            })
+        else:
+            stream = technical_result.get("outlet_stream", {
+                "flow_m3_day": outlet_flow,
+                "water_quality": stream.get("water_quality", {}),
+            })
+            water_quality_trace.append({
+                "sequence": unit["sequence"],
+                "section": unit["section"],
+                "unit_process": unit_process,
+                "flow_m3_day": outlet_flow,
+                "water_quality": technical_result.get("water_quality_out", {}),
+            })
 
         unit_results.append({
             "sequence": unit["sequence"],
@@ -266,29 +436,40 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, context):
         })
 
     operating_days = float(context["operating_days_per_year"])
-    annualized_capital_cost = total_capital_cost / project_life_years
+    flow_display_unit = context.get("feed_flow_display_unit", "m3/day")
+    annual_feed_volume = (
+        float(context["feed_flow_bbl_day"]) * operating_days
+        if flow_display_unit == "bbl/day"
+        else float(context["feed_flow_m3_day"]) * operating_days
+    )
+    annualized_capital_cost = total_capital_cost * crf
     total_annual_cost = annualized_capital_cost + total_annual_operating_cost
-    annual_product_volume = max(stream["flow_m3_day"] * operating_days, 1e-9)
-    lcow = total_annual_cost / annual_product_volume
+    annual_feed_volume = max(annual_feed_volume, 1e-9)
+    lcow = total_annual_cost / annual_feed_volume
 
     for unit_result in unit_results:
         unit_result["capital_lcow_contribution"] = (
-            unit_result["annualized_capital_cost"] / annual_product_volume
+            unit_result["annualized_capital_cost"] / annual_feed_volume
         )
-        unit_result["capital_lcow_contribution_unit"] = "USD/m3"
+        unit_result["capital_lcow_contribution_unit"] = feed_lcow_unit(flow_display_unit)
         unit_result["opex_lcow_contribution"] = (
-            unit_result["total_annual_operating_cost"] / annual_product_volume
+            unit_result["total_annual_operating_cost"] / annual_feed_volume
         )
-        unit_result["opex_lcow_contribution_unit"] = "USD/m3"
+        unit_result["opex_lcow_contribution_unit"] = feed_lcow_unit(flow_display_unit)
+
+    product_flow = display_flow_value(stream["flow_m3_day"], flow_display_unit)
 
     results = {
         "total_capital_cost": total_capital_cost,
         "annualized_capital_cost": annualized_capital_cost,
         "total_annual_operating_cost": total_annual_operating_cost,
         "total_annual_cost": total_annual_cost,
-        "final_product_flow": stream["flow_m3_day"],
+        "final_product_flow": product_flow,
+        "final_product_flow_unit": flow_display_unit,
         "levelized_cost_of_water": lcow,
+        "levelized_cost_unit": feed_lcow_unit(flow_display_unit),
         "unit_results": unit_results,
+        "water_quality_trace": water_quality_trace,
     }
     results["results_csv_rows"] = build_results_csv_rows(results)
     return results
@@ -313,40 +494,208 @@ if not ordered_units:
 technical_template = load_input_table(TECHNICAL_INPUT_PATH)
 cost_template = load_input_table(COST_INPUT_PATH)
 
-st.markdown("Configure each unit process in order. Technical inputs and cost inputs are stored as editable tables and passed into modular unit-process models.")
+st.markdown("Configure the system design assumptions and unit-specific inputs below. When you are ready, click the **Run TEA Calculation** button at the bottom to execute the models and calculate the levelized cost of water (LCOW) for your project.")
 
-feed_flow_bbl_day = st.number_input(
-    "Feed flow rate (bbl/day)",
-    min_value=0.0,
-    value=float(st.session_state.get("wq_flow", 1000.0)),
-    key="tea_feed_flow_bbl_day",
+st.session_state.setdefault("tea_feed_flow_unit", "bbl/day")
+st.session_state.setdefault("tea_previous_feed_flow_unit", st.session_state.tea_feed_flow_unit)
+st.session_state.setdefault("tea_feed_flow_value", 25000.0)
+sync_feed_flow_display_unit()
+
+assumption_cols = st.columns(2)
+with assumption_cols[0]:
+    with st.container(border=True):
+        st.markdown('<div class="assumption-title">System assumptions</div>', unsafe_allow_html=True)
+        header_cols = st.columns([2.2, 1.2, 1.0])
+        header_cols[0].markdown('<div class="assumption-header">Assumption</div>', unsafe_allow_html=True)
+        header_cols[1].markdown('<div class="assumption-header">Value</div>', unsafe_allow_html=True)
+        header_cols[2].markdown('<div class="assumption-header">Unit</div>', unsafe_allow_html=True)
+
+        row_cols = st.columns([2.2, 1.2, 1.0])
+        row_cols[0].markdown("Feed flow rate")
+        with row_cols[1]:
+            feed_flow_value = st.number_input(
+                "Feed flow rate value",
+                min_value=0.0,
+                value=float(st.session_state.tea_feed_flow_value),
+                key="tea_feed_flow_value",
+                label_visibility="collapsed",
+            )
+        with row_cols[2]:
+            feed_flow_unit = st.selectbox(
+                "Feed flow rate unit",
+                ["bbl/day", "m3/day"],
+                key="tea_feed_flow_unit",
+                label_visibility="collapsed",
+            )
+
+        row_cols = st.columns([2.2, 1.2, 1.0])
+        row_cols[0].markdown("Operation time")
+        with row_cols[1]:
+            operation_time = st.number_input(
+                "Operation time",
+                min_value=0.0,
+                max_value=100.0,
+                value=90.0,
+                key="tea_operation_time_percent",
+                label_visibility="collapsed",
+            )
+        row_cols[2].markdown("%")
+
+        row_cols = st.columns([2.2, 1.2, 1.0])
+        row_cols[0].markdown("Project life")
+        with row_cols[1]:
+            project_life = st.number_input(
+                "Project life",
+                min_value=1.0,
+                value=20.0,
+                key="tea_project_life_years",
+                label_visibility="collapsed",
+            )
+        row_cols[2].markdown("yr")
+
+        feed_flow_m3_day = (
+            float(feed_flow_value) * BBL_TO_M3
+            if feed_flow_unit == "bbl/day"
+            else float(feed_flow_value)
+        )
+        feed_flow_bbl_day = (
+            float(feed_flow_value)
+            if feed_flow_unit == "bbl/day"
+            else float(feed_flow_value) * M3_TO_BBL
+        )
+
+with assumption_cols[1]:
+    with st.container(border=True):
+        st.markdown('<div class="assumption-title">Financial assumptions</div>', unsafe_allow_html=True)
+        header_cols = st.columns([2.2, 1.2, 1.0])
+        header_cols[0].markdown('<div class="assumption-header">Assumption</div>', unsafe_allow_html=True)
+        header_cols[1].markdown('<div class="assumption-header">Value</div>', unsafe_allow_html=True)
+        header_cols[2].markdown('<div class="assumption-header">Unit</div>', unsafe_allow_html=True)
+
+        row_cols = st.columns([2.2, 1.2, 1.0])
+        row_cols[0].markdown("Discount rate")
+        with row_cols[1]:
+            discount_rate = st.number_input(
+                "Discount rate",
+                min_value=0.0,
+                value=8.0,
+                key="tea_discount_rate_percent",
+                label_visibility="collapsed",
+            )
+        row_cols[2].markdown("%")
+
+        calculated_crf = calculate_crf(discount_rate, project_life)
+        previous_calculated_crf = st.session_state.get("tea_previous_calculated_crf")
+        if (
+            "tea_capital_recovery_factor" not in st.session_state
+            or previous_calculated_crf is None
+            or abs(float(st.session_state.tea_capital_recovery_factor) - previous_calculated_crf) < 1e-12
+        ):
+            st.session_state.tea_capital_recovery_factor = calculated_crf
+        st.session_state.tea_previous_calculated_crf = calculated_crf
+
+        row_cols = st.columns([2.2, 1.2, 1.0])
+        row_cols[0].markdown("CRF")
+        with row_cols[1]:
+            capital_recovery_factor = st.number_input(
+                "CRF",
+                min_value=0.0,
+                value=float(st.session_state.tea_capital_recovery_factor),
+                format="%.6f",
+                key="tea_capital_recovery_factor",
+                label_visibility="collapsed",
+            )
+        row_cols[2].markdown("")
+
+        row_cols = st.columns([2.2, 1.2, 1.0])
+        row_cols[0].markdown("Base currency year")
+        with row_cols[1]:
+            base_currency_year = st.number_input(
+                "Base currency year",
+                min_value=2001,
+                max_value=2024,
+                value=2024,
+                step=1,
+                key="tea_base_currency_year",
+                label_visibility="collapsed",
+            )
+        row_cols[2].markdown("")
+
+        row_cols = st.columns([2.2, 1.2, 1.0])
+        row_cols[0].markdown("Electricity price")
+        with row_cols[1]:
+            electricity_price = st.number_input(
+                "Electricity price",
+                min_value=0.0,
+                value=0.1,
+                key="tea_electricity_price",
+                label_visibility="collapsed",
+            )
+        row_cols[2].markdown("$/kWh")
+
+        row_cols = st.columns([2.2, 1.2, 1.0])
+        row_cols[0].markdown("Thermal energy price")
+        with row_cols[1]:
+            thermal_energy_price = st.number_input(
+                "Thermal energy price",
+                min_value=0.0,
+                value=0.05,
+                key="tea_thermal_energy_price",
+                label_visibility="collapsed",
+            )
+        row_cols[2].markdown("$/kWh")
+
+operating_days = 365.0 * float(operation_time) / 100.0
+
+feedwater_quality = copy.deepcopy(
+    st.session_state.get("feedwater_quality")
+    or collect_feedwater_quality(st.session_state)
 )
-
-context_cols = st.columns(3)
-with context_cols[0]:
-    operating_days = st.number_input("Operating days/year", min_value=1, value=330, key="tea_operating_days")
-with context_cols[1]:
-    project_life = st.number_input("Project life (years)", min_value=1, value=10, key="tea_project_life")
-with context_cols[2]:
-    feed_flow_m3_day = feed_flow_bbl_day * BBL_TO_M3
-    st.metric("Feed flow", f"{feed_flow_m3_day:,.1f} m3/day")
+feedwater_quality["flow"] = {"value": float(feed_flow_bbl_day), "unit": "bbl/day"}
+if feedwater_quality.get("water_quality"):
+    st.markdown('<div class="feed-quality-tab">Feedwater quality</div>', unsafe_allow_html=True)
+    with st.expander("View feedwater quality", expanded=False):
+        st.dataframe(
+            pd.DataFrame([
+                {
+                    "parameter": parameter,
+                    "value": entry.get("value"),
+                    "unit": entry.get("unit", ""),
+                }
+                for parameter, entry in feedwater_quality["water_quality"].items()
+            ]),
+            hide_index=True,
+            use_container_width=True,
+        )
 
 technical_tables = {}
 cost_tables = {}
+removal_tables = {}
 
 for unit in ordered_units:
     label = f"{unit['sequence']}. {unit['section']} - {unit['unit_process']}"
-    st.subheader(label)
+    title_col, removal_button_col = st.columns([4, 1])
+    with title_col:
+        st.subheader(label)
+    with removal_button_col:
+        if st.button("Removal efficiencies", key=f"show_removal_{unit['sequence']}", type="primary"):
+            show_removal_efficiency_dialog(unit, feedwater_quality)
     tech_col, cost_col = st.columns(2)
 
     technical_rows = get_inputs_for_unit(technical_template, unit["unit_process"])
     cost_rows = get_inputs_for_unit(cost_template, unit["unit_process"])
+    if "parameter" in cost_rows.columns:
+        cost_rows.loc[cost_rows["parameter"] == "electricity_price", "value"] = electricity_price
 
     with tech_col:
         st.markdown("**Technical input table**")
         technical_tables[unit["sequence"]] = render_grouped_input_tables(
             technical_rows,
             f"technical_inputs_{unit['sequence']}_{unit['unit_process']}",
+        )
+        removal_tables[unit["sequence"]] = current_removal_efficiencies(
+            unit,
+            feedwater_quality,
         )
 
     with cost_col:
@@ -355,24 +704,46 @@ for unit in ordered_units:
             cost_rows,
             f"cost_inputs_{unit['sequence']}_{unit['unit_process']}",
         )
+        if "parameter" in cost_tables[unit["sequence"]].columns:
+            cost_tables[unit["sequence"]].loc[
+                cost_tables[unit["sequence"]]["parameter"] == "electricity_price",
+                "value",
+            ] = electricity_price
 
 context = {
     "feed_flow_bbl_day": feed_flow_bbl_day,
     "feed_flow_m3_day": feed_flow_m3_day,
+    "feed_flow_display_value": feed_flow_value,
+    "feed_flow_display_unit": feed_flow_unit,
+    "operation_time_percent": operation_time,
     "operating_days_per_year": operating_days,
     "project_life_years": project_life,
+    "discount_rate_percent": discount_rate,
+    "capital_recovery_factor": capital_recovery_factor,
+    "base_currency_year": int(base_currency_year),
+    "electricity_price": electricity_price,
+    "thermal_energy_price": thermal_energy_price,
 }
 
 if st.button("Run TEA Calculation", type="primary"):
-    results = calculate_lcow(ordered_units, technical_tables, cost_tables, context)
+    results = calculate_lcow(
+        ordered_units,
+        technical_tables,
+        cost_tables,
+        removal_tables,
+        context,
+        feedwater_quality,
+    )
     results_table = pd.DataFrame(results["results_csv_rows"])
     RESULTS_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     results_filename = f"{safe_project_filename(project_name)}_tea_results.csv"
     results_table.to_csv(RESULTS_OUTPUT_PATH.parent / results_filename, index=False)
     st.session_state.tea_context = context
+    st.session_state.feedwater_quality = feedwater_quality
     st.session_state.tea_unit_inputs = {
         "technical": {k: v.to_dict("records") for k, v in technical_tables.items()},
         "cost": {k: v.to_dict("records") for k, v in cost_tables.items()},
+        "removal_efficiencies": removal_tables,
     }
     st.session_state.tea_results = results
     st.session_state.tea_results_csv = results_table.to_csv(index=False).encode("utf-8")
@@ -381,28 +752,26 @@ if st.button("Run TEA Calculation", type="primary"):
 
 if "tea_results" in st.session_state:
     results = st.session_state.tea_results
-    metric_cols = st.columns(4)
-    with metric_cols[0]:
-        st.metric("Total CAPEX", f"${results['total_capital_cost']:,.0f}")
-    with metric_cols[1]:
-        st.metric("Annual OPEX", f"${results['total_annual_operating_cost']:,.0f}/yr")
-    with metric_cols[2]:
-        st.metric("Product flow", f"{results['final_product_flow']:,.1f} m3/day")
-    with metric_cols[3]:
-        st.metric("LCOW", f"${results['levelized_cost_of_water']:,.2f}/m3")
-
-    unit_summary = pd.DataFrame([
-        {k: v for k, v in row.items() if k not in ["technical_results", "cost_results"]}
-        for row in results["unit_results"]
+    st.markdown("**TEA calculation summary**")
+    summary_table = pd.DataFrame([
+        {"Result": "Total CAPEX", "Value": f"${results['total_capital_cost']:,.0f}"},
+        {"Result": "Annual OPEX", "Value": f"${results['total_annual_operating_cost']:,.0f}/yr"},
+        {
+            "Result": "Product flow",
+            "Value": (
+                f"{results['final_product_flow']:,.1f} "
+                f"{results.get('final_product_flow_unit', 'm3/day')}"
+            ),
+        },
+        {
+            "Result": "LCOW",
+            "Value": format_lcow(
+                results["levelized_cost_of_water"],
+                results.get("levelized_cost_unit", "$/m3 feed"),
+            ),
+        },
     ])
-    st.dataframe(unit_summary, use_container_width=True)
+    st.dataframe(summary_table, hide_index=True, use_container_width=True)
 
-    st.download_button(
-        "Download TEA results CSV",
-        st.session_state.get("tea_results_csv", b""),
-        file_name=st.session_state.get("tea_results_filename", f"{safe_project_filename(project_name)}_tea_results.csv"),
-        mime="text/csv",
-    )
-
-    if st.button("TEA Results ->", type="secondary"):
+    if st.button("View TEA results", type="primary"):
         st.switch_page("pages/04_TEA_Results.py")
