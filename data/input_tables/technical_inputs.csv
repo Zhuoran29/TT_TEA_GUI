@@ -43,3 +43,8 @@ Evaporation pond,Pond sizing,net_evaporation_rate,1.0,m/year,Net evaporation rat
 Evaporation pond,Pond sizing,operating_depth,1.5,m,Operating liquid depth
 Evaporation pond,Pond sizing,freeboard,0.5,m,Freeboard allowance
 Evaporation pond,Energy,energy_intensity,0,kWh/m3,Evaporation pond electricity demand
+Saltwater disposal well,Disposal,disposal_fraction,1.0,fraction,Fraction of brine flow injected into disposal well
+Saltwater disposal well,Well sizing,injection_well_capacity,2000,m3/day/well,Daily injection capacity per disposal well
+Saltwater disposal well,Injection,injection_pressure,50,bar,Injection pump discharge pressure
+Saltwater disposal well,Injection,pump_efficiency,0.75,fraction,Injection pump efficiency
+Saltwater disposal well,Energy,energy_intensity,0,kWh/m3,Optional override for disposal well electricity demand; use 0 to calculate from pressure and pump efficiency

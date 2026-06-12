@@ -78,6 +78,23 @@ COST_INPUT_PATH = APP_ROOT / "data" / "input_tables" / "cost_inputs.csv"
 RESULTS_OUTPUT_PATH = APP_ROOT / "data" / "results" / "tea_results.csv"
 BBL_TO_M3 = 0.158987294928
 M3_TO_BBL = 1 / BBL_TO_M3
+REMOVAL_EFFICIENCY_EXCLUDED_PARAMETERS = {"pH"}
+
+COST_INPUT_FALLBACKS = {
+    "MVC": [
+        ("Capital", "capex_per_flow", 2760.0, "$/(m3/day)", "Installed MVC capital cost per unit daily capacity"),
+        ("Fixed O&M", "fixed_opex_fraction", 0.05, "fraction/yr", "Annual fixed OPEX as fraction of installed MVC CAPEX"),
+        ("Variable O&M", "variable_opex_per_m3", 0.0, "$/m3", "Variable MVC operating cost per cubic meter treated"),
+        ("Utilities", "electricity_price", 0.08, "$/kWh", "Electricity price used with MVC technical energy intensity"),
+    ],
+    "Saltwater disposal well": [
+        ("Capital", "capex_per_flow", 120.0, "$/(m3/day)", "Installed surface facilities capital per unit daily disposal capacity"),
+        ("Capital", "capex_per_well", 1500000.0, "$/well", "Installed capital cost per disposal well"),
+        ("Fixed O&M", "fixed_opex_fraction", 0.04, "fraction/yr", "Annual fixed OPEX as fraction of installed disposal well CAPEX"),
+        ("Variable O&M", "variable_opex_per_m3", 11.4, "$/m3", "Variable disposal cost per cubic meter injected"),
+        ("Utilities", "electricity_price", 0.08, "$/kWh", "Electricity price used with disposal well injection energy"),
+    ],
+}
 
 
 def safe_project_filename(project_name):
@@ -173,12 +190,25 @@ def load_input_table(path):
     return table
 
 
-def get_inputs_for_unit(table, unit_process):
+def get_inputs_for_unit(table, unit_process, fallback_map=None):
     """Return unit-specific rows when present, otherwise use DEFAULT rows."""
     default_rows = table[table["unit_process"] == "DEFAULT"].copy()
     unit_rows = table[table["unit_process"] == unit_process].copy()
 
     if unit_rows.empty:
+        fallback_rows = (fallback_map or {}).get(unit_process)
+        if fallback_rows:
+            return pd.DataFrame([
+                {
+                    "unit_process": unit_process,
+                    "sub_section": sub_section,
+                    "parameter": parameter,
+                    "value": value,
+                    "unit": unit,
+                    "description": description,
+                }
+                for sub_section, parameter, value, unit, description in fallback_rows
+            ])
         rows = default_rows
         rows["unit_process"] = unit_process
         return rows.reset_index(drop=True)[
@@ -238,7 +268,12 @@ def current_removal_efficiencies(unit, feedwater_quality):
     override_store = st.session_state.setdefault("unit_removal_overrides", {})
     sequence_key = str(unit["sequence"])
     current_overrides = override_store.get(sequence_key, {})
-    return apply_removal_overrides(defaults, current_overrides)
+    merged = apply_removal_overrides(defaults, current_overrides)
+    return {
+        parameter: value
+        for parameter, value in merged.items()
+        if parameter not in REMOVAL_EFFICIENCY_EXCLUDED_PARAMETERS
+    }
 
 
 @st.dialog("Removal efficiencies")
@@ -258,6 +293,7 @@ def show_removal_efficiency_dialog(unit, feedwater_quality):
         }
         for parameter in quality
         if parameter in defaults
+        and parameter not in REMOVAL_EFFICIENCY_EXCLUDED_PARAMETERS
     ])
     edited = st.data_editor(
         removal_rows,
@@ -683,7 +719,11 @@ for unit in ordered_units:
     tech_col, cost_col = st.columns(2)
 
     technical_rows = get_inputs_for_unit(technical_template, unit["unit_process"])
-    cost_rows = get_inputs_for_unit(cost_template, unit["unit_process"])
+    cost_rows = get_inputs_for_unit(
+        cost_template,
+        unit["unit_process"],
+        COST_INPUT_FALLBACKS,
+    )
     if "parameter" in cost_rows.columns:
         cost_rows.loc[cost_rows["parameter"] == "electricity_price", "value"] = electricity_price
 

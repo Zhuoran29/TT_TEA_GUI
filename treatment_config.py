@@ -130,7 +130,7 @@ WATER_QUALITY_REQUIREMENTS = {
 BRINE_MANAGEMENT_OPTIONS = {
     "Brine disposal": [
         "Evaporation pond",
-        "Deep well injection",
+        "Saltwater disposal well",
         "Brine hauling",
         "Hydraulic fracturing reuse",
         "Reuse-compatible brine recycle / disposal",
@@ -150,7 +150,7 @@ BRINE_MANAGEMENT_OPTIONS = {
 }
 
 BRINE_CATEGORY_DEFAULT_UNIT = {
-    "Brine disposal": "Evaporation pond",
+    "Brine disposal": "Saltwater disposal well",
     "Brine valorization": "Mineral precipitation / recovery",
 }
 
@@ -230,7 +230,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "pretreatment": ["Well pumping", "Media filtration", "Cartridge filter"],
                 "desalination": ["RO"],
                 "posttreatment": ["GAC", "Chlorination"],
-                "brine": "Deep well injection"
+                "brine": "Saltwater disposal well"
             },
             "Powerplant cooling water": {
                 "pretreatment": ["Well pumping", "Media filtration", "Cartridge filter", "Antiscalant dosing"],
@@ -623,7 +623,6 @@ UNIT_REMOVAL_RATES = {
     # Thermal desalination
     # =========================================================
     "MVC": {
-        "pH": "variable",
         "Oil": "95-99%",
         "Conductivity": "99%+",
         "TDS": "99.9%+",
@@ -632,7 +631,7 @@ UNIT_REMOVAL_RATES = {
         "Hardness": "99%+",
         "Alkalinity": "90-99%",
         "TOC": "20-80%",
-        "NH4-N": "30-90%",
+        "NH4-N": "90%",
         "Boron": "99%+",
         "Sodium": "99.9%+",
         "Chloride": "99.9%+",
@@ -807,13 +806,13 @@ UNIT_REMOVAL_RATES = {
         "NH4-N": "90-99%"
     },
     "GAC": {
-        "TOC": "90-99%",
+        "TOC": "99%",
         "Oil": "10-40%",
-        "BTEX": "90-99%",
-        "PAHs": "90-99%"
+        "BTEX": "99%",
+        "PAHs": "99%"
     },
     "Zeolite": {
-        "NH4-N": "90-99%",
+        "NH4-N": "99.9%+",
         "Iron": "10-40%",
         "Manganese": "10-40%"
     },
@@ -946,7 +945,7 @@ UNIT_REMOVAL_RATES = {
     "Reuse-compatible brine recycle / disposal": {},
     "Brine concentration for ZLD": {},
     "Evaporation pond": {},
-    "Deep well injection": {},
+    "Saltwater disposal well": {},
     "Brine hauling": {},
     "Crystallizer": {},
     "Crystallization": {}

@@ -314,7 +314,18 @@ def render_lcow_cost_breakdown(unit_results, lcow_unit):
     st.subheader("LCOW cost breakdown")
     cost_breakdown = unit_results.sort_values("sequence").copy()
     fig, ax = plt.subplots(figsize=(12, 5.2))
-    palette = list(plt.get_cmap("tab20").colors)
+    palette = [
+        "#1f77b4",
+        "#aec7e8",
+        "#ff7f0e",
+        "#ffbb78",
+        "#2ca02c",
+        "#98df8a",
+        "#d62728",
+        "#9467bd",
+        "#8c564b",
+        "#17becf",
+    ]
     bottom = 0.0
     unit_handles = []
     bar_x = 0
