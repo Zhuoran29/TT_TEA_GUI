@@ -7,6 +7,7 @@ import streamlit as st
 from tea_models.registry import run_cost_model, run_technical_model
 from tea_models.water_quality import (
     apply_removal_overrides,
+    calculate_brine_quality,
     collect_feedwater_quality,
     get_default_removal_efficiencies,
     make_stream,
@@ -427,10 +428,18 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables,
         total_annual_operating_cost += annual_operating_cost
         brine_flow = result_value(technical_result, "brine_flow")
         if brine_flow > 0.0 and unit["section"] == "Desalination":
+            brine_quality = calculate_brine_quality(
+                technical_result.get("water_quality_in", {}),
+                technical_result.get("water_quality_out", {}),
+                result_value(technical_result, "inlet_flow"),
+                outlet_flow,
+                brine_flow,
+            )
             brine_stream = {
                 "flow_m3_day": brine_flow,
-                "water_quality": {},
+                "water_quality": brine_quality,
             }
+            technical_result["brine_water_quality"] = brine_quality
         if is_brine_management:
             brine_stream = technical_result.get("outlet_stream", {
                 "flow_m3_day": outlet_flow,
@@ -710,11 +719,12 @@ removal_tables = {}
 
 for unit in ordered_units:
     label = f"{unit['sequence']}. {unit['section']} - {unit['unit_process']}"
+    is_brine_management = unit["section"].startswith("Brine management")
     title_col, removal_button_col = st.columns([4, 1])
     with title_col:
         st.subheader(label)
     with removal_button_col:
-        if st.button("Removal efficiencies", key=f"show_removal_{unit['sequence']}", type="primary"):
+        if not is_brine_management and st.button("Removal efficiencies", key=f"show_removal_{unit['sequence']}", type="primary"):
             show_removal_efficiency_dialog(unit, feedwater_quality)
     tech_col, cost_col = st.columns(2)
 

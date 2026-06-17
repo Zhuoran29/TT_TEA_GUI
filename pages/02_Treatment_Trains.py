@@ -1,3 +1,6 @@
+import csv
+from pathlib import Path
+
 import streamlit as st
 from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_config, UNIT_REMOVAL_RATES, ALL_WATER_QUALITY_PARAMS, SIDEBAR_DEFAULTS, BRINE_MANAGEMENT_OPTIONS
 from tea_models.water_quality import collect_feedwater_quality
@@ -94,6 +97,41 @@ def parse_removal_rate(rate_str):
     
     return 0.0
 
+
+@st.cache_data
+def load_default_recoveries():
+    recoveries = {"DEFAULT": 0.95}
+    input_path = Path(__file__).resolve().parents[1] / "data" / "input_tables" / "technical_inputs.csv"
+    try:
+        with input_path.open(newline="", encoding="utf-8") as input_file:
+            for row in csv.DictReader(input_file):
+                if row.get("parameter") != "recovery":
+                    continue
+                try:
+                    recoveries[row.get("unit_process", "DEFAULT")] = float(row.get("value", 0.95))
+                except (TypeError, ValueError):
+                    continue
+    except OSError:
+        pass
+    return recoveries
+
+
+def default_recovery_for_unit(unit):
+    recoveries = load_default_recoveries()
+    return max(0.0, min(recoveries.get(unit, recoveries.get("DEFAULT", 0.95)), 0.999999))
+
+
+def calculate_brine_concentration(tracked_constituent, inlet_conc, outlet_conc, recovery):
+    if tracked_constituent == "pH":
+        return 8.5
+    if inlet_conc is None or outlet_conc is None:
+        return None
+
+    brine_fraction = 1.0 - recovery
+    if brine_fraction <= 0.0:
+        return None
+    return max((inlet_conc - outlet_conc * recovery) / brine_fraction, 0.0)
+
 # Generate flowchart dynamically based on actual units
 def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, desal_list, posttreat_list, brine_name, tracked_constituent=None, feed_concentration=None):
     """Generate a graphviz flowchart that adapts to the number of units in each stage"""
@@ -107,13 +145,22 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
         brine_list = ["No brine unit selected"]
 
     # Helper function to create nodes and connections for a stage
-    def create_stage_nodes(stage_prefix, stage_name, unit_list, color, current_conc=None):
+    def create_stage_nodes(
+        stage_prefix,
+        stage_name,
+        unit_list,
+        color,
+        current_conc=None,
+        track_brine=False,
+        first_node_conc=None,
+    ):
         """Create nodes and connections for a treatment stage"""
         node_defs = f"\n subgraph cluster_{stage_prefix} {{\n"
         node_defs += f'  label="{stage_name}"; style=filled; color={color}; penwidth=2; pad=0.2;\n'
         
         node_ids = []
         concentrations = {}  # Track concentration after each unit
+        brine_conc = None
         
         for i, unit in enumerate(unit_list):
             node_id = f"{stage_prefix}{i+1}"
@@ -131,7 +178,14 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
             # Calculate outlet concentration if tracking a constituent
             outlet_label = unit
             use_html_label = False
+            if tracked_constituent and first_node_conc is not None and i == 0:
+                session_key = f"wq_target_{tracked_constituent}".replace(" ", "_")
+                target_value = st.session_state.get(session_key, ALL_WATER_QUALITY_PARAMS.get(tracked_constituent, {}).get("limit", first_node_conc))
+                color = "red" if first_node_conc > target_value else "green"
+                outlet_label = f"{unit}<BR/><FONT COLOR='{color}'>Brine {tracked_constituent}: {first_node_conc:.2f} {constituent_unit}</FONT>"
+                use_html_label = True
             if tracked_constituent and current_conc is not None:
+                inlet_conc = current_conc
                 if tracked_constituent in removal_info:
                     removal_rate = parse_removal_rate(removal_info[tracked_constituent])
                     outlet_conc = current_conc * (1 - removal_rate)
@@ -145,6 +199,15 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
                     current_conc = outlet_conc
                 else:
                     concentrations[node_id] = current_conc
+                    outlet_conc = current_conc
+                if track_brine:
+                    recovery = default_recovery_for_unit(unit)
+                    brine_conc = calculate_brine_concentration(
+                        tracked_constituent,
+                        inlet_conc,
+                        outlet_conc,
+                        recovery,
+                    )
             
             if use_html_label:
                 node_defs += f'  {node_id} [label=<{outlet_label}>, tooltip="{tooltip_text}"];\n'
@@ -156,7 +219,7 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
             node_defs += f"  {node_ids[i]} -> {node_ids[i+1]};\n"
         
         node_defs += " }\n"
-        return node_defs, node_ids, current_conc
+        return node_defs, node_ids, current_conc, brine_conc
     
     # Build the complete DOT graph
     dot = "digraph G {\n"
@@ -179,19 +242,33 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
     dot += " // Pretreatment units\n"
     
     # Pretreatment stage (using PT prefix to avoid collision with Post-treatment)
-    pre_dot, pre_nodes, current_conc = create_stage_nodes("PT", "Pretreatment", pretreat_list, "lightgrey", current_conc)
+    pre_dot, pre_nodes, current_conc, _ = create_stage_nodes("PT", "Pretreatment", pretreat_list, "lightgrey", current_conc)
     dot += pre_dot
     
     # Desalination stage
-    desal_dot, desal_nodes, current_conc = create_stage_nodes("D", "Desalination", desal_list, "lightyellow", current_conc)
+    desal_dot, desal_nodes, current_conc, brine_conc = create_stage_nodes(
+        "D",
+        "Desalination",
+        desal_list,
+        "lightyellow",
+        current_conc,
+        track_brine=True,
+    )
     dot += desal_dot
     
     # Post-treatment stage (using PST prefix to distinguish from Pretreatment)
-    post_dot, post_nodes, current_conc = create_stage_nodes("PST", "Post-treatment", posttreat_list, "lightcyan", current_conc)
+    post_dot, post_nodes, current_conc, _ = create_stage_nodes("PST", "Post-treatment", posttreat_list, "lightcyan", current_conc)
     dot += post_dot
     
     # Brine management stage
-    brine_dot, brine_nodes, _ = create_stage_nodes("B", "Brine management", brine_list, "lightcoral", None)
+    brine_dot, brine_nodes, _, _ = create_stage_nodes(
+        "B",
+        "Brine management",
+        brine_list,
+        "lightcoral",
+        None,
+        first_node_conc=brine_conc,
+    )
     dot += brine_dot
     
     # Add Product Water label with final concentration if tracking
@@ -219,7 +296,7 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
         dot += " Influent -> Product_Water;\n"
 
     if desal_nodes:
-        dot += f" {desal_nodes[0]} -> {brine_nodes[0]} [style=dashed];\n"
+        dot += f" {desal_nodes[-1]} -> {brine_nodes[0]} [style=dashed];\n"
     elif non_empty_stages:
         dot += f" {non_empty_stages[-1][-1]} -> {brine_nodes[0]} [style=dashed];\n"
     else:
@@ -239,7 +316,7 @@ PARAM_TO_SIDEBAR_KEY = {
     "Alkalinity": "wq_alk",
     "TOC": "wq_toc",
     "BOD": "wq_bod",
-    "NH4-N": "wq_nh4",
+    "Ammonia nitrogen": "wq_nh4",
     "Boron": "wq_boron",
     "Sodium": "wq_sodium",
     "Chloride": "wq_chloride",

@@ -3,7 +3,7 @@ import streamlit as st
 from matplotlib import pyplot as plt
 from matplotlib.patches import Patch
 from tea_models.scaling_tendency import calculate_scaling_tendency
-from tea_models.water_quality import water_quality_comparison_table
+from tea_models.water_quality import calculate_brine_quality, water_quality_comparison_table
 from treatment_config import ALL_WATER_QUALITY_PARAMS
 
 
@@ -185,6 +185,35 @@ def has_result(output_table, result_name):
     return result_name in set(output_table["result_name"].astype(str))
 
 
+def technical_result_value(technical_results, result_name, default=0.0):
+    result = technical_results.get(result_name, default)
+    if isinstance(result, dict):
+        result = result.get("value", default)
+    try:
+        return float(result)
+    except (TypeError, ValueError):
+        return default
+
+
+def brine_water_quality_for_result(unit_result):
+    technical_results = unit_result.get("technical_results", {})
+    brine_water_quality = technical_results.get("brine_water_quality", {})
+    if brine_water_quality:
+        return brine_water_quality
+
+    brine_flow = technical_result_value(technical_results, "brine_flow")
+    if brine_flow <= 0.0:
+        return {}
+
+    return calculate_brine_quality(
+        technical_results.get("water_quality_in", {}),
+        technical_results.get("water_quality_out", {}),
+        technical_result_value(technical_results, "inlet_flow"),
+        technical_result_value(technical_results, "outlet_flow"),
+        brine_flow,
+    )
+
+
 def format_water_quality_table(table):
     if table.empty:
         return pd.DataFrame(columns=[
@@ -251,19 +280,30 @@ def format_scaling_value(value):
     return f"{numeric_value:.3g}"
 
 
-@st.dialog("Outlet water quality")
-def show_water_quality_dialog(unit_result):
-    st.markdown(f"**{unit_result['sequence']}. {unit_result['unit_process']}**")
-    if unit_result["section"].startswith("Brine management"):
-        st.info("Water quality tracking is not applied to brine management units yet.")
-        return
-
+@st.dialog("Water quality")
+def show_water_quality_dialog(
+    unit_result,
+    stream_name="Outlet",
+    outlet_quality=None,
+    removal_efficiencies=None,
+):
+    st.markdown(f"**{unit_result['sequence']}. {unit_result['unit_process']} - {stream_name}**")
     technical_results = unit_result.get("technical_results", {})
+    if removal_efficiencies is None:
+        removal_efficiencies = (
+            technical_results.get("removal_efficiencies", {})
+            if outlet_quality is None
+            else {}
+        )
     wq_table = water_quality_comparison_table(
         technical_results.get("water_quality_in", {}),
-        technical_results.get("water_quality_out", {}),
-        technical_results.get("removal_efficiencies", {}),
+        outlet_quality if outlet_quality is not None else technical_results.get("water_quality_out", {}),
+        removal_efficiencies,
     )
+    if wq_table.empty:
+        st.info("No water quality data is available for this unit.")
+        return
+
     display_table = format_water_quality_table(wq_table)
     for column in ["Inlet value", "Outlet value", "Target value"]:
         if column in display_table.columns:
@@ -276,15 +316,16 @@ def show_water_quality_dialog(unit_result):
 
 
 @st.dialog("Scaling tendency")
-def show_scaling_tendency_dialog(unit_result):
-    st.markdown(f"**{unit_result['sequence']}. {unit_result['unit_process']}**")
+def show_scaling_tendency_dialog(unit_result, stream_name="Outlet", water_quality=None):
+    st.markdown(f"**{unit_result['sequence']}. {unit_result['unit_process']} - {stream_name}**")
     if unit_result["section"].startswith("Brine management"):
         st.info("Scaling tendency is not applied to brine management units yet.")
         return
 
-    water_quality = unit_result.get("technical_results", {}).get("water_quality_out", {})
+    if water_quality is None:
+        water_quality = unit_result.get("technical_results", {}).get("water_quality_out", {})
     if not water_quality:
-        st.info("No outlet water quality is available for this unit.")
+        st.info(f"No {stream_name.lower()} water quality is available for this unit.")
         return
 
     try:
@@ -452,15 +493,44 @@ for unit_result in sorted(results["unit_results"], key=lambda row: row["sequence
             use_container_width=True,
         )
 
-    wq_button_col, scaling_button_col = st.columns([1, 1])
-    with wq_button_col:
-        wq_button_key = f"show_water_quality_{unit_result['sequence']}"
-        if st.button("Show outlet water quality", key=wq_button_key, type="primary"):
-            show_water_quality_dialog(unit_result)
-    with scaling_button_col:
-        scaling_button_key = f"show_scaling_tendency_{unit_result['sequence']}"
-        if st.button("Show scaling tendency", key=scaling_button_key, type="primary"):
-            show_scaling_tendency_dialog(unit_result)
+    if unit_result["section"] == "Desalination":
+        brine_water_quality = brine_water_quality_for_result(unit_result)
+        product_wq_col, product_scaling_col = st.columns([1, 1])
+        with product_wq_col:
+            wq_button_key = f"show_product_water_quality_{unit_result['sequence']}"
+            if st.button("Show product water quality", key=wq_button_key, type="primary"):
+                show_water_quality_dialog(unit_result, "Product water")
+        with product_scaling_col:
+            scaling_button_key = f"show_product_scaling_tendency_{unit_result['sequence']}"
+            if st.button("Show product water scaling tendency", key=scaling_button_key, type="primary"):
+                show_scaling_tendency_dialog(unit_result, "Product water")
+        brine_wq_col, brine_scaling_col = st.columns([1, 1])
+        with brine_wq_col:
+            brine_wq_button_key = f"show_brine_water_quality_{unit_result['sequence']}"
+            if st.button("Show brine water quality", key=brine_wq_button_key, type="primary"):
+                show_water_quality_dialog(
+                    unit_result,
+                    "Brine water",
+                    outlet_quality=brine_water_quality,
+                )
+        with brine_scaling_col:
+            brine_scaling_button_key = f"show_brine_scaling_tendency_{unit_result['sequence']}"
+            if st.button("Show brine scaling tendency", key=brine_scaling_button_key, type="primary"):
+                show_scaling_tendency_dialog(
+                    unit_result,
+                    "Brine water",
+                    water_quality=brine_water_quality,
+                )
+    else:
+        wq_button_col, scaling_button_col = st.columns([1, 1])
+        with wq_button_col:
+            wq_button_key = f"show_water_quality_{unit_result['sequence']}"
+            if st.button("Show outlet water quality", key=wq_button_key, type="primary"):
+                show_water_quality_dialog(unit_result)
+        with scaling_button_col:
+            scaling_button_key = f"show_scaling_tendency_{unit_result['sequence']}"
+            if st.button("Show scaling tendency", key=scaling_button_key, type="primary"):
+                show_scaling_tendency_dialog(unit_result)
 
 csv = st.session_state.get(
     "tea_results_csv",

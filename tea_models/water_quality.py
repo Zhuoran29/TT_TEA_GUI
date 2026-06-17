@@ -21,7 +21,7 @@ PARAM_TO_SIDEBAR_KEY = {
     "Alkalinity": "wq_alk",
     "TOC": "wq_toc",
     "BOD": "wq_bod",
-    "NH4-N": "wq_nh4",
+    "Ammonia nitrogen": "wq_nh4",
     "Boron": "wq_boron",
     "Sodium": "wq_sodium",
     "Chloride": "wq_chloride",
@@ -170,6 +170,32 @@ def apply_unit_water_quality(stream, recovery, removal_efficiencies, target_valu
         "water_quality": outlet_quality,
     }
     return inlet_flow, outlet_flow, brine_flow, inlet_quality, outlet_quality, outlet_stream
+
+
+def calculate_brine_quality(inlet_quality, outlet_quality, inlet_flow, outlet_flow, brine_flow):
+    """Estimate brine-side water quality by constituent mass balance."""
+    brine_quality = {}
+    if brine_flow <= 0.0:
+        return brine_quality
+
+    for parameter, inlet_entry in (inlet_quality or {}).items():
+        unit = inlet_entry.get("unit", ALL_WATER_QUALITY_PARAMS.get(parameter, {}).get("unit", ""))
+        if parameter == "pH":
+            brine_quality[parameter] = {"value": 8.5, "unit": unit}
+            continue
+
+        try:
+            inlet_value = float(inlet_entry.get("value", 0.0) or 0.0)
+            outlet_value = float(
+                (outlet_quality or {}).get(parameter, {}).get("value", inlet_value) or 0.0
+            )
+        except (TypeError, ValueError):
+            continue
+
+        brine_value = (inlet_value * inlet_flow - outlet_value * outlet_flow) / brine_flow
+        brine_quality[parameter] = {"value": max(brine_value, 0.0), "unit": unit}
+
+    return brine_quality
 
 
 def water_quality_comparison_table(inlet_quality, outlet_quality, removal_efficiencies):

@@ -7,7 +7,7 @@ WATER_QUALITY_REQUIREMENTS = {
         "DO": {"unit": "mg/L", "limit": 4.0},
         "TDS": {"unit": "mg/L", "limit": 500.0},
         "TOC": {"unit": "mg/L", "limit": 5.0},
-        "NH4-N": {"unit": "mg/L", "limit": 0.5},
+        "Ammonia nitrogen": {"unit": "mg/L", "limit": 0.5},
         "Oil": {"unit": "mg/L", "limit": 10.0},
         "Boron": {"unit": "mg/L", "limit": 4.0},
         "Chloride": {"unit": "mg/L", "limit": 250.0},
@@ -96,7 +96,7 @@ WATER_QUALITY_REQUIREMENTS = {
         "Iron": {"unit": "mg/L", "limit": 0.2},
         "Manganese": {"unit": "mg/L", "limit": 0.04},
         "Turbidity": {"unit": "NTU", "limit": 0.1},
-        "NH4-N": {"unit": "mg/L", "limit": 0.0},
+        "Ammonia nitrogen": {"unit": "mg/L", "limit": 0.0},
         "Notes": "Feedwater quality requirements for UPW production are extremely stringent to ensure the \
                   highest purity water for semiconductor manufacturing. Parameters like TDS, hardness, TOC,\
                   silica, iron, manganese, turbidity, and ammonia must be tightly controlled to prevent scaling, \
@@ -488,7 +488,7 @@ ALL_WATER_QUALITY_PARAMS = {
     "Hardness": {"unit": "mg/L as CaCO3", "limit": 500.0},
     "Alkalinity": {"unit": "mg/L as CaCO3", "limit": 300.0},
     "TOC": {"unit": "mg/L", "limit": 10.0},
-    "NH4-N": {"unit": "mg/L", "limit": 1.0},
+    "Ammonia nitrogen": {"unit": "mg/L", "limit": 1.0},
     "Boron": {"unit": "mg/L", "limit": 2.0},
     "Sodium": {"unit": "mg/L", "limit": 70.0},
     "Chloride": {"unit": "mg/L", "limit": 140.0},
@@ -611,7 +611,7 @@ UNIT_REMOVAL_RATES = {
     "Antiscalant dosing": {},
 
     "Air stripping": {
-        "NH4-N": "50-95%",
+        "Ammonia nitrogen": "50-95%",
         "TOC": "0-20%"
     },
 
@@ -631,7 +631,7 @@ UNIT_REMOVAL_RATES = {
         "Hardness": "99%+",
         "Alkalinity": "90-99%",
         "TOC": "20-80%",
-        "NH4-N": "90%",
+        "Ammonia nitrogen": "90%",
         "Boron": "99%+",
         "Sodium": "99.9%+",
         "Chloride": "99.9%+",
@@ -664,7 +664,7 @@ UNIT_REMOVAL_RATES = {
         "Hardness": "95-99%",
         "Alkalinity": "80-98%",
         "TOC": "30-80%",
-        "NH4-N": "0-50%",
+        "Ammonia nitrogen": "0-50%",
         "Boron": "80-95%",
         "Sodium": "95-99%",
         "Chloride": "95-99%",
@@ -694,7 +694,7 @@ UNIT_REMOVAL_RATES = {
         "Hardness": "95-99%",
         "Alkalinity": "70-95%",
         "TOC": "20-60%",
-        "NH4-N": "10-40%",
+        "Ammonia nitrogen": "10-40%",
         "Boron": "30-70%",
         "Sodium": "90-99%",
         "Chloride": "90-99%",
@@ -721,7 +721,7 @@ UNIT_REMOVAL_RATES = {
         "Hardness": "95-99%",
         "Alkalinity": "70-95%",
         "TOC": "20-60%",
-        "NH4-N": "10-40%",
+        "Ammonia nitrogen": "10-40%",
         "Boron": "30-70%",
         "Sodium": "90-99%",
         "Chloride": "90-99%",
@@ -748,7 +748,7 @@ UNIT_REMOVAL_RATES = {
         "Hardness": "95-99%",
         "Alkalinity": "70-95%",
         "TOC": "20-60%",
-        "NH4-N": "10-40%",
+        "Ammonia nitrogen": "10-40%",
         "Boron": "30-80%",
         "Sodium": "90-99%",
         "Chloride": "90-99%",
@@ -803,7 +803,7 @@ UNIT_REMOVAL_RATES = {
     # Post-treatment / polishing
     # =========================================================
     "Ammonia stripping": {
-        "NH4-N": "90-99%"
+        "Ammonia nitrogen": "90-99%"
     },
     "GAC": {
         "TOC": "99%",
@@ -812,7 +812,7 @@ UNIT_REMOVAL_RATES = {
         "PAHs": "99%"
     },
     "Zeolite": {
-        "NH4-N": "99.9%+",
+        "Ammonia nitrogen": "99.9%+",
         "Iron": "10-40%",
         "Manganese": "10-40%"
     },
@@ -820,7 +820,7 @@ UNIT_REMOVAL_RATES = {
         "Conductivity": "80-99%",
         "TDS": "80-95%",
         "Hardness": "99%+",
-        "NH4-N": "80-95%",
+        "Ammonia nitrogen": "80-95%",
         "Boron": "80-95%",
         "Sodium": "80-95%",
         "Chloride": "70-95%",
@@ -961,7 +961,7 @@ SIDEBAR_DEFAULTS = {
     "TSS": 790.0,
     "Alkalinity": 870.0,
     "Hardness": 27800.0,
-    "NH4-N": 750.0,
+    "Ammonia nitrogen": 750.0,
     "Barium": 12.0,
     "Boron": 76.5,
     "Calcium": 8200.0,
@@ -986,7 +986,7 @@ SIDEBAR_DEFAULTS = {
     "TSS": 342.9,
     "Alkalinity": 279.0,
     "Hardness": 12500.0,
-    "NH4-N": 500.0,
+    "Ammonia nitrogen": 500.0,
     "Barium": 5.6,
     "Boron": 42.3,
     "Calcium": 3800.0,
@@ -1011,7 +1011,7 @@ SIDEBAR_DEFAULTS = {
     "TSS": 850.0,
     "Alkalinity": 132.0,
     "Hardness": 4200.0,
-    "NH4-N": 350.0,
+    "Ammonia nitrogen": 350.0,
     "Barium": 2.2,
     "Boron": 17.2,
     "Calcium": 1200.0,
