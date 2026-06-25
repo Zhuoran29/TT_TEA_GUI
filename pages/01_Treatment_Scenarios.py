@@ -1,5 +1,6 @@
 import streamlit as st
 from config import APP_VERSION, DATA_VERSION
+from feedback import render_report_button
 
 st.set_page_config(page_title="Produced Water TEA — Home", layout="wide")
 
@@ -24,7 +25,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("Fit-for-Purpose Treatment Scenarios")
+title_col, report_col = st.columns([0.82, 0.18])
+with title_col:
+    st.title("Fit-for-Purpose Treatment Scenarios")
+with report_col:
+    render_report_button("Treatment scenarios", use_container_width=True)
 st.markdown(
     "Choose the water treatment scenario.  \n\n"
 )

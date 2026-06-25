@@ -4,6 +4,8 @@ import copy
 import pandas as pd
 import streamlit as st
 from config import APP_VERSION, DATA_VERSION
+from feedback import render_report_button
+from ui_helpers import render_card_title
 
 from tea_models.registry import run_cost_model, run_technical_model
 from tea_models.unit_model_defaults import cost_input_rows, technical_input_rows
@@ -671,7 +673,11 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables,
     return results
 
 
-st.header("System design & unit assumptions")
+title_col, report_col = st.columns([0.82, 0.18])
+with title_col:
+    st.header("System design & unit assumptions")
+with report_col:
+    render_report_button("System design and unit assumptions", use_container_width=True)
 
 project_name = st.session_state.get("project_name", "TEA project")
 st.caption(f"Project: {project_name}")
@@ -702,7 +708,12 @@ sync_feed_flow_display_unit()
 assumption_cols = st.columns(2)
 with assumption_cols[0]:
     with st.container(border=True):
-        st.markdown('<div class="assumption-title">System assumptions</div>', unsafe_allow_html=True)
+        render_card_title(
+            "System assumptions",
+            "Set project-wide operating assumptions used by every unit model and cost calculation.",
+            key="help_system_assumptions",
+            html='<div class="assumption-title">System assumptions</div>',
+        )
         header_cols = st.columns([2.2, 1.2, 1.0])
         header_cols[0].markdown('<div class="assumption-header">Assumption</div>', unsafe_allow_html=True)
         header_cols[1].markdown('<div class="assumption-header">Value</div>', unsafe_allow_html=True)
@@ -764,7 +775,12 @@ with assumption_cols[0]:
 
 with assumption_cols[1]:
     with st.container(border=True):
-        st.markdown('<div class="assumption-title">Financial assumptions</div>', unsafe_allow_html=True)
+        render_card_title(
+            "Financial assumptions",
+            "Set the financial factors used to annualize capital cost and calculate levelized cost.",
+            key="help_financial_assumptions",
+            html='<div class="assumption-title">Financial assumptions</div>',
+        )
         header_cols = st.columns([2.2, 1.2, 1.0])
         header_cols[0].markdown('<div class="assumption-header">Assumption</div>', unsafe_allow_html=True)
         header_cols[1].markdown('<div class="assumption-header">Value</div>', unsafe_allow_html=True)

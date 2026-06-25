@@ -1,5 +1,7 @@
 import streamlit as st
 from config import APP_VERSION, DATA_VERSION
+from feedback import render_report_button
+from ui_helpers import render_card_title
 
 from pages.extensions.interactive_map_ui import render_interactive_map
 from pages.extensions.socioeconomic_ui import render_socioeconomic_analysis
@@ -71,7 +73,12 @@ st.markdown("""
 
 def render_extension_card(title, subtitle, inputs, outputs, target_view=None):
     with st.container(border=True):
-        st.markdown(f"<div class='extension-card-title'>{title}</div>", unsafe_allow_html=True)
+        render_card_title(
+            title,
+            f"Open or review the {title} extension module for additional analysis connected to this TEA workflow.",
+            key=f"help_extension_{title.replace(' ', '_').lower()}",
+            html=f"<div class='extension-card-title'>{title}</div>",
+        )
         st.markdown(f"<div class='extension-card-subtitle'>{subtitle}</div>", unsafe_allow_html=True)
         if target_view and st.button(f"Open", key=f"open_{title.replace(' ', '_').lower()}", type="primary"):
             st.session_state.extension_view = target_view
@@ -95,7 +102,11 @@ def render_extension_card(title, subtitle, inputs, outputs, target_view=None):
 
 
 
-st.header("Extensions")
+title_col, report_col = st.columns([0.82, 0.18])
+with title_col:
+    st.header("Extensions")
+with report_col:
+    render_report_button("Extensions", use_container_width=True)
 
 project_name = st.session_state.get("project_name", "TEA project")
 st.caption(f"Project: {project_name}")

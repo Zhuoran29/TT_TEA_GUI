@@ -3,6 +3,8 @@ from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_con
 from tea_models.water_quality import collect_feedwater_quality
 import streamlit as st
 from config import APP_VERSION, DATA_VERSION
+from feedback import render_report_button
+from ui_helpers import render_card_title
 
 st.set_page_config(page_title="02_Treatment_Train", layout="wide")
 
@@ -27,7 +29,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.header("Treatment train configuration")
+title_col, report_col = st.columns([0.82, 0.18])
+with title_col:
+    st.header("Treatment train configuration")
+with report_col:
+    render_report_button("Treatment train configuration", use_container_width=True)
 
 # defaults if not set
 if "influent_type" not in st.session_state:
@@ -462,7 +468,12 @@ if requirements:
     
     with design_col:
         with st.container(border=True):
-            st.markdown(f"<h5 style='margin-top: 0;'>Treatment Chain Design</h5>", unsafe_allow_html=True)
+            render_card_title(
+                "Treatment Chain Design",
+                "Edit the unit processes included in the treatment train before moving to system design.",
+                key="help_treatment_chain_design",
+                html="<h5 style='margin-top: 0;'>Treatment Chain Design</h5>",
+            )
             
             # Get all available units from UNIT_REMOVAL_RATES
             all_units = list(UNIT_REMOVAL_RATES.keys())
@@ -594,7 +605,12 @@ if requirements:
 
     with req_col:
         with st.container(border=True):
-            st.markdown(f"<h5 style='margin-top: 0;'>{ffp_primary} - Water Quality Requirements</h5>", unsafe_allow_html=True)
+            render_card_title(
+                f"{ffp_primary} - Water Quality Requirements",
+                "Review or adjust the target water quality requirements for the selected fit-for-purpose use.",
+                key="help_water_quality_requirements",
+                html=f"<h5 style='margin-top: 0;'>{ffp_primary} - Water Quality Requirements</h5>",
+            )
             
             # Initialize session state for additional parameters
             session_key_added = f"added_params_{ffp_primary}".replace(" ", "_")

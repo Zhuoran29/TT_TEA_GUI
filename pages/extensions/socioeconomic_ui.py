@@ -3,6 +3,7 @@
 import pandas as pd
 import streamlit as st
 from matplotlib import pyplot as plt
+from ui_helpers import render_card_title
 
 from tea_models.socioeconomic import (
     COUNTY_BASELINES,
@@ -76,7 +77,11 @@ def render_socioeconomic_analysis():
 
     with input_col:
         with st.container(border=True):
-            st.subheader("Scenario inputs")
+            render_card_title(
+                "Scenario inputs",
+                "Define the county, sector, treated water volume, and annual project cost for the screening calculation.",
+                key="help_socioeconomic_scenario_inputs",
+            )
             county = st.selectbox("County", list(COUNTY_BASELINES.keys()), index=0)
             sector = st.selectbox("Target economic sector", list(SECTOR_OUTPUTS[county].keys()), index=1)
 
@@ -104,7 +109,11 @@ def render_socioeconomic_analysis():
 
     with assumption_col:
         with st.container(border=True):
-            st.subheader("Model assumptions")
+            render_card_title(
+                "Model assumptions",
+                "Tune the simplified economic response assumptions used by the socio-economic screening model.",
+                key="help_socioeconomic_model_assumptions",
+            )
             water_to_output_elasticity = st.slider(
                 "Water-to-output elasticity",
                 min_value=0.0,
@@ -173,7 +182,21 @@ def render_socioeconomic_analysis():
             font-weight: 750;
             height: 42px;
             justify-content: center;
+            position: relative;
             text-align: center;
+        }
+        .socio-summary-help {
+            align-items: center;
+            border: 1px solid #CBD5E1;
+            border-radius: 999px;
+            color: #64748B;
+            display: inline-flex;
+            font-size: 0.72rem;
+            height: 18px;
+            justify-content: center;
+            position: absolute;
+            right: 8px;
+            width: 18px;
         }
         .socio-summary-value {
             align-items: center;
@@ -194,7 +217,10 @@ def render_socioeconomic_analysis():
             st.markdown(
                 f"""
                 <div class="socio-summary-cell">
-                    <div class="socio-summary-label">{name}</div>
+                    <div class="socio-summary-label">
+                        {name}
+                        <span class="socio-summary-help" title="Screening-level socio-economic result based on the current input assumptions.">?</span>
+                    </div>
                     <div class="socio-summary-value">{value}</div>
                 </div>
                 """,

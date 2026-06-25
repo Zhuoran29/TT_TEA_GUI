@@ -11,7 +11,9 @@ import pandas as pd
 import streamlit as st
 from branca.colormap import linear
 from branca.element import MacroElement, Template
+from feedback import render_report_button
 from streamlit_folium import st_folium
+from ui_helpers import render_card_title
 
 # from pages.extensions.openei_rates import lookup_best_local_electricity_price
 
@@ -2109,7 +2111,16 @@ def render_map_workspace():
 
 
 def render_interactive_map():
-    st.subheader("Interactive map")
+    title_col, report_col = st.columns([0.82, 0.18])
+    with title_col:
+        st.subheader("Interactive map")
+    with report_col:
+        render_report_button("Interactive map", use_container_width=True)
 
     with st.container(border=True):
+        render_card_title(
+            "Map workspace",
+            "Use the map workspace to inspect spatial layers, place facilities, and estimate route-related assumptions.",
+            key="help_interactive_map_workspace",
+        )
         render_map_workspace()

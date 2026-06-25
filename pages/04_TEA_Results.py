@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 from config import APP_VERSION, DATA_VERSION
+from feedback import render_report_button
 from matplotlib import pyplot as plt
 from matplotlib.patches import Patch
 from tea_models.scaling_tendency import calculate_scaling_tendency
@@ -33,7 +34,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.header("TEA results")
+title_col, report_col = st.columns([0.82, 0.18])
+with title_col:
+    st.header("TEA results")
+with report_col:
+    render_report_button("TEA results", use_container_width=True)
 
 project_name = st.session_state.get("project_name", "TEA project")
 st.caption(f"Project: {project_name}")
@@ -77,7 +82,21 @@ def render_summary_cells(summary_values):
             font-weight: 750;
             height: 42px;
             justify-content: center;
+            position: relative;
             text-align: center;
+        }
+        .tea-summary-help {
+            align-items: center;
+            border: 1px solid #CBD5E1;
+            border-radius: 999px;
+            color: #64748B;
+            display: inline-flex;
+            font-size: 0.72rem;
+            height: 18px;
+            justify-content: center;
+            position: absolute;
+            right: 8px;
+            width: 18px;
         }
         .tea-summary-value {
             align-items: center;
@@ -98,7 +117,10 @@ def render_summary_cells(summary_values):
             st.markdown(
                 f"""
                 <div class="tea-summary-cell">
-                    <div class="tea-summary-label">{name}</div>
+                    <div class="tea-summary-label">
+                        {name}
+                        <span class="tea-summary-help" title="Quick summary metric from the current TEA calculation.">?</span>
+                    </div>
                     <div class="tea-summary-value">{value}</div>
                 </div>
                 """,
