@@ -6,6 +6,7 @@ import streamlit as st
 from config import APP_VERSION, DATA_VERSION
 
 from tea_models.registry import run_cost_model, run_technical_model
+from tea_models.unit_model_defaults import cost_input_rows, technical_input_rows
 from tea_models.water_quality import (
     apply_removal_overrides,
     calculate_brine_quality,
@@ -199,6 +200,11 @@ def get_inputs_for_unit(table, unit_process, fallback_map=None):
 
     if unit_rows.empty:
         fallback_rows = (fallback_map or {}).get(unit_process)
+        if fallback_rows is None:
+            if "technical" in str(table.attrs.get("input_table_kind", "")):
+                fallback_rows = technical_input_rows(unit_process)
+            elif "cost" in str(table.attrs.get("input_table_kind", "")):
+                fallback_rows = cost_input_rows(unit_process)
         if fallback_rows:
             return pd.DataFrame([
                 {
@@ -683,6 +689,8 @@ if not ordered_units:
 
 technical_template = load_input_table(TECHNICAL_INPUT_PATH)
 cost_template = load_input_table(COST_INPUT_PATH)
+technical_template.attrs["input_table_kind"] = "technical"
+cost_template.attrs["input_table_kind"] = "cost"
 
 st.markdown("Configure the system design assumptions and unit-specific inputs below. When you are ready, click the **Run TEA Calculation** button at the bottom to execute the models and calculate the levelized cost of water (LCOW) for your project.")
 

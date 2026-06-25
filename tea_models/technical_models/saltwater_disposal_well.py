@@ -50,6 +50,7 @@ def run(unit_process, technical_inputs, stream):
         "injection_pressure": _result(injection_pressure, "bar"),
         "pump_efficiency": _result(pump_efficiency, "fraction"),
         "energy_intensity": _result(energy_intensity, "kWh/m3 disposed"),
+        "thermal_energy_intensity": _result(0.0, "kWh/m3 disposed"),
         "chemical_dose": _result(0.0, "kg/m3"),
         "chemical_consumption": _result(0.0, "kg/day"),
         "removal_efficiencies": {},

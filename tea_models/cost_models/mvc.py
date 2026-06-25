@@ -30,10 +30,7 @@ def run(unit_process, technical_result, cost_inputs, context):
     surrogate_capex = evaporator_capex + compressor_capex
 
     electricity_price = float(context.get("electricity_price", 0.0))
-    if "electricity_cost" in technical_result:
-        electricity_cost = _value(technical_result, "electricity_cost")
-    else:
-        electricity_cost = annual_volume * _value(technical_result, "energy_intensity") * electricity_price
+    electricity_cost = annual_volume * _value(technical_result, "energy_intensity") * electricity_price
 
     capex = capex_per_flow * inlet_flow
     fixed_opex = capex * fixed_opex_fraction

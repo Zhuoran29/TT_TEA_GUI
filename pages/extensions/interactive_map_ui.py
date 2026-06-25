@@ -137,6 +137,24 @@ def pv_wind_lcoe_range(data):
     return min_value, max_value
 
 
+def geojson_numeric_range(data, field_name):
+    values = []
+    for feature in data.get("features", []):
+        try:
+            value = float(feature.get("properties", {}).get(field_name, 0.0) or 0.0)
+        except (TypeError, ValueError):
+            continue
+        if not math.isnan(value):
+            values.append(value)
+    if not values:
+        return 0.0, 1.0
+    min_value = min(values)
+    max_value = max(values)
+    if min_value == max_value:
+        return min_value, min_value + 1.0
+    return min_value, max_value
+
+
 def renewable_penetration_value(properties, source_type):
     field = "Solar_perc____" if source_type == "Solar" else "Wind_perc____"
     try:
@@ -1641,18 +1659,16 @@ class HoverInfoControl(MacroElement):
                         + row('Wind penetration', formatNumber(props.Wind_penetration_percent, 1, '%'))
                         + row('Battery', formatNumber(props.Battery__hr_, 1, 'hour'));
                 }
-                if (props.Production || props.Name) {
+                if (props.State_HUC8 || props.Brack_Avai) {
+                    return '<div class="map-hover-info-title">Brackish groundwater</div>'
+                        + row('Watershed', props.Name)
+                        + row('Volume', formatNumber(props.Brack_Avai, 0, 'AFY'))
+                        + row('Average depth', formatNumber(props.Average_Depth_to_Groundwater_Feet, 0, 'ft'));
+                }
+                if (props.Production) {
                     return '<div class="map-hover-info-title">Oil & Gas Production Area</div>'
                         + row('Area', props.Name)
                         + row('Production', props.Production);
-                }
-                if (props.State_HUC8 || props.Brack_Avai) {
-                    return '<div class="map-hover-info-title">Brackish Groundwater</div>'
-                        + row('Watershed', props.Name)
-                        + row('State', props.State)
-                        + row('HUC8', props.State_HUC8)
-                        + row('Available', formatNumber(props.Brack_Avai, 0, 'AFY'))
-                        + row('Depth', formatNumber(props.Average_Depth_to_Groundwater_Feet, 0, 'ft'));
                 }
                 if (props.status || props.measured_v || props.true_verti) {
                     return '<div class="map-hover-info-title">Produced Water Resource</div>'
@@ -1865,27 +1881,43 @@ def add_geojson_layers(map_obj, base_map, show_produced_water, show_brackish, sh
         add_pv_wind_layer(map_obj)
 
     if show_brackish and BRACKISH_GROUNDWATER_PATH.exists():
-        folium.GeoJson(
-            load_geojson(str(BRACKISH_GROUNDWATER_PATH)),
-            name="Brackish groundwater",
-            style_function=lambda _: {
+        brackish_data = load_geojson(str(BRACKISH_GROUNDWATER_PATH))
+        min_volume, max_volume = geojson_numeric_range(
+            brackish_data,
+            "Brack_Avai",
+        )
+        brackish_colormap = linear.Greens_09.scale(min_volume, max_volume).to_step(9)
+        brackish_colormap.caption = "Available brackish groundwater (AFY)"
+        brackish_colormap.tick_labels = [
+            f"{value:,.0f}"
+            for value in [min_volume, min_volume + (max_volume - min_volume) / 2, max_volume]
+        ]
+
+        def brackish_style(feature):
+            properties = feature.get("properties", {})
+            try:
+                volume = float(properties.get("Brack_Avai", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                volume = None
+            return {
                 "color": "#0B5F62",
                 "weight": 1,
-                "fillColor": "#0D9488",
-                "fillOpacity": 0.22,
-            },
+                "fillColor": "#E5E7EB" if volume is None else brackish_colormap(volume),
+                "fillOpacity": 0.55,
+            }
+
+        folium.GeoJson(
+            brackish_data,
+            name="Brackish groundwater",
+            style_function=brackish_style,
             tooltip=folium.GeoJsonTooltip(
                 fields=[
                     "Name",
-                    "State",
-                    "State_HUC8",
-                    "total_available_brackish_water_AFY",
+                    "Brack_Avai",
                     "Average_Depth_to_Groundwater_Feet",
                 ],
                 aliases=[
                     "Watershed",
-                    "State",
-                    "HUC8",
                     "Available brackish water (AFY)",
                     "Depth to groundwater (ft)",
                 ],
@@ -1893,6 +1925,7 @@ def add_geojson_layers(map_obj, base_map, show_produced_water, show_brackish, sh
                 sticky=True,
             ),
         ).add_to(map_obj)
+        brackish_colormap.add_to(map_obj)
 
     if STATE_BOUNDARY_PATH.exists():
         folium.GeoJson(

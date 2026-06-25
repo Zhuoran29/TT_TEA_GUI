@@ -5,7 +5,6 @@ DEFAULTS = {
     "capex_per_flow": 320.0,
     "fixed_opex_fraction": 0.05,
     "variable_opex_per_m3": 0.03,
-    "electricity_price": 0.08,
     "chemical_price": 1.2,
 }
 

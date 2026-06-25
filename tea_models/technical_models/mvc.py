@@ -289,6 +289,7 @@ def run(unit_process, technical_inputs, stream):
         "brine_flow": _result(brine_flow, "m3/day"),
         "water_recovery": _result(recovery, "fraction"),
         "energy_intensity": _result(l16, "kWh/m3 feed"),
+        "thermal_energy_intensity": _result(0.0, "kWh/m3 feed"),
         "constituent_removal_efficiency": _result(0.999, "fraction"),
         "removal_efficiencies": removal_efficiencies,
         "water_quality_in": water_quality_in,

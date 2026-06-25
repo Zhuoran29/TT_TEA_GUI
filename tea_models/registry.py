@@ -14,9 +14,18 @@ def model_key(unit_process):
 
 def _load_model(package, unit_process):
     module_name = model_key(unit_process)
+    full_module_name = f"{package}.{module_name}"
     try:
-        return import_module(f"{package}.{module_name}")
-    except ModuleNotFoundError:
+        return import_module(full_module_name)
+    except ModuleNotFoundError as exc:
+        if exc.name != full_module_name:
+            raise
+        try:
+            generic_model = import_module(f"{package}.generic_unit_library")
+        except ModuleNotFoundError:
+            generic_model = None
+        if generic_model is not None and generic_model.supports(unit_process):
+            return generic_model
         return import_module(f"{package}.default")
 
 

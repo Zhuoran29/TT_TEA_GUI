@@ -16,13 +16,20 @@ def run(unit_process, technical_result, cost_inputs, context):
         * float(technical_result.get("energy_intensity", {}).get("value", 0.0))
         * electricity_price
     )
+    thermal_energy_price = float(context.get("thermal_energy_price", 0.0))
+    thermal_energy_opex = (
+        annual_volume
+        * float(technical_result.get("thermal_energy_intensity", {}).get("value", 0.0))
+        * thermal_energy_price
+    )
 
-    annual_opex = fixed_opex + variable_opex + energy_opex
+    annual_opex = fixed_opex + variable_opex + energy_opex + thermal_energy_opex
 
     return {
         "installed_capital_cost": {"value": capex, "unit": "USD"},
         "fixed_operating_cost": {"value": fixed_opex, "unit": "USD/year"},
         "variable_operating_cost": {"value": variable_opex, "unit": "USD/year"},
         "energy_operating_cost": {"value": energy_opex, "unit": "USD/year"},
+        "thermal_energy_operating_cost": {"value": thermal_energy_opex, "unit": "USD/year"},
         "total_annual_operating_cost": {"value": annual_opex, "unit": "USD/year"},
     }

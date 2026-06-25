@@ -44,17 +44,25 @@ def run_template(technical_result, cost_inputs, context, defaults):
         "media_replacement_fraction",
         defaults.get("media_replacement_fraction", 0.0),
     )
+    capex_per_kw = _input(cost_inputs, "capex_per_kw", defaults.get("capex_per_kw", 0.0))
     land_cost_per_m2 = _input(cost_inputs, "land_cost_per_m2", defaults.get("land_cost_per_m2", 0.0))
     liner_cost_per_m2 = _input(cost_inputs, "liner_cost_per_m2", defaults.get("liner_cost_per_m2", 0.0))
+    thermal_energy_price = float(context.get("thermal_energy_price", 0.0))
 
     equipment_capex = capex_per_flow * inlet_flow
+    power_capex = _value(technical_result, "power_capacity") * capex_per_kw
     land_capex = _value(technical_result, "pond_area") * land_cost_per_m2
     liner_capex = _value(technical_result, "pond_area") * liner_cost_per_m2
-    capex = equipment_capex + land_capex + liner_capex
+    capex = equipment_capex + power_capex + land_capex + liner_capex
 
     fixed_opex = capex * fixed_opex_fraction
     variable_opex = annual_volume * variable_opex_per_m3
     energy_opex = annual_volume * _value(technical_result, "energy_intensity") * electricity_price
+    thermal_energy_opex = (
+        annual_volume
+        * _value(technical_result, "thermal_energy_intensity")
+        * thermal_energy_price
+    )
     chemical_opex = (
         _value(technical_result, "chemical_consumption")
         * operating_days
@@ -73,6 +81,7 @@ def run_template(technical_result, cost_inputs, context, defaults):
         fixed_opex
         + variable_opex
         + energy_opex
+        + thermal_energy_opex
         + chemical_opex
         + media_replacement_cost
     )
@@ -80,11 +89,13 @@ def run_template(technical_result, cost_inputs, context, defaults):
     return {
         "installed_capital_cost": _result(capex, "USD"),
         "equipment_capital_cost": _result(equipment_capex, "USD"),
+        "power_capacity_capital_cost": _result(power_capex, "USD"),
         "land_capital_cost": _result(land_capex, "USD"),
         "liner_capital_cost": _result(liner_capex, "USD"),
         "fixed_operating_cost": _result(fixed_opex, "USD/year"),
         "variable_operating_cost": _result(variable_opex, "USD/year"),
         "energy_operating_cost": _result(energy_opex, "USD/year"),
+        "thermal_energy_operating_cost": _result(thermal_energy_opex, "USD/year"),
         "chemical_operating_cost": _result(chemical_opex, "USD/year"),
         "media_replacement_cost": _result(media_replacement_cost, "USD/year"),
         "total_annual_operating_cost": _result(annual_opex, "USD/year"),

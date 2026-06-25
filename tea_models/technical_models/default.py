@@ -40,6 +40,10 @@ def run(unit_process, technical_inputs, stream):
             "value": float(technical_inputs.get("energy_intensity", 0.0)),
             "unit": "kWh/m3",
         },
+        "thermal_energy_intensity": {
+            "value": float(technical_inputs.get("thermal_energy_intensity", 0.0)),
+            "unit": "kWh/m3",
+        },
         "constituent_removal_efficiency": {
             "value": float(technical_inputs.get("removal_efficiency", 0.0)),
             "unit": "fraction",
