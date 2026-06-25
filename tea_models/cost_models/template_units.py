@@ -32,7 +32,7 @@ def run_template(technical_result, cost_inputs, context, defaults):
         "variable_opex_per_m3",
         defaults.get("variable_opex_per_m3", 0.0),
     )
-    electricity_price = _input(cost_inputs, "electricity_price", defaults.get("electricity_price", 0.08))
+    electricity_price = float(context.get("electricity_price", 0.0))
     chemical_price = _input(cost_inputs, "chemical_price", defaults.get("chemical_price", 0.0))
     media_replacement_price = _input(
         cost_inputs,

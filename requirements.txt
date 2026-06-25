@@ -1,5 +1,8 @@
 streamlit>=1.0
 pandas
 numpy
+pydeck
+folium
+streamlit-folium
 openpyxl
 matplotlib

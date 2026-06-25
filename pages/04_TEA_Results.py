@@ -9,6 +9,9 @@ from treatment_config import ALL_WATER_QUALITY_PARAMS
 
 st.set_page_config(page_title="04_TEA_Results", layout="wide")
 
+BREAKDOWN_FIGSIZE = (7.2, 5.8)
+BREAKDOWN_BAR_WIDTH = 0.22
+
 st.markdown("""
 <style>
     * {
@@ -354,7 +357,7 @@ def show_scaling_tendency_dialog(unit_result, stream_name="Outlet", water_qualit
 def render_lcow_cost_breakdown(unit_results, lcow_unit):
     st.subheader("LCOW cost breakdown")
     cost_breakdown = unit_results.sort_values("sequence").copy()
-    fig, ax = plt.subplots(figsize=(12, 5.2))
+    fig, ax = plt.subplots(figsize=BREAKDOWN_FIGSIZE)
     palette = [
         "#1f77b4",
         "#aec7e8",
@@ -370,7 +373,7 @@ def render_lcow_cost_breakdown(unit_results, lcow_unit):
     bottom = 0.0
     unit_handles = []
     bar_x = 0
-    bar_width = 0.16
+    bar_width = BREAKDOWN_BAR_WIDTH
 
     for idx, (_, row) in enumerate(cost_breakdown.iterrows()):
         color = palette[idx % len(palette)]
@@ -418,13 +421,104 @@ def render_lcow_cost_breakdown(unit_results, lcow_unit):
     ax.spines["right"].set_visible(False)
     ax.legend(
         handles=style_handles + unit_handles,
-        loc="upper left",
-        bbox_to_anchor=(1.01, 1.0),
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.18),
+        ncol=2,
         frameon=False,
+        fontsize=8,
     )
-    fig.tight_layout()
+    fig.subplots_adjust(bottom=0.32)
     st.pyplot(fig, use_container_width=True)
     plt.close(fig)
+
+
+def render_energy_breakdown(unit_results):
+    st.subheader("Energy breakdown")
+    required_columns = {
+        "electricity_intensity_kwh_per_bbl_feed",
+        "thermal_energy_intensity_kwh_per_bbl_feed",
+    }
+    if not required_columns.issubset(unit_results.columns):
+        st.info("Run TEA Calculation again to generate energy breakdown results.")
+        return
+
+    energy_breakdown = unit_results.sort_values("sequence").copy()
+    fig, ax = plt.subplots(figsize=BREAKDOWN_FIGSIZE)
+    palette = [
+        "#1f77b4",
+        "#aec7e8",
+        "#ff7f0e",
+        "#ffbb78",
+        "#2ca02c",
+        "#98df8a",
+        "#d62728",
+        "#9467bd",
+        "#8c564b",
+        "#17becf",
+    ]
+    bar_x = 0
+    bar_width = BREAKDOWN_BAR_WIDTH
+    electricity_bottom = 0.0
+    thermal_bottom = 0.0
+    unit_handles = []
+
+    for idx, (_, row) in enumerate(energy_breakdown.iterrows()):
+        color = palette[idx % len(palette)]
+        unit_label = f"{int(row['sequence'])}. {row['unit_process']}"
+        electricity_intensity = float(row.get("electricity_intensity_kwh_per_bbl_feed", 0.0) or 0.0)
+        thermal_intensity = float(row.get("thermal_energy_intensity_kwh_per_bbl_feed", 0.0) or 0.0)
+        if electricity_intensity > 0.0:
+            ax.bar(
+                [bar_x],
+                [electricity_intensity],
+                bottom=electricity_bottom,
+                width=bar_width,
+                color=color,
+                edgecolor="white",
+                linewidth=0.8,
+            )
+            electricity_bottom += electricity_intensity
+        if thermal_intensity > 0.0:
+            ax.bar(
+                [bar_x + bar_width * 1.25],
+                [thermal_intensity],
+                bottom=thermal_bottom,
+                width=bar_width,
+                color=color,
+                edgecolor="#333333",
+                linewidth=0.8,
+                hatch="///",
+            )
+            thermal_bottom += thermal_intensity
+        if electricity_intensity > 0.0 or thermal_intensity > 0.0:
+            unit_handles.append(Patch(facecolor=color, edgecolor="white", label=unit_label))
+
+    style_handles = [
+        Patch(facecolor="#d9d9d9", edgecolor="white", label="Electricity"),
+        Patch(facecolor="#d9d9d9", edgecolor="#333333", hatch="///", label="Thermal energy"),
+    ]
+    total_intensity = max(electricity_bottom, thermal_bottom, 0.01)
+
+    ax.set_ylabel("Specific energy consumption (kWh/bbl feed)")
+    ax.set_xticks([bar_x, bar_x + bar_width * 1.25])
+    ax.set_xticklabels(["Electricity", "Thermal energy"])
+    ax.set_xlim(-0.35, bar_x + bar_width * 1.25 + 0.35)
+    ax.set_ylim(0, total_intensity * 1.12)
+    ax.grid(axis="y", alpha=0.2)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.legend(
+        handles=style_handles + unit_handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.18),
+        ncol=2,
+        frameon=False,
+        fontsize=8,
+    )
+    fig.subplots_adjust(bottom=0.32)
+    st.pyplot(fig, use_container_width=True)
+    plt.close(fig)
+
 
 if "tea_results" not in st.session_state:
     st.warning("Please run the TEA calculation on the System Design page first.")
@@ -434,9 +528,18 @@ if "tea_results" not in st.session_state:
 
 results = st.session_state.tea_results
 
-render_summary_cells({
+summary_values = {
     "Total CAPEX": f"${results['total_capital_cost']:,.0f}",
     "Annual OPEX": f"${results['total_annual_operating_cost']:,.0f}/yr",
+    "Electricity power": f"{results.get('electricity_power_requirement_kw', 0.0):,.1f} kW",
+    "Thermal power": f"{results.get('thermal_power_requirement_kw', 0.0):,.1f} kW",
+}
+transportation_cost = results.get("transportation_cost", {})
+annual_transportation_cost = float(transportation_cost.get("annual_transportation_cost", 0.0) or 0.0)
+if annual_transportation_cost > 0.0:
+    summary_values["Annual transportation cost"] = f"${annual_transportation_cost:,.0f}/yr"
+
+summary_values.update({
     "Product flow": (
         f"{results['final_product_flow']:,.1f} "
         f"{results.get('final_product_flow_unit', 'm3/day')}"
@@ -447,13 +550,19 @@ render_summary_cells({
     ),
 })
 
+render_summary_cells(summary_values)
+
 unit_results = pd.DataFrame([
     {k: v for k, v in row.items() if k not in ["technical_results", "cost_results"]}
     for row in results["unit_results"]
 ])
 results_table = pd.DataFrame(results.get("results_csv_rows", []))
 
-render_lcow_cost_breakdown(unit_results, results.get("levelized_cost_unit", "$/m3 feed"))
+breakdown_cols = st.columns(2)
+with breakdown_cols[0]:
+    render_lcow_cost_breakdown(unit_results, results.get("levelized_cost_unit", "$/m3 feed"))
+with breakdown_cols[1]:
+    render_energy_breakdown(unit_results)
 
 st.subheader("Unit process modeling results")
 

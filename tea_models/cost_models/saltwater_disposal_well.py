@@ -28,9 +28,7 @@ def run(unit_process, technical_result, cost_inputs, context):
     capex_per_well = _input(cost_inputs, "capex_per_well", 1500000.0)
     fixed_opex_fraction = _input(cost_inputs, "fixed_opex_fraction", 0.04)
     variable_opex_per_m3 = _input(cost_inputs, "variable_opex_per_m3", 11.4)
-    electricity_price = context.get("electricity_price")
-    if electricity_price is None:
-        electricity_price = _input(cost_inputs, "electricity_price", 0.08)
+    electricity_price = float(context.get("electricity_price", 0.0))
 
     well_count = _value(technical_result, "injection_well_count")
     flow_capex = capex_per_flow * disposed_flow
@@ -39,7 +37,7 @@ def run(unit_process, technical_result, cost_inputs, context):
 
     fixed_opex = capex * fixed_opex_fraction
     variable_opex = annual_disposed_volume * variable_opex_per_m3
-    energy_opex = annual_disposed_volume * _value(technical_result, "energy_intensity") * float(electricity_price)
+    energy_opex = annual_disposed_volume * _value(technical_result, "energy_intensity") * electricity_price
     annual_opex = fixed_opex + variable_opex + energy_opex
 
     return {

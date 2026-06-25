@@ -86,14 +86,12 @@ COST_INPUT_FALLBACKS = {
         ("Capital", "capex_per_flow", 2760.0, "$/(m3/day)", "Installed MVC capital cost per unit daily capacity"),
         ("Fixed O&M", "fixed_opex_fraction", 0.05, "fraction/yr", "Annual fixed OPEX as fraction of installed MVC CAPEX"),
         ("Variable O&M", "variable_opex_per_m3", 0.0, "$/m3", "Variable MVC operating cost per cubic meter treated"),
-        ("Utilities", "electricity_price", 0.08, "$/kWh", "Electricity price used with MVC technical energy intensity"),
     ],
     "Saltwater disposal well": [
         ("Capital", "capex_per_flow", 120.0, "$/(m3/day)", "Installed surface facilities capital per unit daily disposal capacity"),
         ("Capital", "capex_per_well", 1500000.0, "$/well", "Installed capital cost per disposal well"),
         ("Fixed O&M", "fixed_opex_fraction", 0.04, "fraction/yr", "Annual fixed OPEX as fraction of installed disposal well CAPEX"),
         ("Variable O&M", "variable_opex_per_m3", 11.4, "$/m3", "Variable disposal cost per cubic meter injected"),
-        ("Utilities", "electricity_price", 0.08, "$/kWh", "Electricity price used with disposal well injection energy"),
     ],
 }
 
@@ -327,6 +325,42 @@ def result_unit(result, name):
     return ""
 
 
+def energy_basis_flow_m3_day(technical_result, intensity_unit):
+    """Select the flow basis that matches an energy-intensity unit."""
+    unit_text = str(intensity_unit or "").lower()
+    if "disposed" in unit_text:
+        return result_value(
+            technical_result,
+            "disposed_flow",
+            result_value(technical_result, "inlet_flow"),
+        )
+    return result_value(technical_result, "inlet_flow")
+
+
+def unit_energy_summary(technical_result, intensity_name, train_feed_bbl_day):
+    """Summarize unit energy use as daily energy, power, and train-feed intensity."""
+    intensity = result_value(technical_result, intensity_name)
+    intensity_unit = result_unit(technical_result, intensity_name)
+    if intensity <= 0.0 or train_feed_bbl_day <= 0.0:
+        return {
+            "intensity": 0.0,
+            "intensity_unit": intensity_unit,
+            "energy_kwh_day": 0.0,
+            "power_kw": 0.0,
+            "kwh_per_bbl_feed": 0.0,
+        }
+
+    basis_flow_m3_day = energy_basis_flow_m3_day(technical_result, intensity_unit)
+    energy_kwh_day = intensity * basis_flow_m3_day
+    return {
+        "intensity": intensity,
+        "intensity_unit": intensity_unit,
+        "energy_kwh_day": energy_kwh_day,
+        "power_kw": energy_kwh_day / 24.0,
+        "kwh_per_bbl_feed": energy_kwh_day / train_feed_bbl_day,
+    }
+
+
 def flatten_model_results(sequence, section, unit_process, model_type, model_results):
     """Convert nested model outputs into rows for the results CSV."""
     rows = []
@@ -370,6 +404,26 @@ def build_results_csv_rows(results):
         ("total_annual_operating_cost", results["total_annual_operating_cost"], "USD/year"),
         ("total_annual_cost", results["total_annual_cost"], "USD/year"),
         ("final_product_flow", results["final_product_flow"], results["final_product_flow_unit"]),
+        (
+            "electricity_intensity",
+            results.get("electricity_intensity_kwh_per_bbl_feed", 0.0),
+            "kWh/bbl feed",
+        ),
+        (
+            "electricity_power_requirement",
+            results.get("electricity_power_requirement_kw", 0.0),
+            "kW",
+        ),
+        (
+            "thermal_energy_intensity",
+            results.get("thermal_energy_intensity_kwh_per_bbl_feed", 0.0),
+            "kWh/bbl feed",
+        ),
+        (
+            "thermal_power_requirement",
+            results.get("thermal_power_requirement_kw", 0.0),
+            "kW",
+        ),
         ("levelized_cost_of_water", results["levelized_cost_of_water"], results["levelized_cost_unit"]),
     ]
     for result_name, value, unit in project_rows:
@@ -384,6 +438,16 @@ def build_results_csv_rows(results):
         })
 
     return rows
+
+
+def transportation_extension_payload(context):
+    payload = context.get("transportation_cost", {}) or {}
+    try:
+        annual_cost = float(payload.get("annual_transportation_cost", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        annual_cost = 0.0
+    payload["annual_transportation_cost"] = max(annual_cost, 0.0)
+    return payload
 
 
 def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables, context, feedwater_quality):
@@ -406,7 +470,10 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables,
     unit_results = []
     total_capital_cost = 0.0
     total_annual_operating_cost = 0.0
+    total_electricity_kwh_day = 0.0
+    total_thermal_kwh_day = 0.0
     crf = float(context["capital_recovery_factor"])
+    train_feed_bbl_day = max(float(context.get("feed_flow_bbl_day", 0.0) or 0.0), 1e-9)
 
     for unit in ordered_units:
         unit_process = unit["unit_process"]
@@ -423,6 +490,18 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables,
         annualized_capital_cost = capital_cost * crf
         annual_operating_cost = result_value(cost_result, "total_annual_operating_cost")
         outlet_flow = result_value(technical_result, "outlet_flow")
+        electricity_summary = unit_energy_summary(
+            technical_result,
+            "energy_intensity",
+            train_feed_bbl_day,
+        )
+        thermal_summary = unit_energy_summary(
+            technical_result,
+            "thermal_energy_intensity",
+            train_feed_bbl_day,
+        )
+        total_electricity_kwh_day += electricity_summary["energy_kwh_day"]
+        total_thermal_kwh_day += thermal_summary["energy_kwh_day"]
 
         total_capital_cost += capital_cost
         total_annual_operating_cost += annual_operating_cost
@@ -470,6 +549,10 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables,
             "water_recovery_unit": result_unit(technical_result, "water_recovery"),
             "energy_intensity": result_value(technical_result, "energy_intensity"),
             "energy_intensity_unit": result_unit(technical_result, "energy_intensity"),
+            "electricity_intensity_kwh_per_bbl_feed": electricity_summary["kwh_per_bbl_feed"],
+            "electricity_power_requirement_kw": electricity_summary["power_kw"],
+            "thermal_energy_intensity_kwh_per_bbl_feed": thermal_summary["kwh_per_bbl_feed"],
+            "thermal_power_requirement_kw": thermal_summary["power_kw"],
             "installed_capital_cost": capital_cost,
             "installed_capital_cost_unit": result_unit(cost_result, "installed_capital_cost"),
             "annualized_capital_cost": annualized_capital_cost,
@@ -487,6 +570,60 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables,
         if flow_display_unit == "bbl/day"
         else float(context["feed_flow_m3_day"]) * operating_days
     )
+    transportation_cost = transportation_extension_payload(context)
+    annual_transportation_cost = transportation_cost["annual_transportation_cost"]
+    if annual_transportation_cost > 0.0:
+        total_annual_operating_cost += annual_transportation_cost
+        unit_results.append({
+            "sequence": len(unit_results) + 1,
+            "section": "Extension",
+            "unit_process": "Transportation",
+            "inlet_flow": 0.0,
+            "inlet_flow_unit": "",
+            "outlet_flow": 0.0,
+            "outlet_flow_unit": "",
+            "water_recovery": 0.0,
+            "water_recovery_unit": "",
+            "energy_intensity": 0.0,
+            "energy_intensity_unit": "",
+            "installed_capital_cost": 0.0,
+            "installed_capital_cost_unit": "USD",
+            "annualized_capital_cost": 0.0,
+            "annualized_capital_cost_unit": "USD/year",
+            "total_annual_operating_cost": annual_transportation_cost,
+            "total_annual_operating_cost_unit": "USD/year",
+            "technical_results": {
+                "distance_miles": {
+                    "value": float(transportation_cost.get("distance_miles", 0.0) or 0.0),
+                    "unit": "mile",
+                },
+                "transported_volume": {
+                    "value": float(
+                        transportation_cost.get(
+                            "annual_transported_volume_bbl",
+                            transportation_cost.get("transported_volume_bbl_day", 0.0),
+                        )
+                        or 0.0
+                    ),
+                    "unit": (
+                        "bbl/year"
+                        if "annual_transported_volume_bbl" in transportation_cost
+                        else "bbl/day"
+                    ),
+                },
+            },
+            "cost_results": {
+                "cost_per_bbl_mile": {
+                    "value": float(transportation_cost.get("cost_per_bbl_mile", 0.0) or 0.0),
+                    "unit": "$/bbl-mile",
+                },
+                "total_annual_operating_cost": {
+                    "value": annual_transportation_cost,
+                    "unit": "USD/year",
+                },
+            },
+        })
+
     annualized_capital_cost = total_capital_cost * crf
     total_annual_cost = annualized_capital_cost + total_annual_operating_cost
     annual_feed_volume = max(annual_feed_volume, 1e-9)
@@ -511,10 +648,15 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables,
         "total_annual_cost": total_annual_cost,
         "final_product_flow": product_flow,
         "final_product_flow_unit": flow_display_unit,
+        "electricity_intensity_kwh_per_bbl_feed": total_electricity_kwh_day / train_feed_bbl_day,
+        "electricity_power_requirement_kw": total_electricity_kwh_day / 24.0,
+        "thermal_energy_intensity_kwh_per_bbl_feed": total_thermal_kwh_day / train_feed_bbl_day,
+        "thermal_power_requirement_kw": total_thermal_kwh_day / 24.0,
         "levelized_cost_of_water": lcow,
         "levelized_cost_unit": feed_lcow_unit(flow_display_unit),
         "unit_results": unit_results,
         "water_quality_trace": water_quality_trace,
+        "transportation_cost": transportation_cost,
     }
     results["results_csv_rows"] = build_results_csv_rows(results)
     return results
@@ -734,8 +876,6 @@ for unit in ordered_units:
         unit["unit_process"],
         COST_INPUT_FALLBACKS,
     )
-    if "parameter" in cost_rows.columns:
-        cost_rows.loc[cost_rows["parameter"] == "electricity_price", "value"] = electricity_price
 
     with tech_col:
         st.markdown("**Technical input table**")
@@ -754,11 +894,6 @@ for unit in ordered_units:
             cost_rows,
             f"cost_inputs_{unit['sequence']}_{unit['unit_process']}",
         )
-        if "parameter" in cost_tables[unit["sequence"]].columns:
-            cost_tables[unit["sequence"]].loc[
-                cost_tables[unit["sequence"]]["parameter"] == "electricity_price",
-                "value",
-            ] = electricity_price
 
 context = {
     "feed_flow_bbl_day": feed_flow_bbl_day,
@@ -773,6 +908,7 @@ context = {
     "base_currency_year": int(base_currency_year),
     "electricity_price": electricity_price,
     "thermal_energy_price": thermal_energy_price,
+    "transportation_cost": st.session_state.get("transportation_cost", {}),
 }
 
 if st.button("Run TEA Calculation", type="primary"):
@@ -812,6 +948,14 @@ if "tea_results" in st.session_state:
                 f"{results['final_product_flow']:,.1f} "
                 f"{results.get('final_product_flow_unit', 'm3/day')}"
             ),
+        },
+        {
+            "Result": "Electricity power requirement",
+            "Value": f"{results.get('electricity_power_requirement_kw', 0.0):,.1f} kW",
+        },
+        {
+            "Result": "Thermal power requirement",
+            "Value": f"{results.get('thermal_power_requirement_kw', 0.0):,.1f} kW",
         },
         {
             "Result": "LCOW",

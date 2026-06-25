@@ -10,10 +10,11 @@ def run(unit_process, technical_result, cost_inputs, context):
 
     fixed_opex = capex * float(cost_inputs.get("fixed_opex_fraction", 0.0))
     variable_opex = annual_volume * float(cost_inputs.get("variable_opex_per_m3", 0.0))
+    electricity_price = float(context.get("electricity_price", 0.0))
     energy_opex = (
         annual_volume
         * float(technical_result.get("energy_intensity", {}).get("value", 0.0))
-        * float(cost_inputs.get("electricity_price", 0.0))
+        * electricity_price
     )
 
     annual_opex = fixed_opex + variable_opex + energy_opex

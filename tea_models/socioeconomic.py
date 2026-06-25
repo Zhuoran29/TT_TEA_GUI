@@ -2,13 +2,6 @@ AF_PER_BBL = 42.0 / 325851.0
 BBL_PER_M3 = 6.28981077
 
 
-# Missing Database: C:\Users\jake\Dropbox\A Projects\SNL Produced Water Project
-#                      \GIS and model\.\PWESE Model Data Ver1.xlsx
-# PI: Vicent Tidwell (pending meeting to continue the work, using IMPLAN , annual subscription)
-# Contact IMPLan for quote
-# Use industriial value for cost
-# 1 MGD --> 18 -20 million $
-
 COUNTY_BASELINES = {
     "Lea": {
         "population": 71070,

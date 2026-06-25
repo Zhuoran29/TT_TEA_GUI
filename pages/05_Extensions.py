@@ -1,6 +1,7 @@
 import streamlit as st
 
-from tea_models.socioeconomic_ui import render_socioeconomic_analysis
+from pages.extensions.interactive_map_ui import render_interactive_map
+from pages.extensions.socioeconomic_ui import render_socioeconomic_analysis
 
 
 st.set_page_config(page_title="05_Extensions", layout="wide")
@@ -110,6 +111,13 @@ if st.session_state.get("extension_view") == "socioeconomic":
     render_socioeconomic_analysis()
     st.stop()
 
+if st.session_state.get("extension_view") == "interactive_map":
+    if st.button("Back to Extensions", type="primary"):
+        st.session_state.extension_view = None
+        st.rerun()
+    render_interactive_map()
+    st.stop()
+
 left_col, right_col = st.columns(2)
 
 with left_col:
@@ -127,6 +135,7 @@ with left_col:
             # "Estimated transportation distance, hauling intensity, and added cost contribution.",
             # "Location-aware comparison between centralized, distributed, and hybrid treatment options.",
         ],
+        target_view="interactive_map",
     )
 
     render_extension_card(

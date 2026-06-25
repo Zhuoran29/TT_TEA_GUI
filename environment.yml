@@ -7,6 +7,10 @@ dependencies:
   - streamlit>=1.37
   - pandas
   - numpy
+  - pydeck
   - openpyxl
   - matplotlib
   - pip
+  - pip:
+      - folium
+      - streamlit-folium
