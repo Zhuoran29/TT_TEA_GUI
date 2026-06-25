@@ -1,4 +1,25 @@
 import streamlit as st
+import hmac
+
+def check_password():
+    if "authenticated" not in st.session_state:
+        st.session_state["authenticated"] = False
+
+    if st.session_state["authenticated"]:
+        return
+
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        if hmac.compare_digest(password, st.secrets["APP_PASSWORD"]):
+            st.session_state["authenticated"] = True
+            st.rerun()
+        else:
+            st.error("Incorrect password")
+
+    st.stop()
+
+check_password()
 
 st.set_page_config(page_title="Produced Water TEA", layout="wide")
 
