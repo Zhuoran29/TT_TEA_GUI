@@ -1,6 +1,9 @@
 import streamlit as st
+from config import APP_VERSION, DATA_VERSION
 
 st.set_page_config(page_title="Produced Water TEA — Home", layout="wide")
+
+st.sidebar.caption(f"v{APP_VERSION} | {DATA_VERSION}")
 
 # Apple-style CSS
 st.markdown("""

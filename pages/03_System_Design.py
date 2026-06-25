@@ -3,6 +3,7 @@ import copy
 
 import pandas as pd
 import streamlit as st
+from config import APP_VERSION, DATA_VERSION
 
 from tea_models.registry import run_cost_model, run_technical_model
 from tea_models.water_quality import (
@@ -15,6 +16,8 @@ from tea_models.water_quality import (
 
 
 st.set_page_config(page_title="03_System_Design", layout="wide")
+
+st.sidebar.caption(f"v{APP_VERSION} | {DATA_VERSION}")
 
 st.markdown("""
 <style>

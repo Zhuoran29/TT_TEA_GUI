@@ -1,11 +1,12 @@
-import csv
 from pathlib import Path
-
-import streamlit as st
 from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_config, UNIT_REMOVAL_RATES, ALL_WATER_QUALITY_PARAMS, SIDEBAR_DEFAULTS, BRINE_MANAGEMENT_OPTIONS
 from tea_models.water_quality import collect_feedwater_quality
+import streamlit as st
+from config import APP_VERSION, DATA_VERSION
 
 st.set_page_config(page_title="02_Treatment_Train", layout="wide")
+
+
 
 # Apple-style CSS
 st.markdown("""
@@ -879,3 +880,5 @@ st.session_state.feedwater_quality = collect_feedwater_quality(
     st.session_state,
     current_feedwater_params,
 )
+
+st.sidebar.caption(f"v{APP_VERSION} | {DATA_VERSION}")

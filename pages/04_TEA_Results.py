@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+from config import APP_VERSION, DATA_VERSION
 from matplotlib import pyplot as plt
 from matplotlib.patches import Patch
 from tea_models.scaling_tendency import calculate_scaling_tendency
@@ -8,6 +9,8 @@ from treatment_config import ALL_WATER_QUALITY_PARAMS
 
 
 st.set_page_config(page_title="04_TEA_Results", layout="wide")
+
+st.sidebar.caption(f"v{APP_VERSION} | {DATA_VERSION}")
 
 BREAKDOWN_FIGSIZE = (7.2, 5.8)
 BREAKDOWN_BAR_WIDTH = 0.22

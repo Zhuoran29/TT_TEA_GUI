@@ -1,10 +1,13 @@
 import streamlit as st
+from config import APP_VERSION, DATA_VERSION
 
 from pages.extensions.interactive_map_ui import render_interactive_map
 from pages.extensions.socioeconomic_ui import render_socioeconomic_analysis
 
 
 st.set_page_config(page_title="05_Extensions", layout="wide")
+
+st.sidebar.caption(f"v{APP_VERSION} | {DATA_VERSION}")
 
 st.markdown("""
 <style>

@@ -1,5 +1,6 @@
 import streamlit as st
 import hmac
+from config import APP_VERSION, DATA_VERSION
 
 def check_password():
     if "authenticated" not in st.session_state:
@@ -22,6 +23,8 @@ def check_password():
 check_password()
 
 st.set_page_config(page_title="Produced Water TEA", layout="wide")
+
+st.sidebar.caption(f"v{APP_VERSION} | {DATA_VERSION}")
 
 st.title("Techno‑Economic Analysis — Fit-for-Purpose Water Treatment")
 st.markdown(
