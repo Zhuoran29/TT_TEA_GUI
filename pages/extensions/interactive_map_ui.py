@@ -1998,8 +1998,8 @@ def render_map_workspace():
     with control_cols[1]:
         st.markdown("**Layers**")
         show_produced_water = st.checkbox("Produced water resource", value=False)
-        show_brackish = st.checkbox("Brackish groundwater", value=False)
-        show_pv_wind = st.checkbox("PV and wind", value=False)
+        show_brackish = st.checkbox("Brackish groundwater resource", value=False)
+        show_pv_wind = st.checkbox("PV and wind (pre-calculated performance)", value=False)
         
     sync_possible_routes()
     calculated_routes = route_calculations(map_routes_state())
