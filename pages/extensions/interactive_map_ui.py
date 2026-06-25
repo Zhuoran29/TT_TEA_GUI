@@ -1665,7 +1665,11 @@ class HoverInfoControl(MacroElement):
             }
 
             function bindLayer(layer) {
+                if (layer._ttTeaHoverBound) {
+                    return;
+                }
                 if (layer.feature && layer.feature.properties) {
+                    layer._ttTeaHoverBound = true;
                     layer.on('mouseover', function() {
                         var panel = document.querySelector('.map-hover-info-control');
                         if (panel) {
@@ -1684,9 +1688,13 @@ class HoverInfoControl(MacroElement):
                 }
             }
 
+            map.on('layeradd', function(event) {
+                bindLayer(event.layer);
+            });
+
             setTimeout(function() {
                 map.eachLayer(bindLayer);
-            }, 0);
+            }, 100);
         })();
         {% endmacro %}
         """
@@ -1890,6 +1898,7 @@ def add_geojson_layers(map_obj, base_map, show_produced_water, show_brackish, sh
         folium.GeoJson(
             load_geojson(str(STATE_BOUNDARY_PATH)),
             name="State boundary",
+            interactive=False,
             style_function=lambda _: {
                 "color": "#0F172A",
                 "weight": 2,
