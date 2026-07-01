@@ -8,6 +8,78 @@ from ui_helpers import render_card_title
 
 st.set_page_config(page_title="02_Treatment_Train", layout="wide")
 
+PRETREATMENT_UNIT_OPTIONS = [
+    "Well pumping",
+    "Raw water storage",
+    "Equalization tank",
+    "3-phase separator",
+    "DAF",
+    "Floc n Drop",
+    "Walnut shell filtration",
+    "Media filtration",
+    "Cartridge filter",
+    "Bag filter",
+    "Ultrafiltration",
+    "Ultra-fine filtration",
+    "Softening / pH adjustment",
+    "Softening / silica control",
+    "Antiscalant / pH adjustment",
+    "Antiscalant dosing",
+    "Air stripping",
+    "Dechlorination / activated carbon",
+]
+
+DESALINATION_UNIT_OPTIONS = [
+    "MVC",
+    "MD",
+    "LSRRO",
+    "OARO",
+    "RO",
+    "BWRO",
+    "NF",
+]
+
+POSTTREATMENT_UNIT_OPTIONS = [
+    "Ammonia stripping",
+    "GAC",
+    "Zeolite",
+    "Ion exchange / EDI",
+    "Ion exchange",
+    "Boron-selective IX",
+    "ZIX-Zak IX",
+    "KNeW ion exchange",
+    "Selective ED",
+    "Bipolar membrane ED",
+    "Lithium adsorption",
+    "Mineral precipitation / recovery",
+    "Chemical precipitation",
+    "Acid/base recovery",
+    "Fertilizer recovery",
+    "Chlorination",
+    "Polishing filter",
+    "Fine filter",
+    "Polishing",
+    "Final filter",
+    "pH adjustment",
+    "Scale inhibitor dosing",
+    "Biocide dosing",
+    "Blending / remineralization",
+    "Blending / salinity adjustment",
+    "Adjust TDS",
+    "Additives blending",
+    "Add additives",
+    "Hardness adjustment",
+    "Scale control",
+]
+
+
+def stage_options(options, current_unit=None):
+    """Return stage-specific options while preserving existing session selections."""
+    stage_specific = [unit for unit in options if unit in UNIT_REMOVAL_RATES]
+    if current_unit and current_unit not in stage_specific:
+        stage_specific.append(current_unit)
+    return stage_specific
+
 
 
 # Apple-style CSS
@@ -474,19 +546,16 @@ if requirements:
                 key="help_treatment_chain_design",
                 html="<h5 style='margin-top: 0;'>Treatment Chain Design</h5>",
             )
-            
-            # Get all available units from UNIT_REMOVAL_RATES
-            all_units = list(UNIT_REMOVAL_RATES.keys())
-            
             # Display and edit pretreatment
             st.markdown("**Pretreatment**")
             for i, unit in enumerate(st.session_state.treatment_pretreatment):
+                pretreatment_units = stage_options(PRETREATMENT_UNIT_OPTIONS, unit)
                 col_select, col_remove = st.columns([8, 1])
                 with col_select:
                     new_unit = st.selectbox(
                         "Unit type",
-                        all_units,
-                        index=all_units.index(unit) if unit in all_units else 0,
+                        pretreatment_units,
+                        index=pretreatment_units.index(unit) if unit in pretreatment_units else 0,
                         key=f"pretreat_{i}_{st.session_state.reset_counter}",
                         label_visibility="collapsed"
                     )
@@ -501,18 +570,19 @@ if requirements:
             
             # Add button for pretreatment
             if st.button("➕", key="add_pretreat", use_container_width=True):
-                st.session_state.treatment_pretreatment.append(all_units[0])
+                st.session_state.treatment_pretreatment.append(stage_options(PRETREATMENT_UNIT_OPTIONS)[0])
                 st.rerun()
             
             # Display and edit desalination
             st.markdown("**Desalination**")
             for i, unit in enumerate(st.session_state.treatment_desalination):
+                desalination_units = stage_options(DESALINATION_UNIT_OPTIONS, unit)
                 col_select, col_remove = st.columns([8, 1])
                 with col_select:
                     new_unit = st.selectbox(
                         "Unit type",
-                        all_units,
-                        index=all_units.index(unit) if unit in all_units else 0,
+                        desalination_units,
+                        index=desalination_units.index(unit) if unit in desalination_units else 0,
                         key=f"desal_{i}_{st.session_state.reset_counter}",
                         label_visibility="collapsed"
                     )
@@ -527,18 +597,19 @@ if requirements:
             
             # Add button for desalination
             if st.button("➕", key="add_desal", use_container_width=True):
-                st.session_state.treatment_desalination.append(all_units[0])
+                st.session_state.treatment_desalination.append(stage_options(DESALINATION_UNIT_OPTIONS)[0])
                 st.rerun()
             
             # Display and edit posttreatment
             st.markdown("**Posttreatment**")
             for i, unit in enumerate(st.session_state.treatment_posttreatment):
+                posttreatment_units = stage_options(POSTTREATMENT_UNIT_OPTIONS, unit)
                 col_select, col_remove = st.columns([8, 1])
                 with col_select:
                     new_unit = st.selectbox(
                         "Unit type",
-                        all_units,
-                        index=all_units.index(unit) if unit in all_units else 0,
+                        posttreatment_units,
+                        index=posttreatment_units.index(unit) if unit in posttreatment_units else 0,
                         key=f"posttreat_{i}_{st.session_state.reset_counter}",
                         label_visibility="collapsed"
                     )
@@ -553,19 +624,20 @@ if requirements:
             
             # Add button for posttreatment
             if st.button("➕", key="add_posttreat", use_container_width=True):
-                st.session_state.treatment_posttreatment.append(all_units[0])
+                st.session_state.treatment_posttreatment.append(stage_options(POSTTREATMENT_UNIT_OPTIONS)[0])
                 st.rerun()
             
             # Display and edit brine
             st.markdown(f"**Brine Management: {st.session_state.treatment_brine_category}**")
             brine_units = BRINE_MANAGEMENT_OPTIONS.get(st.session_state.treatment_brine_category, ["Brine disposal"])
             for i, unit in enumerate(st.session_state.treatment_brine):
+                available_brine_units = stage_options(brine_units, unit)
                 col_select, col_remove = st.columns([8, 1])
                 with col_select:
                     new_brine = st.selectbox(
                         "Brine type",
-                        brine_units,
-                        index=brine_units.index(unit) if unit in brine_units else 0,
+                        available_brine_units,
+                        index=available_brine_units.index(unit) if unit in available_brine_units else 0,
                         key=f"brine_unit_{i}_{st.session_state.reset_counter}",
                         label_visibility="collapsed"
                     )
@@ -579,7 +651,7 @@ if requirements:
                         st.rerun()
 
             if st.button("➕", key="add_brine", use_container_width=True):
-                st.session_state.treatment_brine.append(brine_units[0])
+                st.session_state.treatment_brine.append(stage_options(brine_units)[0])
                 st.rerun()
             
             # Reset button

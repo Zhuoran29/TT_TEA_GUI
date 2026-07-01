@@ -1,5 +1,7 @@
 from pathlib import Path
 import copy
+from html import escape
+import re
 
 import pandas as pd
 import streamlit as st
@@ -86,6 +88,7 @@ RESULTS_OUTPUT_PATH = APP_ROOT / "data" / "results" / "tea_results.csv"
 BBL_TO_M3 = 0.158987294928
 M3_TO_BBL = 1 / BBL_TO_M3
 REMOVAL_EFFICIENCY_EXCLUDED_PARAMETERS = {"pH"}
+INPUT_METADATA_COLUMNS = ["source", "data_type"]
 
 COST_INPUT_FALLBACKS = {
     "MVC": [
@@ -191,12 +194,25 @@ def load_input_table(path):
     table = pd.read_csv(path)
     if "sub_section" not in table.columns:
         table.insert(1, "sub_section", "General")
+    for column in INPUT_METADATA_COLUMNS:
+        if column not in table.columns:
+            table[column] = ""
+        table[column] = table[column].fillna("")
     table["value"] = pd.to_numeric(table["value"], errors="coerce").fillna(0.0)
     return table
 
 
 def get_inputs_for_unit(table, unit_process, fallback_map=None):
     """Return unit-specific rows when present, otherwise use DEFAULT rows."""
+    output_columns = [
+        "unit_process",
+        "sub_section",
+        "parameter",
+        "value",
+        "unit",
+        "description",
+        *INPUT_METADATA_COLUMNS,
+    ]
     default_rows = table[table["unit_process"] == "DEFAULT"].copy()
     unit_rows = table[table["unit_process"] == unit_process].copy()
 
@@ -216,39 +232,154 @@ def get_inputs_for_unit(table, unit_process, fallback_map=None):
                     "value": value,
                     "unit": unit,
                     "description": description,
+                    "source": "",
+                    "data_type": "",
                 }
                 for sub_section, parameter, value, unit, description in fallback_rows
             ])
         rows = default_rows
         rows["unit_process"] = unit_process
-        return rows.reset_index(drop=True)[
-            ["unit_process", "sub_section", "parameter", "value", "unit", "description"]
-        ]
+        return rows.reset_index(drop=True)[output_columns]
 
-    return unit_rows.reset_index(drop=True)[
-        ["unit_process", "sub_section", "parameter", "value", "unit", "description"]
-    ]
+    return unit_rows.reset_index(drop=True)[output_columns]
+
+
+def input_row_tooltip(row):
+    """Build the tooltip text for one technical/cost input row."""
+    def clean_text(value):
+        if pd.isna(value):
+            return ""
+        return str(value or "").strip()
+
+    source = clean_text(row.get("source", ""))
+    data_type = clean_text(row.get("data_type", ""))
+    if data_type and source:
+        return f"{data_type}: {source}"
+    if data_type:
+        return f"{data_type}: source not provided"
+    if source:
+        return f"Source: {source}"
+    return "Metadata: not provided"
+
+
+def input_key_fragment(value):
+    """Return a stable widget-key fragment for table section and parameter names."""
+    return re.sub(r"[^a-zA-Z0-9_]+", "_", str(value)).strip("_") or "input"
 
 
 def render_grouped_input_tables(rows, key_prefix):
-    """Render one unit's input rows as sub-section tables and return edited rows."""
+    """Render one unit's input rows with per-item tooltips and return edited rows."""
     edited_sections = []
     subsection_names = rows["sub_section"].fillna("General").drop_duplicates().tolist()
+    st.markdown(
+        """
+        <style>
+            .input-row-info {
+                align-items: center;
+                border: 1.3px solid #8A8F98;
+                border-radius: 999px;
+                color: #6B7280;
+                cursor: help;
+                display: inline-flex;
+                font-size: 0.68rem;
+                font-weight: 750;
+                height: 16px;
+                justify-content: center;
+                line-height: 1;
+                margin-top: 0.35rem;
+                position: relative;
+                width: 16px;
+            }
+            .input-row-info:hover::after {
+                background: #111827;
+                border-radius: 4px;
+                bottom: calc(100% + 8px);
+                color: #FFFFFF;
+                content: attr(data-tooltip);
+                font-size: 0.78rem;
+                font-weight: 500;
+                left: 0;
+                line-height: 1.35;
+                padding: 0.42rem 0.55rem;
+                position: absolute;
+                text-align: left;
+                white-space: pre-line;
+                width: 260px;
+                z-index: 9999;
+            }
+            .input-row-info:hover::before {
+                border-left: 6px solid transparent;
+                border-right: 6px solid transparent;
+                border-top: 6px solid #111827;
+                bottom: calc(100% + 2px);
+                content: "";
+                left: 2px;
+                position: absolute;
+                z-index: 9999;
+            }
+            .input-row-description {
+                color: #102A43;
+                font-size: 0.92rem;
+                line-height: 1.25;
+                padding-top: 0.38rem;
+            }
+            .input-row-unit {
+                color: #52606D;
+                font-size: 0.88rem;
+                line-height: 1.25;
+                padding-top: 0.48rem;
+            }
+            .input-row-header {
+                border-bottom: 1px solid #E6ECF2;
+                color: #5F6C7B;
+                font-size: 0.78rem;
+                font-weight: 750;
+                margin-bottom: 0.15rem;
+                padding-bottom: 0.25rem;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
     for sub_section in subsection_names:
         subsection_rows = rows[rows["sub_section"].fillna("General") == sub_section].copy()
         st.markdown(f"_{sub_section}_")
-        display_rows = subsection_rows[["description", "value", "unit"]].copy()
-        edited = st.data_editor(
-            display_rows,
-            key=f"{key_prefix}_{sub_section}",
-            hide_index=True,
-            disabled=["description", "unit"],
-            num_rows="fixed",
-            use_container_width=True,
-        )
+        header_cols = st.columns([3.0, 0.24, 1.15, 0.85], vertical_alignment="top")
+        header_cols[0].markdown('<div class="input-row-header">Input</div>', unsafe_allow_html=True)
+        header_cols[2].markdown('<div class="input-row-header">Value</div>', unsafe_allow_html=True)
+        header_cols[3].markdown('<div class="input-row-header">Unit</div>', unsafe_allow_html=True)
         merged_rows = subsection_rows.reset_index(drop=True).copy()
-        merged_rows["value"] = edited["value"].reset_index(drop=True)
+        for index, row in merged_rows.iterrows():
+            row_cols = st.columns([3.0, 0.24, 1.15, 0.85], vertical_alignment="top")
+            with row_cols[0]:
+                st.markdown(
+                    f'<div class="input-row-description">{escape(str(row.get("description", "")))}</div>',
+                    unsafe_allow_html=True,
+                )
+            with row_cols[1]:
+                st.markdown(
+                    (
+                        f'<span class="input-row-info" '
+                        f'data-tooltip="{escape(input_row_tooltip(row))}">i</span>'
+                    ),
+                    unsafe_allow_html=True,
+                )
+            with row_cols[2]:
+                merged_rows.at[index, "value"] = st.number_input(
+                    str(row.get("description", row.get("parameter", "Input"))),
+                    value=float(row.get("value", 0.0) or 0.0),
+                    key=(
+                        f"{key_prefix}_{input_key_fragment(sub_section)}_"
+                        f"{input_key_fragment(row.get('parameter', index))}_{index}"
+                    ),
+                    label_visibility="collapsed",
+                )
+            with row_cols[3]:
+                st.markdown(
+                    f'<div class="input-row-unit">{escape(str(row.get("unit", "")))}</div>',
+                    unsafe_allow_html=True,
+                )
         edited_sections.append(merged_rows)
 
     if not edited_sections:
