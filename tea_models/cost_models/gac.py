@@ -2,7 +2,7 @@ from tea_models.cost_models.template_units import run_template
 
 
 DEFAULTS = {
-    "capex_per_flow": 1204.0,
+    "capex_per_flow": 481.6,
     "fixed_opex_fraction": 0.04,
     "variable_opex_per_m3": 0.89,
     "media_replacement_price": 2.5,

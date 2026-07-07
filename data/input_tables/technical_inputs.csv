@@ -1,50 +1,50 @@
 unit_process,sub_section,parameter,value,unit,description,source,data_type
-DEFAULT,Hydraulics,recovery,0.95,fraction,Fraction of inlet flow recovered as product from this unit,,
-DEFAULT,Performance,removal_efficiency,0,fraction,Generic constituent removal efficiency placeholder,,
-DEFAULT,Energy,energy_intensity,0,kWh/m3,Electricity demand per cubic meter treated,,
-DEFAULT,Chemicals,chemical_dose,0,kg/m3,Chemical dose per cubic meter treated,,
-MVC,Feed,feed_tds_mass_fraction,0.154,fraction,Feed TDS mass fraction,,
-MVC,Feed,feed_temperature,25,deg C,Feed temperature,,
-MVC,Feed,recovery,0.45,fraction,Recovery ratio,,
-MVC,Pumps,pump_eff,0.8,,Pump efficiency ,,
-MVC,Pumps,feed_pump_pres,7000,Pa,Feed Pump pressure change,,
-MVC,Pumps,distillate_pump_pres,40000,Pa,Distillate pump pressure change,,
-MVC,Heat exchangers,hx_coeff,2000,W/K-m2,Heat exchanger heat transfer coefficiency,,
-MVC,Heat exchangers,brine_hx_cold_pres,7000,Pa,Brine HX cold side pressure change,,
-MVC,Heat exchangers,brine_hx_hot_pres,7000,Pa,Brine HX hot side pressure change,,
-MVC,Heat exchangers,distillate_hx_cold_pres,7000,Pa,Distillate HX cold side pressure change,,
-MVC,Heat exchangers,distillate_hx_hot_pres,7000,Pa,Distillate HX hot side pressure change,,
-MVC,Compressor,comp_eff,0.8,,Compressor efficiency,,
-MVC,Evaporator,evap_coeff,3000,W/K-m2,Evaporator heat transfer coefficient,,
-3-phase separator,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered after oil/water separation,,
-3-phase separator,Hydraulics,hydraulic_retention_time,30,min,Separator hydraulic retention time,,
-3-phase separator,Hydraulics,design_factor,1.2,fraction,Oversizing factor applied to separator volume,,
-3-phase separator,Energy,energy_intensity,0.03,kWh/m3,Pumping and controls electricity demand,,
-DAF,Hydraulics,recovery,0.98,fraction,Fraction of inlet flow recovered after flotation,,
-DAF,Hydraulics,surface_loading_rate,8,m/h,DAF surface overflow loading rate,,
-DAF,Hydraulics,recycle_ratio,0.15,fraction,Pressurized recycle flow as fraction of inlet flow,,
-DAF,Energy,energy_intensity,0.08,kWh/m3,DAF pumps and air saturation electricity demand,,
-DAF,Chemicals,chemical_dose,0.03,kg/m3,Coagulant or polymer dose,,
-Ultrafiltration,Hydraulics,recovery,0.96,fraction,Net UF filtrate recovery after backwash,,
-Ultrafiltration,Membrane,membrane_flux,45,L/m2-h,Average UF operating flux,,
-Ultrafiltration,Membrane,backwash_fraction,0.04,fraction,Backwash and cleaning waste fraction,,
-Ultrafiltration,Energy,energy_intensity,0.12,kWh/m3,UF feed/backwash pumping electricity demand,,
-Ultrafiltration,Chemicals,chemical_dose,0.005,kg/m3,Cleaning chemical dose normalized to feed flow,,
-GAC,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through GAC contactors,,
-GAC,Media,empty_bed_contact_time,10,min,GAC empty bed contact time,,
-GAC,Media,media_bulk_density,480,kg/m3,GAC bulk density,,
-GAC,Energy,energy_intensity,0.03,kWh/m3,GAC headloss pumping electricity demand,,
-Zeolite,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through zeolite beds,,
-Zeolite,Media,empty_bed_contact_time,8,min,Zeolite empty bed contact time,,
-Zeolite,Media,media_bulk_density,700,kg/m3,Zeolite bulk density,,
-Zeolite,Energy,energy_intensity,0.04,kWh/m3,Zeolite bed headloss pumping electricity demand,,
-Evaporation pond,Hydraulics,recovery,1.0,fraction,Pass-through factor for current sequential brine-management placeholder,,
-Evaporation pond,Pond sizing,net_evaporation_rate,1.0,m/year,Net evaporation rate after rainfall credit,,
-Evaporation pond,Pond sizing,operating_depth,1.5,m,Operating liquid depth,,
-Evaporation pond,Pond sizing,freeboard,0.5,m,Freeboard allowance,,
-Evaporation pond,Energy,energy_intensity,0,kWh/m3,Evaporation pond electricity demand,,
-Saltwater disposal well,Disposal,disposal_fraction,1.0,fraction,Fraction of brine flow injected into disposal well,,
-Saltwater disposal well,Well sizing,injection_well_capacity,2000,m3/day/well,Daily injection capacity per disposal well,,
-Saltwater disposal well,Injection,injection_pressure,50,bar,Injection pump discharge pressure,,
-Saltwater disposal well,Injection,pump_efficiency,0.75,fraction,Injection pump efficiency,,
-Saltwater disposal well,Energy,energy_intensity,0,kWh/m3,Optional override for disposal well electricity demand; use 0 to calculate from pressure and pump efficiency,,
+DEFAULT,Hydraulics,recovery,0.95,fraction,Fraction of inlet flow recovered as product from this unit,WaterTAP zero-order model guidance and site-specific Engieering defaults,Open source documentation
+DEFAULT,Performance,removal_efficiency,0,fraction,Generic constituent removal efficiency placeholder,No external source; generic user override placeholder,Engieering estimate
+DEFAULT,Energy,energy_intensity,0,kWh/m3,Electricity demand per cubic meter treated,WaterTAP zero-order model guidance and site-specific Engieering defaults,Open source documentation
+DEFAULT,Chemicals,chemical_dose,0,kg/m3,Chemical dose per cubic meter treated,WaterTAP chemical addition defaults and Vendor-specific dose testing guidance,Open source documentation
+MVC,Feed,feed_tds_mass_fraction,0.154,fraction,Feed TDS mass fraction,,User input
+MVC,Feed,feed_temperature,25,deg C,Feed temperature,,User input
+MVC,Feed,recovery,0.45,fraction,Recovery ratio,,User input
+MVC,Pumps,pump_eff,0.8,,Pump efficiency ,WaterTAP MVC,Open source documentation
+MVC,Pumps,feed_pump_pres,7000,Pa,Feed Pump pressure change,WaterTAP MVC,Open source documentation
+MVC,Pumps,distillate_pump_pres,40000,Pa,Distillate pump pressure change,WaterTAP MVC,Open source documentation
+MVC,Heat exchangers,hx_coeff,2000,W/K-m2,Heat exchanger heat transfer coefficiency,WaterTAP MVC,Open source documentation
+MVC,Heat exchangers,brine_hx_cold_pres,7000,Pa,Brine HX cold side pressure change,WaterTAP MVC,Open source documentation
+MVC,Heat exchangers,brine_hx_hot_pres,7000,Pa,Brine HX hot side pressure change,WaterTAP MVC,Open source documentation
+MVC,Heat exchangers,distillate_hx_cold_pres,7000,Pa,Distillate HX cold side pressure change,WaterTAP MVC,Open source documentation
+MVC,Heat exchangers,distillate_hx_hot_pres,7000,Pa,Distillate HX hot side pressure change,WaterTAP MVC,Open source documentation
+MVC,Compressor,comp_eff,0.8,,Compressor efficiency,WaterTAP MVC,Open source documentation
+MVC,Evaporator,evap_coeff,3000,W/K-m2,Evaporator heat transfer coefficient,WaterTAP MVC,Open source documentation
+3-phase separator,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered after oil/water separation,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
+3-phase separator,Hydraulics,hydraulic_retention_time,30,min,Separator hydraulic retention time,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
+3-phase separator,Hydraulics,design_factor,1.2,fraction,Oversizing factor applied to separator volume,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
+3-phase separator,Energy,energy_intensity,0.03,kWh/m3,Pumping and controls electricity demand,Pump/control auxiliary load Engieering estimate; use site-specific pressure drop where available,Engieering estimate
+DAF,Hydraulics,recovery,0.98,fraction,Fraction of inlet flow recovered after flotation,Water Corporation DS211 Dissolved Air Flotation Unit Design Guideline 2022,Technical report
+DAF,Hydraulics,surface_loading_rate,8,m/h,DAF surface overflow loading rate,Water Corporation DS211 Dissolved Air Flotation Unit Design Guideline 2022,Technical report
+DAF,Hydraulics,recycle_ratio,0.15,fraction,Pressurized recycle flow as fraction of inlet flow,Water Corporation DS211 Dissolved Air Flotation Unit Design Guideline 2022,Technical report
+DAF,Energy,energy_intensity,0.08,kWh/m3,DAF pumps and air saturation electricity demand,WaterTAP Dissolved Air Flotation ZO documentation and Water Corporation DS211,Open source documentation
+DAF,Chemicals,chemical_dose,0.03,kg/m3,Coagulant or polymer dose,Water Corporation DS211 and DAF pilot coagulant dose literature,Technical report
+Ultrafiltration,Hydraulics,recovery,0.96,fraction,Net UF filtrate recovery after backwash,WaterTAP Ultra Filtration ZO documentation and membrane treatment literature,Open source documentation
+Ultrafiltration,Membrane,membrane_flux,45,L/m2-h,Average UF operating flux,WaterTAP Ultra Filtration ZO documentation and EPA RO/NF WBS membrane model context,Open source documentation
+Ultrafiltration,Membrane,backwash_fraction,0.04,fraction,Backwash and cleaning waste fraction,WaterTAP Ultra Filtration ZO documentation and membrane treatment literature,Open source documentation
+Ultrafiltration,Energy,energy_intensity,0.12,kWh/m3,UF feed/backwash pumping electricity demand,Membrane water-treatment plant energy-use literature and WaterTAP Ultra Filtration ZO,Publication
+Ultrafiltration,Chemicals,chemical_dose,0.005,kg/m3,Cleaning chemical dose normalized to feed flow,EPA RO/NF WBS O&M assumptions for membrane cleaning and replacement,Technical report
+GAC,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through GAC contactors,WQA GAC Fact Sheet and US EPA WBS GAC cost model 2024,Technical report
+GAC,Media,empty_bed_contact_time,10,min,GAC empty bed contact time,WQA GAC Fact Sheet and US EPA WBS GAC cost model 2024,Technical report
+GAC,Media,media_bulk_density,480,kg/m3,GAC bulk density,GAC supplier datasheets and WQA GAC Fact Sheet,Vendor data
+GAC,Energy,energy_intensity,0.03,kWh/m3,GAC headloss pumping electricity demand,WaterTAP Granular Activated Carbon ZO documentation and headloss pumping estimate,Open source documentation
+Zeolite,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through zeolite beds,Veolia ion exchange handbook and zeolite water-treatment literature,industrial reference
+Zeolite,Media,empty_bed_contact_time,8,min,Zeolite empty bed contact time,Veolia ion exchange handbook and zeolite water-treatment literature,industrial reference
+Zeolite,Media,media_bulk_density,700,kg/m3,Zeolite bulk density,Clinoptilolite zeolite supplier specifications,Vendor data
+Zeolite,Energy,energy_intensity,0.04,kWh/m3,Zeolite bed headloss pumping electricity demand,WaterTAP Ion Exchange ZO documentation and headloss pumping estimate,Open source documentation
+Evaporation pond,Hydraulics,recovery,1,fraction,Pass-through factor for current sequential brine-management placeholder,WaterTAP Evaporation Pond ZO documentation and produced-water pond practice,Open source documentation
+Evaporation pond,Pond sizing,net_evaporation_rate,1,m/year,Net evaporation rate after rainfall credit,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,industrial report
+Evaporation pond,Pond sizing,operating_depth,1.5,m,Operating liquid depth,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,industrial report
+Evaporation pond,Pond sizing,freeboard,0.5,m,Freeboard allowance,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,industrial report
+Evaporation pond,Energy,energy_intensity,0,kWh/m3,Evaporation pond electricity demand,Passive evaporation pond assumption; auxiliary pumping handled outside this unit,Engieering estimate
+Saltwater disposal well,Disposal,disposal_fraction,1,fraction,Fraction of brine flow injected into disposal well,US EPA Underground Injection Wells for Produced Water Disposal,Technical report
+Saltwater disposal well,Well sizing,injection_well_capacity,2000,m3/day/well,Daily injection capacity per disposal well,WaterTAP Injection Well Disposal ZO documentation and produced-water disposal practice,Open source documentation
+Saltwater disposal well,Injection,injection_pressure,50,bar,Injection pump discharge pressure,US EPA Underground Injection Wells for Produced Water Disposal and injection pump energy calculation,Technical report
+Saltwater disposal well,Injection,pump_efficiency,0.75,fraction,Injection pump efficiency,Hydraulic pump efficiency Engieering assumption,Engieering estimate
+Saltwater disposal well,Energy,energy_intensity,0,kWh/m3,Optional override for disposal well electricity demand; use 0 to calculate from pressure and pump efficiency,Calculated from injection pressure and pump efficiency when override is zero,Engieering calculation

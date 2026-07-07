@@ -77,6 +77,13 @@ def parse_removal_rate(rate):
     return max(0.0, min(value if value <= 1.0 else value / 100.0, 1.0))
 
 
+def parse_ph_target(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def collect_feedwater_quality(session_state, current_parameters=None):
     """Build the feedwater quality object from page 02 sidebar inputs."""
     if current_parameters is None:
@@ -130,7 +137,11 @@ def get_default_removal_efficiencies(unit_process, quality):
     for parameter in quality:
         if parameter in EXCLUDED_AUTO_QUALITY_PARAMETERS:
             continue
-        defaults[parameter] = parse_removal_rate(unit_rates.get(parameter, 0.0))
+        if parameter == "pH" and parameter in unit_rates:
+            ph_target = parse_ph_target(unit_rates.get(parameter))
+            defaults[parameter] = ph_target if ph_target is not None else None
+        else:
+            defaults[parameter] = parse_removal_rate(unit_rates.get(parameter, 0.0))
     return defaults
 
 
@@ -160,6 +171,9 @@ def apply_unit_water_quality(stream, recovery, removal_efficiencies, target_valu
         unit = entry.get("unit", ALL_WATER_QUALITY_PARAMS.get(parameter, {}).get("unit", ""))
         if parameter in target_values and target_values[parameter] not in (None, ""):
             outlet_value = float(target_values[parameter])
+        elif parameter == "pH" and parameter in removal_efficiencies:
+            ph_target = parse_ph_target(removal_efficiencies.get(parameter))
+            outlet_value = ph_target if ph_target is not None else value
         else:
             removal = max(0.0, min(float(removal_efficiencies.get(parameter, 0.0) or 0.0), 1.0))
             outlet_value = value * (1.0 - removal)

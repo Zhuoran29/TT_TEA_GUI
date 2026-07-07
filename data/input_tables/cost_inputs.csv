@@ -1,39 +1,39 @@
 unit_process,sub_section,parameter,value,unit,description,source,data_type
-DEFAULT,Capital,capex_per_flow,720,$/(m3/day),Installed capital cost per unit daily capacity,,
-DEFAULT,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,,
-DEFAULT,Variable O&M,variable_opex_per_m3,0,$/m3,Variable operating cost per cubic meter treated,,
-MVC,Capital,capex_per_flow,2760,$/(m3/day),Installed MVC capital cost per unit daily capacity,,
-MVC,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed MVC CAPEX,,
-MVC,Variable O&M,variable_opex_per_m3,0,$/m3,Variable MVC operating cost per cubic meter treated,,
-3-phase separator,Capital,capex_per_flow,180,$/(m3/day),Installed separator capital cost per unit daily capacity,,
-3-phase separator,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,,
-3-phase separator,Variable O&M,variable_opex_per_m3,0.01,$/m3,Variable separator operating cost per cubic meter treated,,
-DAF,Capital,capex_per_flow,320,$/(m3/day),Installed DAF capital cost per unit daily capacity,,
-DAF,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,,
-DAF,Variable O&M,variable_opex_per_m3,0.03,$/m3,Variable DAF operating cost per cubic meter treated,,
-DAF,Chemicals,chemical_price,1.2,$/kg,Chemical price for coagulant/polymer,,
-Ultrafiltration,Capital,capex_per_flow,500,$/(m3/day),Installed UF capital cost per unit daily capacity,,
-Ultrafiltration,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,,
-Ultrafiltration,Variable O&M,variable_opex_per_m3,0.36,$/m3,Variable UF operating cost per cubic meter treated,,
-Ultrafiltration,Chemicals,chemical_price,1,$/kg,Cleaning chemical price,,
-Ultrafiltration,Replacement,media_replacement_price,35,$/m2,Membrane replacement cost placeholder,,
-Ultrafiltration,Replacement,media_replacement_fraction,0.12,fraction/yr,Annual membrane replacement fraction placeholder,,
-GAC,Capital,capex_per_flow,1204,$/(m3/day),Installed GAC contactor capital cost per unit daily capacity,,
-GAC,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,,
-GAC,Variable O&M,variable_opex_per_m3,0.89,$/m3,Variable GAC operating cost per cubic meter treated,,
-GAC,Replacement,media_replacement_price,2.5,$/kg,GAC media replacement cost,,
-GAC,Replacement,media_replacement_fraction,1,fraction/yr,Annual GAC replacement fraction,,
-Zeolite,Capital,capex_per_flow,1936,$/(m3/day),Installed zeolite bed capital cost per unit daily capacity,,
-Zeolite,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,,
-Zeolite,Variable O&M,variable_opex_per_m3,1.51,$/m3,Variable zeolite operating cost per cubic meter treated,,
-Zeolite,Replacement,media_replacement_price,0.8,$/kg,Zeolite media replacement cost,,
-Zeolite,Replacement,media_replacement_fraction,0.5,fraction/yr,Annual zeolite replacement fraction,,
-Evaporation pond,Capital,capex_per_flow,20,$/(m3/day),Installed pond inlet/distribution capital per unit daily capacity,,
-Evaporation pond,Capital,land_cost_per_m2,2,$/m2,Land acquisition or use cost,,
-Evaporation pond,Capital,liner_cost_per_m2,12,$/m2,Liner and earthwork cost per pond area,,
-Evaporation pond,Fixed O&M,fixed_opex_fraction,0.03,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,,
-Evaporation pond,Variable O&M,variable_opex_per_m3,0.01,$/m3,Variable pond management cost per cubic meter handled,,
-Saltwater disposal well,Capital,capex_per_flow,120,$/(m3/day),Installed surface facilities capital per unit daily disposal capacity,,
-Saltwater disposal well,Capital,capex_per_well,1500000,$/well,Installed capital cost per disposal well,,
-Saltwater disposal well,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed disposal well CAPEX,,
-Saltwater disposal well,Variable O&M,variable_opex_per_m3,11.4,$/m3,Variable disposal cost per cubic meter injected,,
+DEFAULT,Capital,capex_per_flow,288,$/(m3/day),Equipment capital cost per unit daily capacity,US EPA Drinking Water Treatment Technology Unit Cost Models WBS method,Technical report
+DEFAULT,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA Drinking Water Treatment Technology Unit Cost Models WBS method,Technical report
+DEFAULT,Variable O&M,variable_opex_per_m3,0,$/m3,Variable operating cost per cubic meter treated,No external source; generic user override placeholder,Engineering estimate
+MVC,Capital,capex_per_flow,1104,$/(m3/day),Equipment MVC capital cost per unit daily capacity,Veolia,Industrial data
+MVC,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed MVC CAPEX,WaterTAP MVC and planning-level auxiliary O&M allowance,Open source documentation
+MVC,Variable O&M,variable_opex_per_m3,0,$/m3,Variable MVC operating cost per cubic meter treated,WaterTAP MVC and planning-level auxiliary O&M allowance,Open source documentation
+3-phase separator,Capital,capex_per_flow,72,$/(m3/day),Equipment separator capital cost per unit daily capacity,WaterTAP Primary Separator ZO and US EPA WBS cost-model method,Open source documentation
+3-phase separator,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS cost-model O&M categories and planning-level allowance,Technical report
+3-phase separator,Variable O&M,variable_opex_per_m3,0.01,$/m3,Variable separator operating cost per cubic meter treated,WaterTAP Primary Separator ZO and planning-level auxiliary O&M allowance,Open source documentation
+DAF,Capital,capex_per_flow,128,$/(m3/day),Equipment DAF capital cost per unit daily capacity,WaterTAP Dissolved Air Flotation ZO and Water Corporation DS211,Open source documentation
+DAF,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS cost-model O&M categories and planning-level allowance,Technical report
+DAF,Variable O&M,variable_opex_per_m3,0.03,$/m3,Variable DAF operating cost per cubic meter treated,WaterTAP Dissolved Air Flotation ZO and DAF O&M planning estimate,Open source documentation
+DAF,Chemicals,chemical_price,1.2,$/kg,Chemical price for coagulant/polymer,DAF coagulant/polymer vendor pricing assumption; verify with project quote,Vendor data
+Ultrafiltration,Capital,capex_per_flow,200,$/(m3/day),Equipment UF capital cost per unit daily capacity,EPA RO/NF WBS cost model and WaterTAP Ultra Filtration ZO,Technical report
+Ultrafiltration,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS cost-model O&M categories and planning-level allowance,Technical report
+Ultrafiltration,Variable O&M,variable_opex_per_m3,0.36,$/m3,Variable UF operating cost per cubic meter treated,EPA RO/NF WBS membrane O&M categories and membrane plant cost literature,Technical report
+Ultrafiltration,Chemicals,chemical_price,1,$/kg,Cleaning chemical price,EPA RO/NF WBS membrane cleaning O&M assumptions,Technical report
+Ultrafiltration,Replacement,media_replacement_price,35,$/m2,Membrane replacement cost placeholder,EPA RO/NF WBS membrane element replacement cost framework,Technical report
+Ultrafiltration,Replacement,media_replacement_fraction,0.12,fraction/yr,Annual membrane replacement fraction placeholder,EPA RO/NF WBS membrane element replacement cost framework,Technical report
+GAC,Capital,capex_per_flow,481.6,$/(m3/day),Equipment GAC contactor capital cost per unit daily capacity,US EPA WBS GAC cost model 2024,Technical report
+GAC,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS GAC cost model 2024,Technical report
+GAC,Variable O&M,variable_opex_per_m3,0.89,$/m3,Variable GAC operating cost per cubic meter treated,US EPA WBS GAC cost model 2024,Technical report
+GAC,Replacement,media_replacement_price,2.5,$/kg,GAC media replacement cost,US EPA WBS GAC cost model 2024 and GAC supplier pricing,Vendor data
+GAC,Replacement,media_replacement_fraction,1,fraction/yr,Annual GAC replacement fraction,US EPA WBS GAC cost model 2024; carbon life is site-specific,Technical report
+Zeolite,Capital,capex_per_flow,774.4,$/(m3/day),Equipment zeolite bed capital cost per unit daily capacity,US EPA WBS Ion Exchange PFAS cost model 2024 and zeolite supplier specs,Technical report
+Zeolite,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS Ion Exchange PFAS cost model 2024,Technical report
+Zeolite,Variable O&M,variable_opex_per_m3,1.51,$/m3,Variable zeolite operating cost per cubic meter treated,US EPA WBS Ion Exchange PFAS cost model 2024 and zeolite regeneration literature,Technical report
+Zeolite,Replacement,media_replacement_price,0.8,$/kg,Zeolite media replacement cost,Clinoptilolite zeolite supplier media pricing assumption,Vendor data
+Zeolite,Replacement,media_replacement_fraction,0.5,fraction/yr,Annual zeolite replacement fraction,Zeolite regeneration and replacement planning assumption; site-specific pilot data needed,Engineering estimate
+Evaporation pond,Capital,capex_per_flow,8,$/(m3/day),Equipment pond inlet/distribution capital per unit daily capacity,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,Industrial report
+Evaporation pond,Capital,land_cost_per_m2,0.8,$/m2,Land acquisition or use cost before investment factor,Planning-level land cost assumption; replace with parcel-specific land value,Engineering estimate
+Evaporation pond,Capital,liner_cost_per_m2,4.8,$/m2,Liner and earthwork cost per pond area before investment factor,SCS Engineers HDPE-lined produced-water evaporation ponds 2015 and geomembrane liner cost allowance,Industrial report
+Evaporation pond,Fixed O&M,fixed_opex_fraction,0.03,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS cost-model O&M categories and planning-level allowance,Technical report
+Evaporation pond,Variable O&M,variable_opex_per_m3,0.01,$/m3,Variable pond management cost per cubic meter handled,SCS Engineers HDPE-lined produced-water evaporation ponds 2015 and pond O&M planning estimate,Industrial report
+Saltwater disposal well,Capital,capex_per_flow,48,$/(m3/day),Equipment surface facilities capital per unit daily disposal capacity,US EPA Underground Injection Wells for Produced Water Disposal and WaterTAP Injection Well Disposal ZO,Technical report
+Saltwater disposal well,Capital,capex_per_well,600000,$/well,Equipment capital cost per disposal well,US EPA Underground Injection Wells for Produced Water Disposal and produced-water SWD planning estimate,Technical report
+Saltwater disposal well,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed disposal well CAPEX,US EPA WBS cost-model O&M categories and planning-level allowance,Technical report
+Saltwater disposal well,Variable O&M,variable_opex_per_m3,11.4,$/m3,Variable disposal cost per cubic meter injected,US EPA Underground Injection Wells for Produced Water Disposal commercial SWD fee range,Technical report

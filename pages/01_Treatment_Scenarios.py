@@ -74,13 +74,13 @@ ffp = st.selectbox(
     "Fit‑for‑purpose scenario",
     [
         "Agricultural use",
-        "Municipal drinking water",
+        "Drinking water quality oriented(e.g. groundwater recharge)",
         "Surface water discharge",
         "Powerplant cooling water",
         "Data center cooling water",
         "Feedwater to UPW production",
-        "Hydraulic fracturing reuse",
-        "ZLD feed conditioning",
+        "On-site O&G hydraulic fracturing recirculation",
+        "Brine valorization(In progress)",
     ],
     index=0,
     label_visibility="collapsed"

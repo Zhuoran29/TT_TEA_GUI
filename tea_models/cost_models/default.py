@@ -1,3 +1,10 @@
+def _investment_factor(context):
+    try:
+        return max(float(context.get("investment_factor", 2.5)), 0.0)
+    except (TypeError, ValueError):
+        return 2.5
+
+
 def run(unit_process, technical_result, cost_inputs, context):
     """Default cost model for a unit process.
 
@@ -6,7 +13,9 @@ def run(unit_process, technical_result, cost_inputs, context):
     """
     inlet_flow = float(technical_result.get("inlet_flow", {}).get("value", 0.0))
     annual_volume = inlet_flow * float(context.get("operating_days_per_year", 330))
-    capex = float(cost_inputs.get("capex_per_flow", 0.0)) * inlet_flow
+    equipment_capex = float(cost_inputs.get("capex_per_flow", 0.0)) * inlet_flow
+    investment_factor = _investment_factor(context)
+    capex = equipment_capex * investment_factor
 
     fixed_opex = capex * float(cost_inputs.get("fixed_opex_fraction", 0.0))
     variable_opex = annual_volume * float(cost_inputs.get("variable_opex_per_m3", 0.0))
@@ -27,6 +36,8 @@ def run(unit_process, technical_result, cost_inputs, context):
 
     return {
         "installed_capital_cost": {"value": capex, "unit": "USD"},
+        "equipment_capital_cost": {"value": equipment_capex, "unit": "USD"},
+        "investment_factor": {"value": investment_factor, "unit": "-"},
         "fixed_operating_cost": {"value": fixed_opex, "unit": "USD/year"},
         "variable_operating_cost": {"value": variable_opex, "unit": "USD/year"},
         "energy_operating_cost": {"value": energy_opex, "unit": "USD/year"},

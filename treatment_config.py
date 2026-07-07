@@ -16,15 +16,10 @@ WATER_QUALITY_REQUIREMENTS = {
         "PAHs": {"unit": "mg/L", "limit": 0.2},
         "Gross Alpha": {"unit": "pCi/L", "limit": 15.0},
         "Gross Beta": {"unit": "pCi/L", "limit": 15.0},
-        "Notes": "Surface water discharge requirements are governed by a hierarchical regulatory framework consisting \
-                  of the U.S. Clean Water Act, EPA water quality standards, and state-specific regulations. \
-                  \\n Discharge limits are ultimately defined through permit systems (e.g., NPDES/TPDES), which incorporate \
-                 both technology-based and water-quality-based criteria depending on receiving water conditions. \
-                 \\n For produced water discharges, while currently not allowed by regulations, this tool provides \
-                  technology-based effluent limits that are typically established \
-                  based on the best available technology (BAT) for the specific industry and discharge type. ",
+        "Notes": "Screening targets for surface-water discharge are anchored to the latest NMED suggestions. Clean Water Act / NPDES framework, EPA water quality standards, and oil-and-gas effluent serve as guideline context. Actual discharge limits are permit-specific and may combine technology-based limits with receiving-water-based criteria. These values are therefore planning targets, not a substitute for NPDES/TPDES permit review.",
         "url": {"EPA NPDES Program": "https://www.epa.gov/npdes",
                 "EPA Water Quality Standards": "https://www.epa.gov/wqs-tech/water-quality-standards",
+                "EPA Oil and Gas Extraction Effluent Guidelines": "https://www.epa.gov/eg/oil-and-gas-extraction-effluent-guidelines",
                 "State-specific regulations": "https://www.epa.gov/wqs-tech/state-water-quality-standards",
                 }
     },
@@ -43,18 +38,11 @@ WATER_QUALITY_REQUIREMENTS = {
         "Selenium": {"unit": "mg/L", "limit": 0.02},
         "Bicarbonate": {"unit": "mg/L", "limit": 1.5},
 
-        "Notes": "These values are provided as general guidelines based on FAO Irrigation and Drainage and should not be interpreted as strict regulatory limits. \
-            \\n Site-specific factors such as crop type, soil conditions, \
-            and management practices (e.g., blending, soil amendments) should be considered when determining appropriate thresholds.\
-            \\n This guideline evaluates the agricultural water suitability based on four categories defined in the FAO framework: \
-            * Salinity (affecting crop water availability, typically represented by EC or TDS), \
-            * Infiltration (affecting soil infiltration rate, evaluated using EC and SAR together), \
-            * Specific ion toxicity (affecting sensitive crops, including Na+, Cl-, Boron and trace elements), \
-            * Miscellaneous effects (including parameters such as nitrogen (NO3-N), bicarbonate (HCO3-), and pH). ",
-        "url": {"FAO Irrigation Water Quality Guidelines":  "https://www.fao.org/4/t0234e/T0234E00.htm#TOC"},
+        "Notes": "Agricultural-use targets are screening guidelines based primarily on FAO Irrigation and Drainage Paper 29. The targets reflect salinity, infiltration/SAR, specific-ion toxicity, trace-element, and miscellaneous-effect considerations. Site-specific crop tolerance, soil drainage, irrigation method, blending, and soil amendments should be reviewed before treating these as final limits.",
+        "url": {"FAO Water Quality for Agriculture":  "https://www.fao.org/4/t0234e/t0234e00.htm"},
 
     },
-    "Municipal drinking water": {
+    "Drinking water quality oriented(e.g. groundwater recharge)": {
         "pH": {"unit": "-", "range": "6.5-8.5"},
         "TDS": {"unit": "mg/L", "limit": 500.0},
         "Turbidity": {"unit": "NTU", "limit": 0.3},
@@ -62,7 +50,12 @@ WATER_QUALITY_REQUIREMENTS = {
         "Iron": {"unit": "mg/L", "limit": 0.3},
         "Manganese": {"unit": "mg/L", "limit": 0.05},
         "Arsenic": {"unit": "mg/L", "limit": 0.01},
-        "Notes": "Placeholder municipal drinking water targets. Values should be reviewed and updated against the applicable federal, state, tribal, and project-specific requirements."
+        "Notes": "Drinking-water / groundwater-recharge oriented targets are based on EPA National Primary Drinking Water Regulations for health-based contaminants, EPA National Secondary Drinking Water Regulations for aesthetic parameters such as pH, TDS, iron, and manganese, and potable-reuse/recharge guidance. Groundwater recharge projects require state, tribal, and site-specific review in addition to these screening values.",
+        "url": {
+            "EPA National Primary Drinking Water Regulations": "https://www.epa.gov/ground-water-and-drinking-water/national-primary-drinking-water-regulations",
+            "EPA Drinking Water Regulations and Contaminants": "https://www.epa.gov/sdwa/drinking-water-regulations-and-contaminants",
+            "EPA Water Reuse Guidelines and Resources": "https://www.epa.gov/waterreuse"
+        }
     },
     "Powerplant cooling water": {
         "TSS": {"unit": "mg/L", "limit": 10.0},
@@ -72,9 +65,12 @@ WATER_QUALITY_REQUIREMENTS = {
         "Alkalinity": {"unit": "mg/L as CaCO3", "limit": 300.0},
         "Silica": {"unit": "mg/L", "limit": 40.0},
         "TOC": {"unit": "mg/L", "limit": 5.0},
-        "Notes": "Powerplant cooling water quality requirements are aimed at preventing scaling, corrosion, and fouling in cooling systems. \
-                 Parameters like TSS, oil, conductivity, hardness, alkalinity, silica, and TOC must be controlled to maintain efficient heat \
-                 transfer and minimize maintenance issues in cooling towers and condensers."
+        "Notes": "Power-plant cooling-water targets are engineering screening values for cooling-tower / condenser service, not universal regulatory limits. They are intended to control scaling, corrosion, fouling, and biological growth; final limits should be set with site makeup-water chemistry, cycles of concentration, materials compatibility, and the plant water-treatment specialist.",
+        "url": {
+            "DOE FEMP Cooling Tower Management": "https://www.energy.gov/cmei/femp/best-management-practice-10-cooling-tower-management",
+            "EPA WaterSense at Work - Cooling Towers": "https://www.epa.gov/watersense/watersense-work",
+            "EPRI Cooling Water Chemistry Programs": "https://restservice.epri.com/publicdownload/000000003002001276/0/Product"
+        }
     },
     "Data center cooling water": {
         "TSS": {"unit": "mg/L", "limit": 5.0},
@@ -83,9 +79,12 @@ WATER_QUALITY_REQUIREMENTS = {
         "Silica": {"unit": "mg/L", "limit": 20.0},
         "TOC": {"unit": "mg/L", "limit": 3.0},
         "Microbes": {"unit": "CFU/mL", "limit": 10000.0},
-        "Notes": "Data center cooling water quality requirements focus on preventing scaling, corrosion, and microbial growth in cooling systems. \
-                 Parameters like TSS, conductivity, hardness, silica, TOC, and microbial counts must be controlled to maintain efficient heat \
-                 transfer and minimize maintenance issues."
+        "Notes": "Data-center cooling-water targets are screening values for facility-water / liquid-cooling service. They reflect ASHRAE guidance that water quality and wetted-material compatibility control corrosion, scaling, fouling, and filtration requirements, plus cooling-tower best practices for conductivity and cycles of concentration. Vendor-specific ITE/CDU water specifications should override these defaults.",
+        "url": {
+            "ASHRAE Water-Cooled Servers White Paper": "https://www.ashrae.org/file%20library/technical%20resources/bookstore/whitepaper_tc099-watercooledservers.pdf",
+            "ASHRAE Liquid Cooling Guidance": "https://www.ashrae.org/technical-resources/bookstore/datacom-series",
+            "DOE FEMP Cooling Tower Management": "https://www.energy.gov/cmei/femp/best-management-practice-10-cooling-tower-management"
+        }
     },
     "Feedwater to UPW production": {
         "TDS": {"unit": "mg/L", "limit": 190.0},
@@ -97,23 +96,28 @@ WATER_QUALITY_REQUIREMENTS = {
         "Manganese": {"unit": "mg/L", "limit": 0.04},
         "Turbidity": {"unit": "NTU", "limit": 0.1},
         "Ammonia nitrogen": {"unit": "mg/L", "limit": 0.0},
-        "Notes": "Feedwater quality requirements for UPW production are extremely stringent to ensure the \
-                  highest purity water for semiconductor manufacturing. Parameters like TDS, hardness, TOC,\
-                  silica, iron, manganese, turbidity, and ammonia must be tightly controlled to prevent scaling, \
-                  fouling, and contamination of the UPW system and final product."
+        "Notes": "UPW-feed targets are pretreatment screening values for water entering an ultrapure-water production train, not final point-of-use UPW specifications. Final UPW quality should be set from SEMI F63, ASTM D5127, site process-node requirements, and UPW vendor design criteria; these feed targets are intended to protect RO/IX/EDI/polishing steps from scaling, fouling, and contaminant breakthrough.",
+        "url": {
+            "SEMI F63 UPW Guide": "https://store-us.semi.org/products/f06300-semi-f63-guide-for-ultrapure-water-used-in-semiconductor-processing",
+            "ASTM D5127 Ultra-Pure Water Guide": "https://store.astm.org/d5127-13.html",
+            "IRDS Yield Enhancement Roadmap": "https://irds.ieee.org/images/files/pdf/2022/2022IRDS_YE.pdf"
+        }
     },
-    "Hydraulic fracturing reuse": {
+    "On-site O&G hydraulic fracturing recirculation": {
         "TSS": {"unit": "mg/L", "limit": 50.0},
         "Oil": {"unit": "mg/L", "limit": 10.0},
         "Iron": {"unit": "mg/L", "limit": 50.0},
         "Bacteria": {"unit": "CFU/mL", "limit": 1000.0},
         "Ba2+": {"unit": "mg/L", "limit": 20.0},
         "SO4": {"unit": "mg/L", "limit": 50.0},
-        "Notes": "Hydraulic fracturing reuse water quality requirements focus on parameters that can cause operational issues in fracturing operations. \
-                High TSS, oil, iron, bacteria, barium, and sulfate can lead to equipment fouling, scaling, and microbial growth in fracturing fluids and \
-                wellbore environments. Controlling these parameters is essential for successful reuse of produced water in hydraulic fracturing."
+        "Notes": "Hydraulic-fracturing recirculation targets are fit-for-purpose operational screening values for reuse as completion-fluid makeup. They focus on constituents that interfere with friction reducers, crosslinked gels, scale control, souring, corrosion, and equipment reliability. Basin-specific frac-fluid chemistry and operator/vendor compatibility tests should override these defaults.",
+        "url": {
+            "EPA Produced and Flowback Water Reuse Workshop": "https://19january2021snapshot.epa.gov/sites/static/files/documents/stewart.pdf",
+            "API HF2 Water Management Associated with Hydraulic Fracturing": "https://mde.maryland.gov/programs/Land/mining/marcellus/Documents/API_standard_HF2.pdf",
+            "GWPC Produced Water Resources": "https://www.gwpc.org/topics/produced-water/"
+        }
     },
-    "ZLD feed conditioning": {
+    "Brine valorization(In progress)": {
         "TSS": {"unit": "mg/L", "limit": 10.0},
         "Oil": {"unit": "mg/L", "limit": 5.0},
         "Hardness": {"unit": "mg/L as CaCO3", "limit": 100.0},
@@ -121,9 +125,12 @@ WATER_QUALITY_REQUIREMENTS = {
         "Ba2+": {"unit": "mg/L", "limit": 5.0},
         "Sr2+": {"unit": "mg/L", "limit": 10.0},
         "SO4": {"unit": "mg/L", "limit": 50.0},
-        "Notes": "ZLD feed conditioning water quality requirements focus on parameters that can cause scaling and fouling in ZLD systems. \
-                  High TSS, oil, hardness, silica, barium, strontium, and sulfate can lead to operational issues in evaporators, crystallizers,\
-                  and other ZLD components. Controlling these parameters is essential for efficient ZLD operation and minimizing maintenance."
+        "Notes": "Brine-valorization / ZLD-feed targets are engineering screening values for conditioning brine before high-recovery concentration, evaporation, crystallization, or mineral-recovery steps. The selected parameters control suspended-solids fouling, oil carryover, hardness, silica, and sparingly soluble sulfate scales such as barium/strontium sulfate. Final thresholds should be set from site water chemistry, saturation-index modeling, target recovered products, and vendor crystallizer/evaporator design.",
+        "url": {
+            "USBOR Desalting Handbook for Planners": "https://www.usbr.gov/research/dwpr/reportpdfs/report072.pdf",
+            "USBOR ZLD Process Evaluation": "https://www.usbr.gov/research/dwpr/reportpdfs/report149.pdf",
+            "USBOR Brine Concentrate Treatment and Disposal Options": "https://www.usbr.gov/lc/socal/reports/brineconcentrate/6TreatmentandDisposal_part1.pdf"
+        }
     }
 }
 
@@ -132,7 +139,7 @@ BRINE_MANAGEMENT_OPTIONS = {
         "Evaporation pond",
         "Saltwater disposal well",
         "Brine hauling",
-        "Hydraulic fracturing reuse",
+        "On-site O&G hydraulic fracturing recirculation",
         "Reuse-compatible brine recycle / disposal",
         "Brine concentration for ZLD",
         "Crystallization",
@@ -213,7 +220,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             primary_desal = ["NF", "RO"]
 
         configs = {
-            "Municipal drinking water": {
+            "Drinking water quality oriented(e.g. groundwater recharge)": {
                 "pretreatment": ["Well pumping", "Raw water storage", "Cartridge filter"],
                 "desalination": ["RO"],
                 "posttreatment": ["ZIX-Zak IX"],
@@ -250,13 +257,13 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "posttreatment": ["GAC", "Ion exchange / EDI"],
                 "brine": "Brine valorization"
             },
-            "Hydraulic fracturing reuse": {
+            "On-site O&G hydraulic fracturing recirculation": {
                 "pretreatment": ["Well pumping", "Media filtration", "Bag filter"],
                 "desalination": ["RO"],
                 "posttreatment": ["Adjust TDS", "Additives blending"],
                 "brine": "Reuse-compatible brine recycle / disposal"
             },
-            "ZLD feed conditioning": {
+            "Brine valorization(In progress)": {
                 "pretreatment": ["Well pumping", "Media filtration", "Softening / silica control", "Antiscalant dosing"],
                 "desalination": ["RO"],
                 "posttreatment": ["Selective ED", "Mineral precipitation / recovery"],
@@ -264,11 +271,11 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             }
         }
 
-        return normalize_treatment_train_config(configs.get(ffp_scenario, configs["Municipal drinking water"]))
+        return normalize_treatment_train_config(configs.get(ffp_scenario, configs["Drinking water quality oriented(e.g. groundwater recharge)"]))
 
     if desal_type == "Mechanical Vapor Compression (MVC)":
         configs = {
-            "Municipal drinking water": {
+            "Drinking water quality oriented(e.g. groundwater recharge)": {
                 "pretreatment": ["DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
                 "desalination": ["MVC"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment", "Chlorination"],
@@ -304,13 +311,13 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "posttreatment": ["GAC", "Ion exchange"],
                 "brine": "Brine valorization"
             },
-            "Hydraulic fracturing reuse": {
+            "On-site O&G hydraulic fracturing recirculation": {
                 "pretreatment": ["DAF", "Bag filter"],
                 "desalination": ["MVC"],
                 "posttreatment": ["Adjust TDS", "Add additives"],
-                "brine": "Hydraulic fracturing reuse"
+                "brine": "On-site O&G hydraulic fracturing recirculation"
             },
-            "ZLD feed conditioning": {
+            "Brine valorization(In progress)": {
                 "pretreatment": ["DAF", "Media filtration"],
                 "desalination": ["MVC"],
                 "posttreatment": ["Hardness adjustment", "Scale control"],
@@ -320,7 +327,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
 
     elif desal_type == "Membrane desalination (MD)":  # Membrane desalination
         configs = {
-            "Municipal drinking water": {
+            "Drinking water quality oriented(e.g. groundwater recharge)": {
                 "pretreatment": ["DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
                 "desalination": ["MD"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment", "Chlorination"],
@@ -356,13 +363,13 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "posttreatment": ["GAC", "Ion exchange"],
                 "brine": "Brine valorization"
             },
-            "Hydraulic fracturing reuse": {
+            "On-site O&G hydraulic fracturing recirculation": {
                 "pretreatment": ["DAF", "Bag filter"],
                 "desalination": ["MD"],
                 "posttreatment": ["Adjust TDS", "Add additives"],
-                "brine": "Hydraulic fracturing reuse"
+                "brine": "On-site O&G hydraulic fracturing recirculation"
             },
-            "ZLD feed conditioning": {
+            "Brine valorization(In progress)": {
                 "pretreatment": ["DAF", "Media filtration"],
                 "desalination": ["MD"],
                 "posttreatment": ["Hardness adjustment", "Scale control"],
@@ -372,7 +379,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
 
     elif desal_type in ["RO", "Reverse Osmosis (RO)", "Reverse osmosis (RO)"]:
         configs = {
-            "Municipal drinking water": {
+            "Drinking water quality oriented(e.g. groundwater recharge)": {
                 "pretreatment": ["DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
                 "desalination": ["RO"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment", "Chlorination"],
@@ -408,13 +415,13 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "posttreatment": ["GAC", "Ion exchange"],
                 "brine": "Brine valorization"
             },
-            "Hydraulic fracturing reuse": {
+            "On-site O&G hydraulic fracturing recirculation": {
                 "pretreatment": ["DAF", "Bag filter"],
                 "desalination": ["RO"],
                 "posttreatment": ["Adjust TDS", "Add additives"],
-                "brine": "Hydraulic fracturing reuse"
+                "brine": "On-site O&G hydraulic fracturing recirculation"
             },
-            "ZLD feed conditioning": {
+            "Brine valorization(In progress)": {
                 "pretreatment": ["DAF", "Media filtration"],
                 "desalination": ["RO"],
                 "posttreatment": ["Hardness adjustment", "Scale control"],
@@ -424,7 +431,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
 
     else: # LSRRO
         configs = {
-            "Municipal drinking water": {
+            "Drinking water quality oriented(e.g. groundwater recharge)": {
                 "pretreatment": ["DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
                 "desalination": ["LSRRO"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment", "Chlorination"],
@@ -460,13 +467,13 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "posttreatment": ["GAC", "Ion exchange"],
                 "brine": "Brine valorization"
             },
-            "Hydraulic fracturing reuse": {
+            "On-site O&G hydraulic fracturing recirculation": {
                 "pretreatment": ["DAF", "Bag filter"],
                 "desalination": ["LSRRO"],
                 "posttreatment": ["Adjust TDS", "Add additives"],
-                "brine": "Hydraulic fracturing reuse"
+                "brine": "On-site O&G hydraulic fracturing recirculation"
             },
-            "ZLD feed conditioning": {
+            "Brine valorization(In progress)": {
                 "pretreatment": ["DAF", "Media filtration"],
                 "desalination": ["LSRRO"],
                 "posttreatment": ["Hardness adjustment", "Scale control"],
@@ -563,21 +570,11 @@ UNIT_REMOVAL_RATES = {
         "Turbidity": "90-99%"
     },
 
-    "Bag filter": {
-        "TSS": "80-95%",
-        "Turbidity": "70-90%"
-    },
-
     "Ultrafiltration": {
         "TSS": "99%+",
         "Turbidity": "99%+",
         "Oil": "50-90%",
         "TOC": "20-50%"
-    },
-
-    "Ultra-fine filtration": {
-        "TSS": "95-99%",
-        "Turbidity": "95-99%"
     },
 
     "Well pumping": {},
@@ -590,6 +587,7 @@ UNIT_REMOVAL_RATES = {
     # Chemical conditioning / pretreatment
     # =========================================================
     "Softening / pH adjustment": {
+        "pH": 10,
         "Hardness": "60-95%",
         "Calcium": "50-95%",
         "Barium": "20-70%",
@@ -623,12 +621,13 @@ UNIT_REMOVAL_RATES = {
     # Thermal desalination
     # =========================================================
     "MVC": {
+        "pH": 8,
         "Oil": "95-99%",
         "Conductivity": "99%+",
         "TDS": "99.9%+",
         "TSS": "99%+",
         "Turbidity": "99%+",
-        "Hardness": "99%+",
+        "Hardness": "99.9%+",
         "Alkalinity": "90-99%",
         "TOC": "20-80%",
         "Ammonia nitrogen": "90%",
@@ -648,10 +647,10 @@ UNIT_REMOVAL_RATES = {
         "Bicarbonate": "90-99%",
         "BTEX": "50-90%",
         "PAHs": "50-90%",
-        "Gross Alpha": "95-99%",
-        "Gross Beta": "95-99%",
-        "Radium-226": "90-99%",
-        "Radium-228": "90-99%"
+        "Gross Alpha": "99.9%",
+        "Gross Beta": "99.9%",
+        "Radium-226": "99%",
+        "Radium-228": "99%"
     },
 
     "MD": {
@@ -803,7 +802,7 @@ UNIT_REMOVAL_RATES = {
     # Post-treatment / polishing
     # =========================================================
     "Ammonia stripping": {
-        "Ammonia nitrogen": "90-99%"
+        "Ammonia nitrogen": "99.9%"
     },
     "GAC": {
         "TOC": "99%",
@@ -904,8 +903,6 @@ UNIT_REMOVAL_RATES = {
         "Chloride": "10-60%",
         "Sulfate": "10-60%"
     },
-    "Solar PV": {},
-    "Chlorination": {},
     "Polishing filter": {
         "TSS": "95-99%",
         "Turbidity": "90-99%"
@@ -923,7 +920,12 @@ UNIT_REMOVAL_RATES = {
         "TSS": "99%+",
         "Turbidity": "99%+"
     },
-    "pH adjustment": {},
+    "pH adjustment for ammonia stripping": {
+        "pH": 11,
+    },
+    "pH adjustment for product water": {
+        "pH": 6.5,
+    },
     "Scale inhibitor dosing": {},
     "Biocide dosing": {},
     "Blending / remineralization": {},
@@ -941,7 +943,7 @@ UNIT_REMOVAL_RATES = {
     "Brine disposal / further concentration": {},
     "Brine valorization": {},
     "Brine valorization / disposal": {},
-    "Hydraulic fracturing reuse": {},
+    "On-site O&G hydraulic fracturing recirculation": {},
     "Reuse-compatible brine recycle / disposal": {},
     "Brine concentration for ZLD": {},
     "Evaporation pond": {},

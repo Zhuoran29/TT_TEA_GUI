@@ -16,10 +16,18 @@ def _result(value, unit):
     return {"value": value, "unit": unit}
 
 
+def _investment_factor(context):
+    try:
+        return max(float(context.get("investment_factor", 2.5)), 0.0)
+    except (TypeError, ValueError):
+        return 2.5
+
+
 def run_template(technical_result, cost_inputs, context, defaults):
     inlet_flow = _value(technical_result, "inlet_flow")
     operating_days = float(context.get("operating_days_per_year", 330))
     annual_volume = inlet_flow * operating_days
+    investment_factor = _investment_factor(context)
 
     capex_per_flow = _input(cost_inputs, "capex_per_flow", defaults.get("capex_per_flow", 0.0))
     fixed_opex_fraction = _input(
@@ -53,7 +61,8 @@ def run_template(technical_result, cost_inputs, context, defaults):
     power_capex = _value(technical_result, "power_capacity") * capex_per_kw
     land_capex = _value(technical_result, "pond_area") * land_cost_per_m2
     liner_capex = _value(technical_result, "pond_area") * liner_cost_per_m2
-    capex = equipment_capex + power_capex + land_capex + liner_capex
+    total_equipment_capex = equipment_capex + power_capex + land_capex + liner_capex
+    capex = total_equipment_capex * investment_factor
 
     fixed_opex = capex * fixed_opex_fraction
     variable_opex = annual_volume * variable_opex_per_m3
@@ -88,10 +97,8 @@ def run_template(technical_result, cost_inputs, context, defaults):
 
     return {
         "installed_capital_cost": _result(capex, "USD"),
-        "equipment_capital_cost": _result(equipment_capex, "USD"),
-        "power_capacity_capital_cost": _result(power_capex, "USD"),
-        "land_capital_cost": _result(land_capex, "USD"),
-        "liner_capital_cost": _result(liner_capex, "USD"),
+        "equipment_capital_cost": _result(total_equipment_capex, "USD"),
+        "investment_factor": _result(investment_factor, "-"),
         "fixed_operating_cost": _result(fixed_opex, "USD/year"),
         "variable_operating_cost": _result(variable_opex, "USD/year"),
         "energy_operating_cost": _result(energy_opex, "USD/year"),

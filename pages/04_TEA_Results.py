@@ -1,3 +1,6 @@
+import csv
+import io
+
 import pandas as pd
 import streamlit as st
 from config import APP_VERSION, DATA_VERSION
@@ -15,6 +18,12 @@ st.sidebar.caption(f"v{APP_VERSION} | {DATA_VERSION}")
 
 BREAKDOWN_FIGSIZE = (7.2, 5.8)
 BREAKDOWN_BAR_WIDTH = 0.22
+HIDDEN_COST_OUTPUTS = {
+    "flow_capacity_equipment_capital_cost",
+    "power_capacity_capital_cost",
+    "land_capital_cost",
+    "liner_capital_cost",
+}
 
 st.markdown("""
 <style>
@@ -61,6 +70,182 @@ def format_lcow(value, unit):
     if str(unit).startswith("$/"):
         return f"${value:,.2f}/{str(unit)[2:]}"
     return f"${value:,.2f} {unit}"
+
+
+def export_csv_number(value):
+    """Return a stable compact numeric value for CSV output."""
+    try:
+        numeric_value = float(value)
+    except (TypeError, ValueError):
+        return value
+    if pd.isna(numeric_value):
+        return ""
+    return f"{numeric_value:.6g}"
+
+
+def export_unit_scaling_summary(unit_result):
+    """Return a concise scaling summary for one unit's outlet water quality."""
+    if str(unit_result.get("section", "")).startswith("Brine management"):
+        return "Not applied", ""
+
+    water_quality = unit_result.get("technical_results", {}).get("water_quality_out", {})
+    if not water_quality:
+        return "No data", ""
+
+    try:
+        scaling_result = calculate_scaling_tendency(water_quality)
+    except Exception as exc:
+        return "Calculation unavailable", str(exc)
+
+    likely = []
+    near = []
+    for mineral in scaling_result.get("minerals", []):
+        tendency = mineral.get("tendency", "")
+        mineral_name = mineral.get("mineral", "")
+        omega = mineral.get("scaling_tendency")
+        si = mineral.get("saturation_index")
+        mineral_label = mineral_name
+        if omega is not None and si is not None:
+            mineral_label = (
+                f"{mineral_name} "
+                f"(Omega={export_csv_number(omega)}, SI={export_csv_number(si)})"
+            )
+        if tendency == "Scaling likely":
+            likely.append(mineral_label)
+        elif tendency == "Near saturation":
+            near.append(mineral_label)
+
+    if likely:
+        return "Scaling likely", "; ".join(likely)
+    if near:
+        return "Near saturation", "; ".join(near)
+    return "No scaling expected", ""
+
+
+def export_unit_summary_rows(results):
+    """Build one summary row per unit process for the download CSV."""
+    rows = []
+    for unit_result in sorted(results.get("unit_results", []), key=lambda row: row["sequence"]):
+        scaling_tendency, scaling_minerals = export_unit_scaling_summary(unit_result)
+        electricity_consumption = unit_result.get("electricity_consumption_kwh_day", "")
+        if electricity_consumption == "":
+            electricity_consumption = float(unit_result.get("electricity_power_requirement_kw", 0.0) or 0.0) * 24.0
+        thermal_consumption = unit_result.get("thermal_energy_consumption_kwh_day", "")
+        if thermal_consumption == "":
+            thermal_consumption = float(unit_result.get("thermal_power_requirement_kw", 0.0) or 0.0) * 24.0
+        rows.append({
+            "Sequence": unit_result.get("sequence", ""),
+            "Section": unit_result.get("section", ""),
+            "Unit process": unit_result.get("unit_process", ""),
+            "Inlet flow": export_csv_number(unit_result.get("inlet_flow", "")),
+            "Inlet flow unit": unit_result.get("inlet_flow_unit", ""),
+            "Outlet flow": export_csv_number(unit_result.get("outlet_flow", "")),
+            "Outlet flow unit": unit_result.get("outlet_flow_unit", ""),
+            "Water recovery": export_csv_number(unit_result.get("water_recovery", "")),
+            "Water recovery unit": unit_result.get("water_recovery_unit", ""),
+            "Installed CAPEX": export_csv_number(unit_result.get("installed_capital_cost", "")),
+            "Installed CAPEX unit": unit_result.get("installed_capital_cost_unit", "USD"),
+            "Annualized CAPEX": export_csv_number(unit_result.get("annualized_capital_cost", "")),
+            "Annualized CAPEX unit": unit_result.get("annualized_capital_cost_unit", "USD/year"),
+            "Annual OPEX": export_csv_number(unit_result.get("total_annual_operating_cost", "")),
+            "Annual OPEX unit": unit_result.get("total_annual_operating_cost_unit", "USD/year"),
+            "CAPEX LCOW contribution": export_csv_number(unit_result.get("capital_lcow_contribution", "")),
+            "CAPEX LCOW unit": unit_result.get("capital_lcow_contribution_unit", ""),
+            "OPEX LCOW contribution": export_csv_number(unit_result.get("opex_lcow_contribution", "")),
+            "OPEX LCOW unit": unit_result.get("opex_lcow_contribution_unit", ""),
+            "Electricity consumption": export_csv_number(electricity_consumption),
+            "Electricity consumption unit": "kWh/day",
+            "Electricity intensity": export_csv_number(unit_result.get("electricity_intensity_kwh_per_bbl_feed", "")),
+            "Electricity intensity unit": "kWh/bbl feed",
+            "Electricity power": export_csv_number(unit_result.get("electricity_power_requirement_kw", "")),
+            "Electricity power unit": "kW",
+            "Thermal energy consumption": export_csv_number(thermal_consumption),
+            "Thermal energy consumption unit": "kWh/day",
+            "Thermal energy intensity": export_csv_number(unit_result.get("thermal_energy_intensity_kwh_per_bbl_feed", "")),
+            "Thermal energy intensity unit": "kWh/bbl feed",
+            "Thermal power": export_csv_number(unit_result.get("thermal_power_requirement_kw", "")),
+            "Thermal power unit": "kW",
+            "Scaling tendency": scaling_tendency,
+            "Scaling minerals": scaling_minerals,
+        })
+    return rows
+
+
+def export_quality_value_and_unit(water_quality, parameter):
+    entry = water_quality.get(parameter, {})
+    if isinstance(entry, dict):
+        return export_csv_number(entry.get("value", "")), entry.get("unit", "")
+    return export_csv_number(entry), ""
+
+
+def export_water_quality_tracking_rows(results):
+    """Build a constituent-by-unit water quality tracking table."""
+    unit_results = sorted(results.get("unit_results", []), key=lambda row: row["sequence"])
+    trace = results.get("water_quality_trace", [])
+    feed_quality = trace[0].get("water_quality", {}) if trace else {}
+    if not feed_quality and unit_results:
+        feed_quality = unit_results[0].get("technical_results", {}).get("water_quality_in", {}) or {}
+
+    stage_columns = [("Influent", feed_quality)]
+    for unit_result in unit_results:
+        stage_columns.append((
+            f"{unit_result.get('sequence', '')}. {unit_result.get('unit_process', '')}",
+            unit_result.get("technical_results", {}).get("water_quality_out", {}) or {},
+        ))
+
+    rows = []
+    for parameter in feed_quality:
+        _, unit = export_quality_value_and_unit(feed_quality, parameter)
+        row = {"Parameter": parameter, "Unit": unit}
+        for stage_name, water_quality in stage_columns:
+            value, stage_unit = export_quality_value_and_unit(water_quality, parameter)
+            row[stage_name] = value
+            if not row["Unit"] and stage_unit:
+                row["Unit"] = stage_unit
+        rows.append(row)
+    return rows
+
+
+def build_results_download_csv(results):
+    """Create a sectioned CSV for summary, water quality, and detailed results."""
+    output = io.StringIO()
+    writer = csv.writer(output, lineterminator="\n")
+
+    summary_rows = export_unit_summary_rows(results)
+    writer.writerow(["Unit process summary"])
+    if summary_rows:
+        summary_columns = list(summary_rows[0].keys())
+        writer.writerow(summary_columns)
+        for row in summary_rows:
+            writer.writerow([row.get(column, "") for column in summary_columns])
+    else:
+        writer.writerow(["No unit results"])
+
+    writer.writerow([])
+    writer.writerow(["Water quality tracking"])
+    water_quality_rows = export_water_quality_tracking_rows(results)
+    if water_quality_rows:
+        water_quality_columns = list(water_quality_rows[0].keys())
+        writer.writerow(water_quality_columns)
+        for row in water_quality_rows:
+            writer.writerow([row.get(column, "") for column in water_quality_columns])
+    else:
+        writer.writerow(["No water quality tracking data"])
+
+    writer.writerow([])
+    writer.writerow(["Detailed model results"])
+    detailed_rows = results.get("results_csv_rows", [])
+    if detailed_rows:
+        detailed_columns = ["sequence", "section", "unit_process", "model_type", "result_name", "value", "unit"]
+        writer.writerow(detailed_columns)
+        for row in detailed_rows:
+            if row.get("model_type") == "cost" and row.get("result_name") in HIDDEN_COST_OUTPUTS:
+                continue
+            writer.writerow([row.get(column, "") for column in detailed_columns])
+    else:
+        writer.writerow(["No detailed results"])
+
+    return output.getvalue()
 
 
 def render_summary_cells(summary_values):
@@ -155,13 +340,15 @@ def format_output_parameter(result_name):
     return " ".join(word.capitalize() for word in words)
 
 
-def format_model_value(value, mode):
+def format_model_value(value, mode, unit=""):
     try:
         numeric_value = float(value)
     except (TypeError, ValueError):
         return value
     if pd.isna(numeric_value):
         return ""
+    if str(unit).strip() in {"", "-"}:
+        return f"{numeric_value:.3g}"
     if mode == "cost":
         return f"{numeric_value:,.0f}"
     if abs(numeric_value) > 10:
@@ -175,8 +362,13 @@ def format_output_table(table, mode="technical"):
         return pd.DataFrame(columns=["Output parameters", "Value", "Unit"])
 
     output = table.copy()
+    if mode == "cost":
+        output = output[~output["result_name"].isin(HIDDEN_COST_OUTPUTS)].copy()
     output["result_name"] = output["result_name"].apply(format_output_parameter)
-    output["value"] = output["value"].apply(lambda value: format_model_value(value, mode))
+    output["value"] = output.apply(
+        lambda row: format_model_value(row["value"], mode, row.get("unit", "")),
+        axis=1,
+    )
     return output.rename(columns={
         "result_name": "Output parameters",
         "value": "Value",
@@ -666,10 +858,8 @@ for unit_result in sorted(results["unit_results"], key=lambda row: row["sequence
             if st.button("Show scaling tendency", key=scaling_button_key, type="primary"):
                 show_scaling_tendency_dialog(unit_result)
 
-csv = st.session_state.get(
-    "tea_results_csv",
-    results_table.to_csv(index=False).encode("utf-8"),
-)
+csv = build_results_download_csv(results).encode("utf-8")
+st.session_state.tea_results_csv = csv
 st.download_button(
     "Download TEA results CSV",
     csv,

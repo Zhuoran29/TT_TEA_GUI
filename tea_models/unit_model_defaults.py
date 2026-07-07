@@ -120,24 +120,24 @@ TECHNICAL_MODEL_DEFAULTS = {
     "MD": {
         "unit_kind": "thermal_membrane",
         "recovery": 0.65,
-        "energy_intensity": 0.20,
-        "thermal_energy_intensity": 25.0,
+        "energy_intensity": 1.0,
+        "thermal_energy_intensity": 80.0,
         "membrane_flux": 5.0,
         "operating_pressure": 1.0,
     },
     "LSRRO": {
         "unit_kind": "pressure_membrane",
-        "recovery": 0.75,
-        "energy_intensity": 2.2,
+        "recovery": 0.70,
+        "energy_intensity": 3.9,
         "membrane_flux": 18.0,
         "operating_pressure": 45.0,
     },
     "OARO": {
         "unit_kind": "pressure_membrane",
-        "recovery": 0.80,
-        "energy_intensity": 3.5,
+        "recovery": 0.72,
+        "energy_intensity": 4.0,
         "membrane_flux": 12.0,
-        "operating_pressure": 60.0,
+        "operating_pressure": 48.3,
     },
     "RO": {
         "unit_kind": "pressure_membrane",
@@ -290,47 +290,47 @@ TECHNICAL_MODEL_DEFAULTS = {
 
 
 COST_MODEL_DEFAULTS = {
-    "Equalization tank": {"capex_per_flow": 120.0, "fixed_opex_fraction": 0.03, "variable_opex_per_m3": 0.005},
-    "Floc n Drop": {"capex_per_flow": 260.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.06, "chemical_price": 0.8},
-    "Walnut shell filtration": {"capex_per_flow": 420.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.08, "media_replacement_price": 0.6, "media_replacement_fraction": 0.25},
-    "Media filtration": {"capex_per_flow": 240.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.04, "media_replacement_price": 0.15, "media_replacement_fraction": 0.10},
-    "Cartridge filter": {"capex_per_flow": 90.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.04, "media_replacement_price": 80.0, "media_replacement_fraction": 6.0},
-    "Bag filter": {"capex_per_flow": 70.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.03, "media_replacement_price": 35.0, "media_replacement_fraction": 6.0},
-    "Ultra-fine filtration": {"capex_per_flow": 450.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.20, "chemical_price": 1.0, "media_replacement_price": 25.0, "media_replacement_fraction": 0.12},
-    "Well pumping": {"capex_per_flow": 80.0, "fixed_opex_fraction": 0.03, "variable_opex_per_m3": 0.005},
-    "Raw water storage": {"capex_per_flow": 60.0, "fixed_opex_fraction": 0.02, "variable_opex_per_m3": 0.002},
-    "Product water storage": {"capex_per_flow": 60.0, "fixed_opex_fraction": 0.02, "variable_opex_per_m3": 0.002},
-    "Softening / pH adjustment": {"capex_per_flow": 380.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.08, "chemical_price": 0.25},
-    "Softening / silica control": {"capex_per_flow": 420.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.10, "chemical_price": 0.30},
-    "Antiscalant / pH adjustment": {"capex_per_flow": 35.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.01, "chemical_price": 2.5},
-    "Antiscalant dosing": {"capex_per_flow": 25.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 3.0},
-    "Air stripping": {"capex_per_flow": 300.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.04},
-    "Dechlorination / activated carbon": {"capex_per_flow": 700.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.20, "chemical_price": 1.0, "media_replacement_price": 2.5, "media_replacement_fraction": 0.5},
-    "MD": {"capex_per_flow": 1800.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.15, "media_replacement_price": 60.0, "media_replacement_fraction": 0.10},
-    "LSRRO": {"capex_per_flow": 1200.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.10, "media_replacement_price": 45.0, "media_replacement_fraction": 0.12},
-    "OARO": {"capex_per_flow": 1500.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.12, "media_replacement_price": 50.0, "media_replacement_fraction": 0.12},
-    "RO": {"capex_per_flow": 900.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.08, "media_replacement_price": 40.0, "media_replacement_fraction": 0.12},
-    "BWRO": {"capex_per_flow": 650.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.06, "media_replacement_price": 35.0, "media_replacement_fraction": 0.12},
-    "NF": {"capex_per_flow": 550.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.05, "media_replacement_price": 35.0, "media_replacement_fraction": 0.12},
-    "Ammonia stripping": {"capex_per_flow": 320.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.05},
-    "Ion exchange / EDI": {"capex_per_flow": 1100.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.35, "chemical_price": 0.5, "media_replacement_price": 5.0, "media_replacement_fraction": 0.25},
-    "Ion exchange": {"capex_per_flow": 850.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.25, "chemical_price": 0.5, "media_replacement_price": 4.0, "media_replacement_fraction": 0.20},
-    "Boron-selective IX": {"capex_per_flow": 950.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.30, "chemical_price": 0.6, "media_replacement_price": 8.0, "media_replacement_fraction": 0.20},
-    "Solar PV": {"capex_per_flow": 0.0, "capex_per_kw": 1200.0, "fixed_opex_fraction": 0.02, "variable_opex_per_m3": 0.0},
-    "Chlorination": {"capex_per_flow": 30.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 1.0},
-    "Polishing filter": {"capex_per_flow": 180.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.03, "media_replacement_price": 0.15, "media_replacement_fraction": 0.10},
-    "Fine filter": {"capex_per_flow": 90.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.04, "media_replacement_price": 80.0, "media_replacement_fraction": 6.0},
-    "Final filter": {"capex_per_flow": 90.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.04, "media_replacement_price": 80.0, "media_replacement_fraction": 6.0},
-    "pH adjustment": {"capex_per_flow": 30.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 0.5},
-    "Scale inhibitor dosing": {"capex_per_flow": 25.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 3.0},
-    "Biocide dosing": {"capex_per_flow": 25.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 2.5},
-    "Blending / remineralization": {"capex_per_flow": 40.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.01, "chemical_price": 0.3},
-    "Blending / salinity adjustment": {"capex_per_flow": 35.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005},
-    "Adjust TDS": {"capex_per_flow": 35.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005},
-    "Additives blending": {"capex_per_flow": 30.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 1.0},
-    "Add additives": {"capex_per_flow": 30.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 1.0},
-    "Hardness adjustment": {"capex_per_flow": 35.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 0.3},
-    "Scale control": {"capex_per_flow": 25.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 3.0},
+    "Equalization tank": {"capex_per_flow": 48.0, "fixed_opex_fraction": 0.03, "variable_opex_per_m3": 0.005},
+    "Floc n Drop": {"capex_per_flow": 104.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.06, "chemical_price": 0.8},
+    "Walnut shell filtration": {"capex_per_flow": 168.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.08, "media_replacement_price": 0.6, "media_replacement_fraction": 0.25},
+    "Media filtration": {"capex_per_flow": 96.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.04, "media_replacement_price": 0.15, "media_replacement_fraction": 0.10},
+    "Cartridge filter": {"capex_per_flow": 36.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.04, "media_replacement_price": 80.0, "media_replacement_fraction": 6.0},
+    "Bag filter": {"capex_per_flow": 28.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.03, "media_replacement_price": 35.0, "media_replacement_fraction": 6.0},
+    "Ultra-fine filtration": {"capex_per_flow": 180.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.20, "chemical_price": 1.0, "media_replacement_price": 25.0, "media_replacement_fraction": 0.12},
+    "Well pumping": {"capex_per_flow": 32.0, "fixed_opex_fraction": 0.03, "variable_opex_per_m3": 0.005},
+    "Raw water storage": {"capex_per_flow": 24.0, "fixed_opex_fraction": 0.02, "variable_opex_per_m3": 0.002},
+    "Product water storage": {"capex_per_flow": 24.0, "fixed_opex_fraction": 0.02, "variable_opex_per_m3": 0.002},
+    "Softening / pH adjustment": {"capex_per_flow": 152.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.08, "chemical_price": 0.25},
+    "Softening / silica control": {"capex_per_flow": 168.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.10, "chemical_price": 0.30},
+    "Antiscalant / pH adjustment": {"capex_per_flow": 14.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.01, "chemical_price": 2.5},
+    "Antiscalant dosing": {"capex_per_flow": 10.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 3.0},
+    "Air stripping": {"capex_per_flow": 120.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.04},
+    "Dechlorination / activated carbon": {"capex_per_flow": 280.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.20, "chemical_price": 1.0, "media_replacement_price": 2.5, "media_replacement_fraction": 0.5},
+    "MD": {"capex_per_flow": 720.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.15, "media_replacement_price": 60.0, "media_replacement_fraction": 0.10},
+    "LSRRO": {"capex_per_flow": 480.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.10, "media_replacement_price": 45.0, "media_replacement_fraction": 0.12},
+    "OARO": {"capex_per_flow": 600.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.12, "media_replacement_price": 50.0, "media_replacement_fraction": 0.12},
+    "RO": {"capex_per_flow": 360.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.08, "media_replacement_price": 40.0, "media_replacement_fraction": 0.12},
+    "BWRO": {"capex_per_flow": 260.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.06, "media_replacement_price": 35.0, "media_replacement_fraction": 0.12},
+    "NF": {"capex_per_flow": 220.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.05, "media_replacement_price": 35.0, "media_replacement_fraction": 0.12},
+    "Ammonia stripping": {"capex_per_flow": 128.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.05},
+    "Ion exchange / EDI": {"capex_per_flow": 440.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.35, "chemical_price": 0.5, "media_replacement_price": 5.0, "media_replacement_fraction": 0.25},
+    "Ion exchange": {"capex_per_flow": 340.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.25, "chemical_price": 0.5, "media_replacement_price": 4.0, "media_replacement_fraction": 0.20},
+    "Boron-selective IX": {"capex_per_flow": 380.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.30, "chemical_price": 0.6, "media_replacement_price": 8.0, "media_replacement_fraction": 0.20},
+    "Solar PV": {"capex_per_flow": 0.0, "capex_per_kw": 480.0, "fixed_opex_fraction": 0.02, "variable_opex_per_m3": 0.0},
+    "Chlorination": {"capex_per_flow": 12.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 1.0},
+    "Polishing filter": {"capex_per_flow": 72.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.03, "media_replacement_price": 0.15, "media_replacement_fraction": 0.10},
+    "Fine filter": {"capex_per_flow": 36.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.04, "media_replacement_price": 80.0, "media_replacement_fraction": 6.0},
+    "Final filter": {"capex_per_flow": 36.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.04, "media_replacement_price": 80.0, "media_replacement_fraction": 6.0},
+    "pH adjustment": {"capex_per_flow": 12.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 0.5},
+    "Scale inhibitor dosing": {"capex_per_flow": 10.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 3.0},
+    "Biocide dosing": {"capex_per_flow": 10.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 2.5},
+    "Blending / remineralization": {"capex_per_flow": 16.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.01, "chemical_price": 0.3},
+    "Blending / salinity adjustment": {"capex_per_flow": 14.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005},
+    "Adjust TDS": {"capex_per_flow": 14.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005},
+    "Additives blending": {"capex_per_flow": 12.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 1.0},
+    "Add additives": {"capex_per_flow": 12.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 1.0},
+    "Hardness adjustment": {"capex_per_flow": 14.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 0.3},
+    "Scale control": {"capex_per_flow": 10.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 3.0},
 }
 
 
@@ -362,13 +362,431 @@ TECHNICAL_INPUT_SPECS = {
 
 
 COST_INPUT_SPECS = {
-    "capex_per_flow": ("Capital", "$/(m3/day)", "Installed capital cost per unit daily capacity"),
-    "capex_per_kw": ("Capital", "$/kW", "Installed capital cost per kW capacity"),
+    "capex_per_flow": ("Capital", "$/(m3/day)", "Equipment capital cost per unit daily capacity"),
+    "capex_per_kw": ("Capital", "$/kW", "Equipment capital cost per kW capacity"),
     "fixed_opex_fraction": ("Fixed O&M", "fraction/yr", "Annual fixed OPEX as fraction of installed CAPEX"),
     "variable_opex_per_m3": ("Variable O&M", "$/m3", "Variable operating cost per cubic meter treated"),
     "chemical_price": ("Chemicals", "$/kg", "Chemical or regenerant price"),
     "media_replacement_price": ("Replacement", "$/unit", "Replacement media, membrane, cartridge, or bag price"),
     "media_replacement_fraction": ("Replacement", "fraction/yr", "Annual replacement fraction"),
+}
+
+
+TECHNICAL_INPUT_METADATA = {
+    "recovery": (
+        "WaterTAP zero-order model guidance and site-specific engineering defaults",
+        "open source documentation",
+    ),
+    "energy_intensity": (
+        "WaterTAP zero-order model guidance and site-specific energy-use literature",
+        "open source documentation",
+    ),
+    "thermal_energy_intensity": (
+        "Membrane distillation and thermal desalination energy-use literature",
+        "publication",
+    ),
+    "chemical_dose": (
+        "Water Technologies Handbook and RO chemical dosing guidance",
+        "industrial reference",
+    ),
+    "hydraulic_retention_time": (
+        "WaterTAP tank and clarification zero-order defaults; verify by site-specific sizing",
+        "open source documentation",
+    ),
+    "design_factor": (
+        "Planning-level engineering sizing allowance; no exact external source",
+        "engineering estimate",
+    ),
+    "filtration_rate": (
+        "Hach Granular Media Filtration for Water Treatment Applications 2012",
+        "industrial report",
+    ),
+    "bed_depth": (
+        "Hach Granular Media Filtration for Water Treatment Applications 2012",
+        "industrial report",
+    ),
+    "media_bulk_density": (
+        "WaterTAP media and ion-exchange defaults plus supplier media datasheets",
+        "vendor data",
+    ),
+    "element_capacity": (
+        "WaterTAP Cartridge Filtration ZO defaults and vendor element sizing practice",
+        "open source documentation",
+    ),
+    "membrane_flux": (
+        "EPA RO/NF WBS cost model and WaterTAP membrane model defaults",
+        "technical report",
+    ),
+    "backwash_fraction": (
+        "WaterTAP Ultra Filtration ZO documentation and membrane treatment literature",
+        "open source documentation",
+    ),
+    "pump_head": (
+        "Hydraulic pump energy calculation; use site-specific total dynamic head",
+        "engineering calculation",
+    ),
+    "pump_efficiency": (
+        "Hydraulic pump energy calculation; use pump vendor curve when available",
+        "engineering calculation",
+    ),
+    "target_pH": (
+        "Water Technologies Handbook precipitation softening and pH adjustment practice",
+        "industrial reference",
+    ),
+    "air_water_ratio": (
+        "WaterTAP air stripping and decarbonator zero-order defaults",
+        "open source documentation",
+    ),
+    "tower_loading_rate": (
+        "WaterTAP air stripping and decarbonator zero-order defaults",
+        "open source documentation",
+    ),
+    "operating_pressure": (
+        "USBR brackish groundwater RO/NF comparison and membrane desalination literature",
+        "technical report",
+    ),
+    "empty_bed_contact_time": (
+        "US EPA WBS GAC cost model 2024 and WQA GAC Fact Sheet",
+        "technical report",
+    ),
+    "regenerant_dose": (
+        "Veolia ion exchange handbook and US EPA WBS IX cost model",
+        "industrial reference",
+    ),
+    "power_capacity": (
+        "LBNL Utility-Scale Solar 2024 Edition",
+        "technical report",
+    ),
+    "capacity_factor": (
+        "LBNL Utility-Scale Solar 2024 Edition",
+        "technical report",
+    ),
+    "blend_fraction": (
+        "Site-specific blending design assumption; no exact external source",
+        "engineering estimate",
+    ),
+}
+
+
+TECHNICAL_INPUT_METADATA_BY_UNIT = {
+    "MD": {
+        "recovery": (
+            "Membrane distillation energy and cost literature; waste-heat integration case studies",
+            "publication",
+        ),
+        "energy_intensity": (
+            "Waste heat driven integrated membrane distillation study and MD energy review",
+            "publication",
+        ),
+        "thermal_energy_intensity": (
+            "Waste heat driven integrated membrane distillation study and MD energy review",
+            "publication",
+        ),
+        "membrane_flux": (
+            "Membrane distillation review and waste-heat MD case-study flux ranges",
+            "publication",
+        ),
+        "operating_pressure": (
+            "Membrane distillation low-pressure operation assumption",
+            "engineering estimate",
+        ),
+    },
+    "LSRRO": {
+        "recovery": (
+            "Atia et al. 2023 Cost optimization of low-salt-rejection reverse osmosis",
+            "publication",
+        ),
+        "energy_intensity": (
+            "Atia et al. 2023 Cost optimization of low-salt-rejection reverse osmosis",
+            "publication",
+        ),
+        "membrane_flux": (
+            "WaterTAP LSRRO flowsheet documentation and LSRRO TEA literature",
+            "open source documentation",
+        ),
+        "operating_pressure": (
+            "WaterTAP LSRRO flowsheet documentation and LSRRO TEA literature",
+            "open source documentation",
+        ),
+    },
+    "OARO": {
+        "recovery": (
+            "OARO five-approach brine dewatering study reporting 72 percent recovery at 35 g/L feed",
+            "publication",
+        ),
+        "energy_intensity": (
+            "OARO five-approach brine dewatering study reporting approximately 4 kWh/m3",
+            "publication",
+        ),
+        "membrane_flux": (
+            "WaterTAP OARO flowsheet documentation and OARO brine dewatering literature",
+            "open source documentation",
+        ),
+        "operating_pressure": (
+            "OARO five-approach brine dewatering study using 48.3 bar membrane pressure limit",
+            "publication",
+        ),
+    },
+    "RO": {
+        "recovery": (
+            "EPA RO/NF WBS cost model and USBR brackish groundwater RO/NF comparison",
+            "technical report",
+        ),
+        "energy_intensity": (
+            "USBR brackish groundwater RO/NF comparison and RO energy literature",
+            "technical report",
+        ),
+        "operating_pressure": (
+            "USBR brackish groundwater RO/NF comparison",
+            "technical report",
+        ),
+    },
+    "BWRO": {
+        "recovery": (
+            "USBR brackish groundwater RO/NF comparison",
+            "technical report",
+        ),
+        "energy_intensity": (
+            "USBR brackish groundwater RO/NF comparison",
+            "technical report",
+        ),
+        "operating_pressure": (
+            "USBR brackish groundwater RO/NF comparison",
+            "technical report",
+        ),
+    },
+    "NF": {
+        "recovery": (
+            "EPA RO/NF WBS cost model and USBR brackish groundwater RO/NF comparison",
+            "technical report",
+        ),
+        "energy_intensity": (
+            "USBR brackish groundwater RO/NF comparison showing lower NF pressure and energy",
+            "technical report",
+        ),
+        "operating_pressure": (
+            "USBR brackish groundwater RO/NF comparison",
+            "technical report",
+        ),
+    },
+    "Ion exchange / EDI": {
+        "empty_bed_contact_time": (
+            "US EPA WBS Ion Exchange PFAS cost model 2024",
+            "technical report",
+        ),
+        "media_bulk_density": (
+            "Ion exchange resin supplier data and US EPA WBS IX model",
+            "vendor data",
+        ),
+        "regenerant_dose": (
+            "Veolia ion exchange handbook and US EPA WBS IX model",
+            "industrial reference",
+        ),
+    },
+    "Ion exchange": {
+        "empty_bed_contact_time": (
+            "US EPA WBS Ion Exchange PFAS cost model 2024",
+            "technical report",
+        ),
+        "media_bulk_density": (
+            "Ion exchange resin supplier data and US EPA WBS IX model",
+            "vendor data",
+        ),
+        "regenerant_dose": (
+            "Veolia ion exchange handbook and US EPA WBS IX model",
+            "industrial reference",
+        ),
+    },
+    "Boron-selective IX": {
+        "empty_bed_contact_time": (
+            "US EPA WBS Ion Exchange PFAS cost model 2024 and boron-selective resin guidance",
+            "technical report",
+        ),
+        "media_bulk_density": (
+            "Boron-selective ion exchange resin supplier data",
+            "vendor data",
+        ),
+        "regenerant_dose": (
+            "Veolia ion exchange handbook and boron-selective IX regeneration guidance",
+            "industrial reference",
+        ),
+    },
+    "Dechlorination / activated carbon": {
+        "empty_bed_contact_time": (
+            "WQA GAC Fact Sheet and US EPA WBS GAC cost model 2024",
+            "technical report",
+        ),
+        "media_bulk_density": (
+            "GAC supplier datasheets and WQA GAC Fact Sheet",
+            "vendor data",
+        ),
+    },
+}
+
+
+COST_INPUT_METADATA = {
+    "capex_per_flow": (
+        "US EPA Drinking Water Treatment Technology Unit Cost Models WBS method",
+        "technical report",
+    ),
+    "capex_per_kw": (
+        "LBNL Utility-Scale Solar 2024 Edition and NREL ATB-style PV cost assumptions",
+        "technical report",
+    ),
+    "fixed_opex_fraction": (
+        "US EPA WBS cost-model O&M categories and planning-level allowance",
+        "technical report",
+    ),
+    "variable_opex_per_m3": (
+        "US EPA WBS cost-model O&M categories and WaterTAP zero-order cost defaults",
+        "technical report",
+    ),
+    "chemical_price": (
+        "Chemical vendor pricing assumption; verify with project quote",
+        "vendor data",
+    ),
+    "media_replacement_price": (
+        "EPA WBS replacement cost framework and supplier media pricing",
+        "technical report",
+    ),
+    "media_replacement_fraction": (
+        "EPA WBS O&M replacement framework; site-specific lifetime should override",
+        "technical report",
+    ),
+}
+
+
+COST_INPUT_METADATA_BY_UNIT = {
+    "MD": {
+        "capex_per_flow": (
+            "Membrane distillation energy and cost literature with waste-heat integration cases",
+            "publication",
+        ),
+        "variable_opex_per_m3": (
+            "Membrane distillation energy and cost literature with waste-heat integration cases",
+            "publication",
+        ),
+        "media_replacement_price": (
+            "Membrane distillation module replacement planning estimate",
+            "engineering estimate",
+        ),
+    },
+    "LSRRO": {
+        "capex_per_flow": (
+            "Atia et al. 2023 LSRRO cost optimization and WaterTAP costing framework",
+            "publication",
+        ),
+        "variable_opex_per_m3": (
+            "Atia et al. 2023 LSRRO cost optimization and WaterTAP costing framework",
+            "publication",
+        ),
+    },
+    "OARO": {
+        "capex_per_flow": (
+            "OARO brine dewatering TEA literature and WaterTAP OARO flowsheet context",
+            "publication",
+        ),
+        "variable_opex_per_m3": (
+            "OARO brine dewatering TEA literature and WaterTAP OARO flowsheet context",
+            "publication",
+        ),
+    },
+    "RO": {
+        "capex_per_flow": (
+            "US EPA WBS RO/NF cost model",
+            "technical report",
+        ),
+        "variable_opex_per_m3": (
+            "US EPA WBS RO/NF cost model membrane O&M assumptions",
+            "technical report",
+        ),
+    },
+    "BWRO": {
+        "capex_per_flow": (
+            "US EPA WBS RO/NF cost model and USBR brackish groundwater RO/NF comparison",
+            "technical report",
+        ),
+        "variable_opex_per_m3": (
+            "US EPA WBS RO/NF cost model membrane O&M assumptions",
+            "technical report",
+        ),
+    },
+    "NF": {
+        "capex_per_flow": (
+            "US EPA WBS RO/NF cost model and USBR brackish groundwater RO/NF comparison",
+            "technical report",
+        ),
+        "variable_opex_per_m3": (
+            "US EPA WBS RO/NF cost model membrane O&M assumptions",
+            "technical report",
+        ),
+    },
+    "Ion exchange / EDI": {
+        "capex_per_flow": (
+            "US EPA WBS Ion Exchange PFAS cost model 2024",
+            "technical report",
+        ),
+        "variable_opex_per_m3": (
+            "US EPA WBS Ion Exchange PFAS cost model 2024",
+            "technical report",
+        ),
+        "media_replacement_price": (
+            "Ion exchange resin supplier pricing and US EPA WBS IX model",
+            "vendor data",
+        ),
+    },
+    "Ion exchange": {
+        "capex_per_flow": (
+            "US EPA WBS Ion Exchange PFAS cost model 2024",
+            "technical report",
+        ),
+        "variable_opex_per_m3": (
+            "US EPA WBS Ion Exchange PFAS cost model 2024",
+            "technical report",
+        ),
+        "media_replacement_price": (
+            "Ion exchange resin supplier pricing and US EPA WBS IX model",
+            "vendor data",
+        ),
+    },
+    "Boron-selective IX": {
+        "capex_per_flow": (
+            "US EPA WBS Ion Exchange PFAS cost model 2024 and boron-selective IX vendor guidance",
+            "technical report",
+        ),
+        "variable_opex_per_m3": (
+            "US EPA WBS Ion Exchange PFAS cost model 2024 and boron-selective IX vendor guidance",
+            "technical report",
+        ),
+        "media_replacement_price": (
+            "Boron-selective resin supplier pricing assumption",
+            "vendor data",
+        ),
+    },
+    "Solar PV": {
+        "capex_per_kw": (
+            "LBNL Utility-Scale Solar 2024 Edition and NREL ATB-style PV cost assumptions",
+            "technical report",
+        ),
+        "fixed_opex_fraction": (
+            "NREL ATB-style fixed O&M planning assumption",
+            "technical report",
+        ),
+    },
+    "Dechlorination / activated carbon": {
+        "capex_per_flow": (
+            "US EPA WBS GAC cost model 2024",
+            "technical report",
+        ),
+        "variable_opex_per_m3": (
+            "US EPA WBS GAC cost model 2024",
+            "technical report",
+        ),
+        "media_replacement_price": (
+            "US EPA WBS GAC cost model 2024 and GAC supplier pricing",
+            "vendor data",
+        ),
+    },
 }
 
 
@@ -425,6 +843,13 @@ def cost_defaults(unit_process):
     return COST_MODEL_DEFAULTS[unit_process]
 
 
+def _metadata_for(metadata_by_unit, metadata_by_parameter, unit_process, parameter):
+    return metadata_by_unit.get(unit_process, {}).get(
+        parameter,
+        metadata_by_parameter.get(parameter, ("", "")),
+    )
+
+
 def technical_input_rows(unit_process):
     defaults = TECHNICAL_MODEL_DEFAULTS.get(unit_process)
     if not defaults:
@@ -434,7 +859,21 @@ def technical_input_rows(unit_process):
         if parameter not in defaults:
             continue
         sub_section, unit, description = TECHNICAL_INPUT_SPECS[parameter]
-        rows.append((sub_section, parameter, defaults[parameter], unit, description))
+        source, data_type = _metadata_for(
+            TECHNICAL_INPUT_METADATA_BY_UNIT,
+            TECHNICAL_INPUT_METADATA,
+            unit_process,
+            parameter,
+        )
+        rows.append((
+            sub_section,
+            parameter,
+            defaults[parameter],
+            unit,
+            description,
+            source,
+            data_type,
+        ))
     return rows
 
 
@@ -447,5 +886,19 @@ def cost_input_rows(unit_process):
         if parameter not in defaults:
             continue
         sub_section, unit, description = COST_INPUT_SPECS[parameter]
-        rows.append((sub_section, parameter, defaults[parameter], unit, description))
+        source, data_type = _metadata_for(
+            COST_INPUT_METADATA_BY_UNIT,
+            COST_INPUT_METADATA,
+            unit_process,
+            parameter,
+        )
+        rows.append((
+            sub_section,
+            parameter,
+            defaults[parameter],
+            unit,
+            description,
+            source,
+            data_type,
+        ))
     return rows

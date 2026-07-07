@@ -1,6 +1,8 @@
+import csv
+import json
 from pathlib import Path
 from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_config, UNIT_REMOVAL_RATES, ALL_WATER_QUALITY_PARAMS, SIDEBAR_DEFAULTS, BRINE_MANAGEMENT_OPTIONS
-from tea_models.water_quality import collect_feedwater_quality
+from tea_models.water_quality import collect_feedwater_quality, parse_removal_rate as parse_config_removal_rate
 import streamlit as st
 from config import APP_VERSION, DATA_VERSION
 from feedback import render_report_button
@@ -61,6 +63,8 @@ POSTTREATMENT_UNIT_OPTIONS = [
     "Polishing",
     "Final filter",
     "pH adjustment",
+    "pH adjustment for ammonia stripping",
+    "pH adjustment for product water",
     "Scale inhibitor dosing",
     "Biocide dosing",
     "Blending / remineralization",
@@ -152,29 +156,49 @@ if requirements:
 
 # Helper function to parse removal rates from string
 def parse_removal_rate(rate_str):
-    """Parse removal rate from string format (e.g., '90-95%', '99%+', '0%') to float (0-1)"""
-    if not rate_str or rate_str == "0%":
-        return 0.0
-    if isinstance(rate_str, (int, float)):
-        return float(rate_str) / 100.0
-    
-    rate_str = str(rate_str).strip()
-    
-    # Handle percentage formats
-    if "%" in rate_str:
-        # Extract numbers
-        nums = []
-        parts = rate_str.replace("%", "").replace("+", "").split("-")
-        for part in parts:
-            try:
-                nums.append(float(part.strip()))
-            except ValueError:
-                pass
-        
-        if nums:
-            return min(nums) / 100.0  # Use minimum for conservative estimate
-    
-    return 0.0
+    """Parse removal rates using the same parser as the technical models."""
+    return parse_config_removal_rate(rate_str)
+
+
+def parse_ph_target(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def dot_string(value):
+    return json.dumps(str(value))
+
+
+def format_percent(value):
+    return f"{value * 100.0:.1f}%"
+
+
+def unit_tooltip_text(unit, removal_info, tracked_constituent=None):
+    lines = [unit, f"Default recovery: {format_percent(default_recovery_for_unit(unit))}"]
+    if removal_info:
+        lines.append("Removal efficiencies:")
+        ordered_items = list(removal_info.items())
+        if tracked_constituent in removal_info:
+            ordered_items = [
+                (tracked_constituent, removal_info[tracked_constituent]),
+                *[(name, rate) for name, rate in ordered_items if name != tracked_constituent],
+            ]
+        for constituent, rate in ordered_items:
+            if constituent == "pH":
+                ph_target = parse_ph_target(rate)
+                parsed_text = f" (target pH {ph_target:g})" if ph_target is not None else ""
+            else:
+                parsed_rate = parse_removal_rate(rate)
+                parsed_text = f" ({format_percent(parsed_rate)})" if parsed_rate > 0.0 else ""
+            lines.append(f"- {constituent}: {rate}{parsed_text}")
+    else:
+        lines.append("No constituent removal assumed.")
+
+    if tracked_constituent and tracked_constituent not in removal_info:
+        lines.append(f"Tracked {tracked_constituent}: no removal assumed in this unit.")
+    return "\\n".join(lines)
 
 
 @st.cache_data
@@ -245,14 +269,8 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
             node_id = f"{stage_prefix}{i+1}"
             node_ids.append(node_id)
             
-            # Get removal rates for tooltip
             removal_info = UNIT_REMOVAL_RATES.get(unit, {})
-            tooltip_text = f"{unit}\\n"
-            if removal_info:
-                for constituent, rate in list(removal_info.items())[:3]:  # Show top 3 constituents
-                    tooltip_text += f"{constituent}: {rate}\\n"
-            else:
-                tooltip_text += "No data"
+            tooltip_text = unit_tooltip_text(unit, removal_info, tracked_constituent)
             
             # Calculate outlet concentration if tracking a constituent
             outlet_label = unit
@@ -266,8 +284,12 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
             if tracked_constituent and current_conc is not None:
                 inlet_conc = current_conc
                 if tracked_constituent in removal_info:
-                    removal_rate = parse_removal_rate(removal_info[tracked_constituent])
-                    outlet_conc = current_conc * (1 - removal_rate)
+                    if tracked_constituent == "pH":
+                        ph_target = parse_ph_target(removal_info[tracked_constituent])
+                        outlet_conc = ph_target if ph_target is not None else current_conc
+                    else:
+                        removal_rate = parse_removal_rate(removal_info[tracked_constituent])
+                        outlet_conc = current_conc * (1 - removal_rate)
                     concentrations[node_id] = outlet_conc
                     session_key = f"wq_target_{tracked_constituent}".replace(" ", "_")
                     # Get target value from session state, default to requirement limit
@@ -279,6 +301,11 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
                 else:
                     concentrations[node_id] = current_conc
                     outlet_conc = current_conc
+                    session_key = f"wq_target_{tracked_constituent}".replace(" ", "_")
+                    target_value = st.session_state.get(session_key, ALL_WATER_QUALITY_PARAMS.get(tracked_constituent, {}).get("limit", current_conc))
+                    color = "red" if outlet_conc > target_value else "green"
+                    outlet_label = f"{unit}<BR/><FONT COLOR='{color}'>{tracked_constituent}: {outlet_conc:.2f} {constituent_unit}</FONT>"
+                    use_html_label = True
                 if track_brine:
                     recovery = default_recovery_for_unit(unit)
                     brine_conc = calculate_brine_concentration(
@@ -289,9 +316,9 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
                     )
             
             if use_html_label:
-                node_defs += f'  {node_id} [label=<{outlet_label}>, tooltip="{tooltip_text}"];\n'
+                node_defs += f'  {node_id} [label=<{outlet_label}>, tooltip={dot_string(tooltip_text)}];\n'
             else:
-                node_defs += f'  {node_id} [label="{outlet_label}", tooltip="{tooltip_text}"];\n'
+                node_defs += f'  {node_id} [label={dot_string(outlet_label)}, tooltip={dot_string(tooltip_text)}];\n'
         
         # Create connections between nodes in this stage
         for i in range(len(node_ids) - 1):
@@ -421,6 +448,135 @@ PARAM_TO_SIDEBAR_KEY = {
     "Radium-228": "wq_radium_228",
 }
 
+REQUIREMENT_TO_INTERNAL_PARAM = {
+    "Ba2+": "Barium",
+    "SO4": "Sulfate",
+}
+
+
+def target_range(info):
+    range_text = str(info.get("range", "") or "")
+    if "-" not in range_text:
+        return None
+    try:
+        low_text, high_text = range_text.split("-", 1)
+        return float(low_text.strip()), float(high_text.strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def feed_concentration_for_param(parameter):
+    internal_param = REQUIREMENT_TO_INTERNAL_PARAM.get(parameter, parameter)
+    sidebar_key = PARAM_TO_SIDEBAR_KEY.get(internal_param)
+    if sidebar_key and sidebar_key in st.session_state:
+        return float(st.session_state[sidebar_key] or 0.0)
+
+    additional_input_key = f"additional_input_{internal_param}".replace(" ", "_")
+    if additional_input_key in st.session_state:
+        return float(st.session_state[additional_input_key] or 0.0)
+
+    conc_level = st.session_state.get("conc_level", "High")
+    influent_type = st.session_state.get("influent_type", "Produced water")
+    sidebar_defaults_for_water = SIDEBAR_DEFAULTS.get(influent_type, SIDEBAR_DEFAULTS)
+    sidebar_defaults_for_level = sidebar_defaults_for_water.get(conc_level, {})
+    if internal_param in sidebar_defaults_for_level:
+        return float(sidebar_defaults_for_level[internal_param] or 0.0)
+    if parameter in sidebar_defaults_for_level:
+        return float(sidebar_defaults_for_level[parameter] or 0.0)
+    return None
+
+
+def target_display_value(parameter, info):
+    parameter_range = target_range(info)
+    if parameter_range:
+        low, high = parameter_range
+        return f"{low:g}-{high:g}", parameter_range
+
+    session_key = f"wq_target_{parameter}".replace(" ", "_")
+    target_value = st.session_state.get(session_key, info.get("limit"))
+    try:
+        target_value = float(target_value)
+    except (TypeError, ValueError):
+        return "N/A", None
+    return f"{target_value:g}", target_value
+
+
+def estimate_product_concentration(parameter, feed_concentration, pretreat_list, desal_list, posttreat_list):
+    internal_param = REQUIREMENT_TO_INTERNAL_PARAM.get(parameter, parameter)
+    concentration = float(feed_concentration)
+    for unit in [*pretreat_list, *desal_list, *posttreat_list]:
+        removal_info = UNIT_REMOVAL_RATES.get(unit, {})
+        if internal_param == "pH" and internal_param in removal_info:
+            ph_target = parse_ph_target(removal_info.get(internal_param))
+            if ph_target is not None:
+                concentration = ph_target
+            continue
+        removal_rate = parse_removal_rate(removal_info.get(internal_param, 0.0))
+        concentration *= 1.0 - removal_rate
+    return max(concentration, 0.0)
+
+
+def water_quality_gap_summary(requirements, pretreat_list, desal_list, posttreat_list):
+    rows = []
+    for parameter, info in requirements.items():
+        if parameter in {"Notes", "url"}:
+            continue
+        if REQUIREMENT_TO_INTERNAL_PARAM.get(parameter, parameter) == "pH":
+            continue
+
+        feed_value = feed_concentration_for_param(parameter)
+        unit = info.get("unit", ALL_WATER_QUALITY_PARAMS.get(REQUIREMENT_TO_INTERNAL_PARAM.get(parameter, parameter), {}).get("unit", ""))
+        target_text, target_value = target_display_value(parameter, info)
+        if feed_value is None:
+            continue
+
+        product_value = estimate_product_concentration(
+            parameter,
+            feed_value,
+            pretreat_list,
+            desal_list,
+            posttreat_list,
+        )
+        if isinstance(target_value, tuple):
+            low, high = target_value
+            meets_target = low <= product_value <= high
+        elif target_value is not None:
+            meets_target = product_value <= target_value
+        else:
+            meets_target = True
+
+        if not meets_target:
+            rows.append(
+                {
+                    "Pollutant": parameter,
+                    "Feed": f"{feed_value:,.2f}",
+                    "Estimated product": f"{product_value:,.2f}",
+                    "Target": target_text,
+                    "Unit": unit,
+                    "Status": "May exceed target",
+                }
+            )
+    return rows
+
+
+def render_water_quality_gap_summary(requirements, pretreat_list, desal_list, posttreat_list):
+    summary_rows = water_quality_gap_summary(
+        requirements,
+        pretreat_list,
+        desal_list,
+        posttreat_list,
+    )
+    st.markdown("**Potential water quality gaps**")
+    if not summary_rows:
+        st.success("No target exceedances estimated for the listed fit-for-purpose requirements.")
+        return
+    st.dataframe(
+        summary_rows,
+        hide_index=True,
+        width="stretch",
+    )
+
+
 # Display flowchart and requirements side-by-side
 if requirements:    
     # Add constituent tracking selector
@@ -433,6 +589,7 @@ if requirements:
             "Select constituent to track",
             constituent_options,
             index=0,
+            key="tracked_constituent_selector",
             label_visibility="collapsed",
             width = 170,
         )
@@ -520,6 +677,29 @@ if requirements:
     posttreatment = st.session_state.treatment_posttreatment
     brine_option = st.session_state.treatment_brine
     brine_category = st.session_state.treatment_brine_category
+
+    def _sync_stage_widget_values(stage_key, widget_prefix):
+        stage_units = st.session_state.get(stage_key, [])
+        changed = False
+        for index, unit in enumerate(stage_units):
+            widget_key = f"{widget_prefix}_{index}_{st.session_state.reset_counter}"
+            widget_value = st.session_state.get(widget_key)
+            if widget_value and widget_value != unit:
+                stage_units[index] = widget_value
+                changed = True
+        if changed:
+            st.session_state[stage_key] = stage_units
+        return changed
+
+    _sync_stage_widget_values("treatment_pretreatment", "pretreat")
+    _sync_stage_widget_values("treatment_desalination", "desal")
+    _sync_stage_widget_values("treatment_posttreatment", "posttreat")
+    _sync_stage_widget_values("treatment_brine", "brine_unit")
+
+    pretreatment = st.session_state.treatment_pretreatment
+    desalination = st.session_state.treatment_desalination
+    posttreatment = st.session_state.treatment_posttreatment
+    brine_option = st.session_state.treatment_brine
     
     with chart_col:
         if tracked_const != "None":
@@ -527,6 +707,7 @@ if requirements:
         else:
             dot = generate_treatment_flowchart(influent, ffp_primary, pretreatment, desalination, posttreatment, brine_option)
         st.graphviz_chart(dot)
+        render_water_quality_gap_summary(requirements, pretreatment, desalination, posttreatment)
         if st.button("System Design →", type="primary"):
             st.session_state.treatment_train = {
                 "pretreatment": pretreatment,

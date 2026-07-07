@@ -26,6 +26,7 @@ BRACKISH_GROUNDWATER_PATH = LAYER_DIR / "BGW_Tidwell.geojson"
 RENEWABLE_LCOE_PATH = LAYER_DIR / "pv_wind.geojson"
 OIL_GAS_PRODUCTION_PATH = LAYER_DIR / "New_Mexico_Oil_and_Gas_Production_Areas.geojson"
 PRODUCED_WATER_RESOURCE_PATH = LAYER_DIR / "swd_well.geojson"
+WATERSTAR_PRODUCED_WATER_PATH = LAYER_DIR / "waterstar_pw.geojson"
 ASSET_TYPES = ["Water source", "Treatment plant", "Disposal", "End user"]
 ASSET_COLORS = {
     "Water source": "#2563EB",
@@ -61,6 +62,26 @@ STATE_LABELS = {
 }
 NOMINAL_SIZE_COLUMN = "Suggested nominal size / Grid load (MW)"
 ESTIMATED_LCOE_COLUMN = "Estimated LCOE / Grid price ($/kWh)"
+WATERSTAR_QUANTITY_LAST_YEAR_FIELD = "waterstar.Quantity_Last_Cal__Year__BBL_"
+WATERSTAR_QUALITY_FIELDS = [
+    ("waterstar.Water_Quality__TDS___mg_L_", "TDS", "mg/L"),
+    ("waterstar.Water_Quality__Turbidity_", "Turbidity", ""),
+    ("waterstar.Water_Quality__Temp_", "Temperature", ""),
+    ("waterstar.Water_Quality__DO_", "DO", ""),
+    ("waterstar.Water_Quality__pH___SU_", "pH", ""),
+    ("waterstar.Water_Quality__TOC_", "TOC", ""),
+    ("waterstar.Water_Quality__Nitrate_", "Nitrate", ""),
+    ("waterstar.Water_Quality__TPH_", "TPH", ""),
+    ("waterstar.Water_Quality__Gross_Alpha_", "Gross alpha", ""),
+    ("waterstar.Water_Quality__Gross_Beta_", "Gross beta", ""),
+    ("waterstar.Water_Quality__Thorium_", "Thorium", ""),
+    ("waterstar.Water_Quality__Uranium_", "Uranium", ""),
+    ("waterstar.Water_Quality__Boron_", "Boron", ""),
+    ("waterstar.Water_Quality__Na___mg_L_", "Na", "mg/L"),
+    ("waterstar.Water_Quality__Cl___mg_L_", "Cl", "mg/L"),
+    ("waterstar.Water_Quality__SAR_", "SAR", ""),
+]
+WATERSTAR_PRIMARY_QUALITY_LABELS = ["TDS", "pH", "Na", "Cl"]
 
 
 @st.cache_data(show_spinner=False)
@@ -155,6 +176,103 @@ def geojson_numeric_range(data, field_name):
     if min_value == max_value:
         return min_value, min_value + 1.0
     return min_value, max_value
+
+
+def geojson_present_numeric_range(data, field_name):
+    values = []
+    for feature in data.get("features", []):
+        raw_value = feature.get("properties", {}).get(field_name)
+        if raw_value in (None, ""):
+            continue
+        try:
+            value = float(raw_value)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(value):
+            values.append(value)
+    if not values:
+        return 0.0, 1.0
+    min_value = min(values)
+    max_value = max(values)
+    if min_value == max_value:
+        return min_value, min_value + 1.0
+    return min_value, max_value
+
+
+def is_present_value(value):
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return True
+
+
+def format_waterstar_value(value, unit=""):
+    try:
+        numeric_value = float(value)
+    except (TypeError, ValueError):
+        text = str(value).strip()
+    else:
+        if not math.isfinite(numeric_value):
+            return ""
+        if numeric_value.is_integer():
+            text = f"{numeric_value:,.0f}"
+        elif abs(numeric_value) >= 100.0:
+            text = f"{numeric_value:,.1f}"
+        else:
+            text = f"{numeric_value:,.2f}"
+    return f"{text} {unit}".strip()
+
+
+def format_waterstar_cell_value(value):
+    if not is_present_value(value):
+        return ""
+    return format_waterstar_value(value)
+
+
+def waterstar_quality_column_name(label, unit=""):
+    return f"{label} ({unit})" if unit else label
+
+
+@st.cache_data(show_spinner=False)
+def load_waterstar_produced_water_geojson(path):
+    data = copy.deepcopy(load_geojson(path))
+    for feature in data.get("features", []):
+        properties = feature.setdefault("properties", {})
+        raw_quantity = properties.get(WATERSTAR_QUANTITY_LAST_YEAR_FIELD)
+        try:
+            quantity = float(raw_quantity)
+        except (TypeError, ValueError):
+            quantity = None
+        if quantity is not None and not math.isfinite(quantity):
+            quantity = None
+
+        quality_rows = []
+        for field_name, label, unit in WATERSTAR_QUALITY_FIELDS:
+            value = properties.get(field_name)
+            if not is_present_value(value):
+                continue
+            formatted_value = format_waterstar_value(value, unit)
+            if formatted_value:
+                quality_rows.append({"label": label, "value": formatted_value})
+
+        properties["waterstar_layer"] = True
+        properties["waterstar_display_id"] = properties.get(
+            "waterstar.ID",
+            properties.get("BLM_NM_REGION_CadNSD_quarter_wgs1984.ID", ""),
+        )
+        properties["waterstar_quantity_last_year_bbl"] = quantity
+        properties["waterstar_quantity_last_year_display"] = (
+            format_waterstar_value(quantity, "bbl") if quantity is not None else ""
+        )
+        properties["waterstar_quality_rows"] = quality_rows
+        properties["waterstar_quality_summary"] = "; ".join(
+            f"{row['label']}: {row['value']}" for row in quality_rows
+        )
+    return data
 
 
 def renewable_penetration_value(properties, source_type):
@@ -387,6 +505,16 @@ def renewable_feature_at(lon, lat):
     if not RENEWABLE_LCOE_PATH.exists():
         return None
     data = load_renewable_geojson(str(RENEWABLE_LCOE_PATH))
+    for feature in data.get("features", []):
+        if point_in_geojson_geometry(lon, lat, feature.get("geometry")):
+            return feature
+    return None
+
+
+def waterstar_produced_water_feature_at(lon, lat):
+    if not WATERSTAR_PRODUCED_WATER_PATH.exists():
+        return None
+    data = load_waterstar_produced_water_geojson(str(WATERSTAR_PRODUCED_WATER_PATH))
     for feature in data.get("features", []):
         if point_in_geojson_geometry(lon, lat, feature.get("geometry")):
             return feature
@@ -1331,6 +1459,121 @@ def render_water_market_card():
             st.success("Water market assumption saved.")
 
 
+def water_quality_editor_rows():
+    ensure_target_ids()
+    overrides = st.session_state.setdefault("water_quality_overrides", {})
+    sources = [
+        target
+        for target in map_targets_state()
+        if target.get("type") == "Water source"
+    ]
+    source_records = []
+    missing_sources = []
+    active_quality_columns = {}
+
+    for source in sources:
+        feature = waterstar_produced_water_feature_at(source["lon"], source["lat"])
+        if not feature:
+            missing_sources.append(source["name"])
+            continue
+
+        properties = feature.get("properties", {})
+        source_id = source.get("id", source["name"])
+        waterstar_id = properties.get("waterstar_display_id", "")
+        row = {
+            "Source": source["name"],
+            "Township ID": waterstar_id,
+            "Quantity last year (bbl)": overrides.get(
+                f"{source_id}|waterstar_quantity_last_year_bbl",
+                format_waterstar_cell_value(properties.get("waterstar_quantity_last_year_bbl")),
+            ),
+        }
+        cell_keys = {
+            "Quantity last year (bbl)": f"{source_id}|waterstar_quantity_last_year_bbl",
+        }
+
+        for field_name, label, unit in WATERSTAR_QUALITY_FIELDS:
+            value = properties.get(field_name)
+            if not is_present_value(value):
+                continue
+            column_name = waterstar_quality_column_name(label, unit)
+            row_key = f"{source_id}|{field_name}"
+            row[column_name] = overrides.get(row_key, format_waterstar_cell_value(value))
+            cell_keys[column_name] = row_key
+            active_quality_columns[label] = column_name
+
+        source_records.append({"row": row, "cell_keys": cell_keys})
+
+    fixed_columns = [
+        "Source",
+        "Township ID",
+        "Quantity last year (bbl)",
+        "TDS (mg/L)",
+        "pH",
+        "Na (mg/L)",
+        "Cl (mg/L)",
+    ]
+    extra_columns = [
+        active_quality_columns[label]
+        for _, label, _ in WATERSTAR_QUALITY_FIELDS
+        if label not in WATERSTAR_PRIMARY_QUALITY_LABELS
+        and label in active_quality_columns
+    ]
+    column_order = fixed_columns + extra_columns
+
+    rows = []
+    row_cell_keys = []
+    for record in source_records:
+        row = {column: record["row"].get(column, "") for column in column_order}
+        rows.append(row)
+        row_cell_keys.append(record["cell_keys"])
+
+    return rows, row_cell_keys, missing_sources, column_order
+
+
+def render_water_quality_card():
+    with st.expander("Water quality", expanded=False):
+        st.markdown(
+            '<span class="map-tool-panel-marker"></span>',
+            unsafe_allow_html=True,
+        )
+        rows, row_cell_keys, missing_sources, column_order = water_quality_editor_rows()
+        if missing_sources:
+            st.info(
+                "No WaterSTAR produced-water polygon found for: "
+                + ", ".join(missing_sources)
+            )
+        if not rows:
+            st.info("Add a Water source in Transportation to populate water quality.")
+            if st.button("Apply water quality to TEA", type="primary", disabled=True):
+                pass
+            return
+
+        edited_rows = st.data_editor(
+            rows,
+            key="water_quality_editor",
+            hide_index=True,
+            num_rows="fixed",
+            width="stretch",
+            column_order=column_order,
+            disabled=["Source", "Township ID"],
+            column_config={column: st.column_config.TextColumn(column) for column in column_order},
+        )
+        if hasattr(edited_rows, "to_dict"):
+            edited_records = edited_rows.to_dict("records")
+        else:
+            edited_records = [dict(row) for row in edited_rows]
+
+        overrides = st.session_state.setdefault("water_quality_overrides", {})
+        for cell_keys, row in zip(row_cell_keys, edited_records):
+            for column_name, row_key in cell_keys.items():
+                overrides[row_key] = str(row.get(column_name, "") or "").strip()
+
+        if st.button("Apply water quality to TEA", type="primary"):
+            st.session_state.water_quality_assumptions = edited_records
+            st.success("Water quality assumptions saved for TEA.")
+
+
 def render_map_extension_cards():
     render_local_electricity_card()
     render_water_market_card()
@@ -1509,6 +1752,8 @@ def render_targets_panel():
         ):
             st.session_state.map_targets = []
             st.session_state.map_routes = []
+            st.session_state.pop("water_quality_overrides", None)
+            st.session_state.pop("water_quality_assumptions", None)
             st.rerun()
 
     st.radio(
@@ -1666,6 +1911,20 @@ class HoverInfoControl(MacroElement):
                         + row('Watershed', props.Name)
                         + row('Volume', formatNumber(props.Brack_Avai, 0, 'AFY'))
                         + row('Average depth', formatNumber(props.Average_Depth_to_Groundwater_Feet, 0, 'ft'));
+                }
+                if (props.waterstar_layer) {
+                    var waterstarHtml = '<div class="map-hover-info-title">WaterSTAR produced water</div>'
+                        + row('ID', props.waterstar_display_id)
+                        + row('Quantity last year', props.waterstar_quantity_last_year_display || formatNumber(props.waterstar_quantity_last_year_bbl, 0, 'bbl'));
+                    var qualityRows = Array.isArray(props.waterstar_quality_rows) ? props.waterstar_quality_rows : [];
+                    if (qualityRows.length) {
+                        qualityRows.forEach(function(item) {
+                            waterstarHtml += row(item.label, item.value);
+                        });
+                    } else {
+                        waterstarHtml += row('Water quality', 'N/A');
+                    }
+                    return waterstarHtml;
                 }
                 if (props.Production) {
                     return '<div class="map-hover-info-title">Oil & Gas Production Area</div>'
@@ -1842,7 +2101,125 @@ def add_produced_water_resource_layer(map_obj):
     ).add_to(map_obj)
 
 
-def add_geojson_layers(map_obj, base_map, show_produced_water, show_brackish, show_pv_wind):
+def add_waterstar_quantity_legend(map_obj, min_quantity, max_quantity):
+    mid_quantity = min_quantity + (max_quantity - min_quantity) / 2
+    labels = [
+        f"{value:,.0f}"
+        for value in (min_quantity, mid_quantity, max_quantity)
+        if math.isfinite(value)
+    ]
+    if len(labels) != 3:
+        return
+
+    gradient_colors = [
+        "#FFFFCC",
+        "#FFEDA0",
+        "#FED976",
+        "#FEB24C",
+        "#FD8D3C",
+        "#FC4E2A",
+        "#E31A1C",
+        "#BD0026",
+        "#800026",
+    ]
+    map_obj.get_root().html.add_child(
+        folium.Element(
+            f"""
+            <div class="legend waterstar-quantity-legend">
+                <div class="waterstar-quantity-legend-title">WaterSTAR quantity last year (bbl)</div>
+                <div class="waterstar-quantity-legend-gradient"></div>
+                <div class="waterstar-quantity-legend-labels">
+                    <span>{labels[0]}</span>
+                    <span>{labels[1]}</span>
+                    <span>{labels[2]}</span>
+                </div>
+            </div>
+            <style>
+                .waterstar-quantity-legend {{
+                    bottom: 28px;
+                    line-height: 1.2;
+                    position: fixed;
+                    right: 28px;
+                    width: 240px;
+                    z-index: 9999;
+                }}
+                .waterstar-quantity-legend-title {{
+                    font-size: 12px;
+                    font-weight: 700;
+                    margin-bottom: 6px;
+                }}
+                .waterstar-quantity-legend-gradient {{
+                    background: linear-gradient(90deg, {", ".join(gradient_colors)});
+                    border: 1px solid rgba(15, 23, 42, 0.18);
+                    height: 12px;
+                    width: 100%;
+                }}
+                .waterstar-quantity-legend-labels {{
+                    display: flex;
+                    font-size: 11px;
+                    justify-content: space-between;
+                    margin-top: 4px;
+                }}
+            </style>
+            """
+        )
+    )
+
+
+def add_waterstar_produced_water_layer(map_obj):
+    if not WATERSTAR_PRODUCED_WATER_PATH.exists():
+        return
+
+    waterstar_data = load_waterstar_produced_water_geojson(str(WATERSTAR_PRODUCED_WATER_PATH))
+    min_quantity, max_quantity = geojson_present_numeric_range(
+        waterstar_data,
+        "waterstar_quantity_last_year_bbl",
+    )
+    waterstar_colormap = linear.YlOrRd_09.scale(min_quantity, max_quantity).to_step(9)
+
+    def waterstar_style(feature):
+        properties = feature.get("properties", {})
+        try:
+            quantity = float(properties.get("waterstar_quantity_last_year_bbl"))
+        except (TypeError, ValueError):
+            quantity = None
+        if quantity is not None and not math.isfinite(quantity):
+            quantity = None
+        return {
+            "color": "#7C2D12",
+            "weight": 0.7,
+            "fillColor": "#E5E7EB" if quantity is None or math.isnan(quantity) else waterstar_colormap(quantity),
+            "fillOpacity": 0.62,
+        }
+
+    folium.GeoJson(
+        waterstar_data,
+        name="WaterSTAR produced water",
+        style_function=waterstar_style,
+        tooltip=folium.GeoJsonTooltip(
+            fields=[
+                "waterstar_display_id",
+                "waterstar_quality_summary",
+            ],
+            aliases=[
+                "ID",
+                "Water quality",
+            ],
+            localize=True,
+            sticky=True,
+        ),
+    ).add_to(map_obj)
+    add_waterstar_quantity_legend(map_obj, min_quantity, max_quantity)
+
+
+def add_geojson_layers(
+    map_obj,
+    base_map,
+    show_produced_water,
+    show_waterstar_produced_water,
+    show_brackish,
+    show_pv_wind,
+):
     if base_map == "County boundary" and COUNTY_BOUNDARY_PATH.exists():
         folium.GeoJson(
             load_county_geojson(str(COUNTY_BOUNDARY_PATH)),
@@ -1929,6 +2306,9 @@ def add_geojson_layers(map_obj, base_map, show_produced_water, show_brackish, sh
         ).add_to(map_obj)
         brackish_colormap.add_to(map_obj)
 
+    if show_waterstar_produced_water:
+        add_waterstar_produced_water_layer(map_obj)
+
     if STATE_BOUNDARY_PATH.exists():
         folium.GeoJson(
             load_geojson(str(STATE_BOUNDARY_PATH)),
@@ -1984,12 +2364,13 @@ def add_route_markers(map_obj, routes):
         ).add_to(map_obj)
 
 
-def render_folium_map(base_map, show_produced_water, show_brackish, show_pv_wind, routes):
+def render_folium_map(base_map, show_produced_water, show_waterstar_produced_water, show_brackish, show_pv_wind, routes):
     view = map_view_state()
     center = view["center"]
     map_key = (
         "interactive_route_map_"
-        f"{base_map}_{int(show_produced_water)}_{int(show_brackish)}_{int(show_pv_wind)}"
+        f"{base_map}_{int(show_produced_water)}_{int(show_waterstar_produced_water)}_"
+        f"{int(show_brackish)}_{int(show_pv_wind)}_v2"
     )
     map_obj = folium.Map(
         location=[center["lat"], center["lng"]],
@@ -2017,7 +2398,14 @@ def render_folium_map(base_map, show_produced_water, show_brackish, show_pv_wind
             """
         )
     )
-    add_geojson_layers(map_obj, base_map, show_produced_water, show_brackish, show_pv_wind)
+    add_geojson_layers(
+        map_obj,
+        base_map,
+        show_produced_water,
+        show_waterstar_produced_water,
+        show_brackish,
+        show_pv_wind,
+    )
     add_route_markers(map_obj, routes)
     map_obj.add_child(HoverInfoControl())
     return st_folium(
@@ -2042,12 +2430,20 @@ def render_map_workspace():
     with control_cols[1]:
         st.markdown("**Layers**")
         show_produced_water = st.checkbox("Produced water resource", value=False)
+        show_waterstar_produced_water = st.checkbox("WaterSTAR produced water", value=False)
         show_brackish = st.checkbox("Brackish groundwater resource", value=False)
         show_pv_wind = st.checkbox("PV and wind (pre-calculated performance)", value=False)
         
     sync_possible_routes()
     calculated_routes = route_calculations(map_routes_state())
-    map_data = render_folium_map(base_map, show_produced_water, show_brackish, show_pv_wind, calculated_routes)
+    map_data = render_folium_map(
+        base_map,
+        show_produced_water,
+        show_waterstar_produced_water,
+        show_brackish,
+        show_pv_wind,
+        calculated_routes,
+    )
     if apply_map_click(map_data):
         st.rerun()
     st.markdown(
@@ -2107,6 +2503,7 @@ def render_map_workspace():
         )
         render_targets_panel()
         render_route_setup()
+    render_water_quality_card()
     render_map_extension_cards()
 
 
