@@ -190,7 +190,10 @@ def get_ordered_unit_processes(train):
         for unit_process in units:
             # Migrate treatment trains saved before the generic RO placeholder
             # was replaced by the explicit BWRO model.
-            unit_process = "BWRO" if unit_process == "RO" else unit_process
+            if unit_process == "RO":
+                unit_process = "BWRO"
+            elif unit_process in {"MD", "VMD"}:
+                unit_process = "Vacuum membrane distillation (VMD)"
             ordered_units.append({
                 "sequence": sequence,
                 "section": section,

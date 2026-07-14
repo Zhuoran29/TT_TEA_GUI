@@ -33,7 +33,7 @@ PRETREATMENT_UNIT_OPTIONS = [
 
 DESALINATION_UNIT_OPTIONS = [
     "MVC",
-    "MD",
+    "Vacuum membrane distillation (VMD)",
     "LSRRO",
     "OARO",
     "BWRO",

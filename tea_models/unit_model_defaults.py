@@ -117,13 +117,19 @@ TECHNICAL_MODEL_DEFAULTS = {
         "media_bulk_density": 480.0,
         "chemical_dose": 0.001,
     },
-    "MD": {
+    "Vacuum membrane distillation (VMD)": {
         "unit_kind": "thermal_membrane",
-        "recovery": 0.65,
-        "energy_intensity": 1.0,
-        "thermal_energy_intensity": 80.0,
-        "membrane_flux": 5.0,
-        "operating_pressure": 1.0,
+        "recovery": 0.50,
+        "feed_tds_mass_fraction": 0.035,
+        "feed_temperature": 25.0,
+        "recycle_ratio": 6.169,
+        "specific_electric_energy": 91.43,
+        "reference_feed_flow": 84.414643,
+        "reference_recovery": 0.50,
+        "reference_membrane_area": 103.1817,
+        "reference_heat_exchanger_area": 291.08,
+        "reference_heater_power": 268.454,
+        "reference_chiller_power": 274.402,
     },
     "LSRRO": {
         "unit_kind": "pressure_membrane",
@@ -317,7 +323,19 @@ COST_MODEL_DEFAULTS = {
     "Antiscalant dosing": {"capex_per_flow": 10.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 3.0},
     "Air stripping": {"capex_per_flow": 120.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.04},
     "Dechlorination / activated carbon": {"capex_per_flow": 280.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.20, "chemical_price": 1.0, "media_replacement_price": 2.5, "media_replacement_fraction": 0.5},
-    "MD": {"capex_per_flow": 720.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.15, "media_replacement_price": 60.0, "media_replacement_fraction": 0.10},
+    "Vacuum membrane distillation (VMD)": {
+        "low_pressure_pump_cost": 889.0,
+        "heat_exchanger_material_factor": 1.0,
+        "heat_exchanger_unit_cost": 300.0,
+        "mixer_unit_cost": 361.0,
+        "heater_unit_cost": 0.066,
+        "heater_efficiency": 0.99,
+        "chiller_unit_cost": 0.20,
+        "chiller_cop": 7.0,
+        "membrane_cost": 56.0,
+        "membrane_replacement_fraction": 0.20,
+        "fixed_opex_fraction": 0.03,
+    },
     "LSRRO": {"capex_per_flow": 480.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.10, "media_replacement_price": 45.0, "media_replacement_fraction": 0.12},
     "OARO": {"capex_per_flow": 600.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.12, "media_replacement_price": 50.0, "media_replacement_fraction": 0.12},
     "RO": {"capex_per_flow": 360.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.08, "media_replacement_price": 40.0, "media_replacement_fraction": 0.12},
@@ -529,7 +547,7 @@ TECHNICAL_INPUT_METADATA = {
 
 
 TECHNICAL_INPUT_METADATA_BY_UNIT = {
-    "MD": {
+    "Vacuum membrane distillation (VMD)": {
         "recovery": (
             "Membrane distillation energy and cost literature; waste-heat integration case studies",
             "publication",
@@ -717,7 +735,7 @@ COST_INPUT_METADATA = {
 
 
 COST_INPUT_METADATA_BY_UNIT = {
-    "MD": {
+    "Vacuum membrane distillation (VMD)": {
         "capex_per_flow": (
             "Membrane distillation energy and cost literature with waste-heat integration cases",
             "publication",

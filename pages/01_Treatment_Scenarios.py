@@ -88,7 +88,7 @@ ffp = st.selectbox(
 
 st.markdown("##### Primary desalination type")
 desal = st.selectbox("Primary desalination type", 
-                    ["Mechanical Vapor Compression (MVC)", "Membrane desalination (MD)", "Low-salt rejection reverse osmosis (LSRRO)", "Brackish-water reverse osmosis (BWRO)"],
+                    ["Mechanical Vapor Compression (MVC)", "Vacuum membrane distillation (VMD)", "Low-salt rejection reverse osmosis (LSRRO)", "Brackish-water reverse osmosis (BWRO)"],
                     index=0, label_visibility="collapsed")
 
 # Next button with automatic session state save

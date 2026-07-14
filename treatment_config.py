@@ -194,7 +194,13 @@ def normalize_treatment_train_config(config):
     # RO was the former generic placeholder.  All current RO positions use the
     # explicit BWRO technical and cost models, including secondary desalination.
     normalized["desalination"] = [
-        "BWRO" if unit == "RO" else unit
+        (
+            "BWRO"
+            if unit == "RO"
+            else "Vacuum membrane distillation (VMD)"
+            if unit in {"MD", "VMD"}
+            else unit
+        )
         for unit in config.get("desalination", [])
     ]
     normalized["brine_category"] = brine_category
@@ -216,8 +222,13 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
     """
 
     if water_type == "Brackish groundwater":
-        if desal_type == "Membrane desalination (MD)":
-            primary_desal = ["NF", "MD"]
+        if desal_type in {
+            "Vacuum membrane distillation (VMD)",
+            "Membrane desalination (MD)",
+            "MD",
+            "VMD",
+        }:
+            primary_desal = ["NF", "Vacuum membrane distillation (VMD)"]
         elif desal_type == "Mechanical Vapor Compression (MVC)":
             primary_desal = ["NF", "MVC"]
         elif desal_type in {
@@ -226,6 +237,11 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             "Reverse osmosis (RO)",
         }:
             primary_desal = ["BWRO"]
+        elif desal_type in {
+            "LSRRO",
+            "Low-salt rejection reverse osmosis (LSRRO)",
+        }:
+            primary_desal = ["NF", "LSRRO"]
         else:
             primary_desal = ["NF", "BWRO"]
 
@@ -281,7 +297,19 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             }
         }
 
-        return normalize_treatment_train_config(configs.get(ffp_scenario, configs["Drinking water quality oriented(e.g. groundwater recharge)"]))
+        selected = configs.get(
+            ffp_scenario,
+            configs["Drinking water quality oriented(e.g. groundwater recharge)"],
+        ).copy()
+        configured_desalination = list(selected.get("desalination", []))
+        if configured_desalination == ["BWRO"]:
+            selected["desalination"] = list(primary_desal)
+        else:
+            selected["desalination"] = [
+                primary_desal[-1] if unit == "BWRO" else unit
+                for unit in configured_desalination
+            ]
+        return normalize_treatment_train_config(selected)
 
     if desal_type == "Mechanical Vapor Compression (MVC)":
         configs = {
@@ -335,53 +363,58 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             }
         }
 
-    elif desal_type == "Membrane desalination (MD)":  # Membrane desalination
+    elif desal_type in {
+        "Vacuum membrane distillation (VMD)",
+        "Membrane desalination (MD)",
+        "MD",
+        "VMD",
+    }:
         configs = {
             "Drinking water quality oriented(e.g. groundwater recharge)": {
                 "pretreatment": ["DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
-                "desalination": ["MD"],
+                "desalination": ["Vacuum membrane distillation (VMD)"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment", "Chlorination"],
                 "brine": "Brine disposal"
             },
             "Surface water discharge": {
                 "pretreatment": ["3-phase separator","DAF", "Ultrafiltration", "Antiscalant / pH adjustment"],
-                "desalination": ["MD"],
+                "desalination": ["Vacuum membrane distillation (VMD)"],
                 "posttreatment": ["GAC", "Zeolite"],
                 "brine": "Brine disposal"
             },
             "Agricultural use": {
                 "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
-                "desalination": ["MD"],
+                "desalination": ["Vacuum membrane distillation (VMD)"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment"],
                 "brine": "Brine valorization"
             },
             "Powerplant cooling water": {
                 "pretreatment": ["DAF", "Cartridge filter"],
-                "desalination": ["MD"],
+                "desalination": ["Vacuum membrane distillation (VMD)"],
                 "posttreatment": ["Scale inhibitor dosing", "Polishing filter"],
                 "brine": "Brine disposal"
             },
             "Data center cooling water": {
                 "pretreatment": ["DAF", "Ultra-fine filtration"],
-                "desalination": ["MD"],
+                "desalination": ["Vacuum membrane distillation (VMD)"],
                 "posttreatment": ["Biocide dosing", "Fine filter", "Polishing"],
                 "brine": "Brine disposal"
             },
             "Feedwater to UPW production": {
                 "pretreatment": ["DAF", "Ultrafiltration"],
-                "desalination": ["MD"],
+                "desalination": ["Vacuum membrane distillation (VMD)"],
                 "posttreatment": ["GAC", "Ion exchange"],
                 "brine": "Brine valorization"
             },
             "On-site O&G hydraulic fracturing recirculation": {
                 "pretreatment": ["DAF", "Bag filter"],
-                "desalination": ["MD"],
+                "desalination": ["Vacuum membrane distillation (VMD)"],
                 "posttreatment": ["Adjust TDS", "Add additives"],
                 "brine": "On-site O&G hydraulic fracturing recirculation"
             },
             "Brine valorization(In progress)": {
                 "pretreatment": ["DAF", "Media filtration"],
-                "desalination": ["MD"],
+                "desalination": ["Vacuum membrane distillation (VMD)"],
                 "posttreatment": ["Hardness adjustment", "Scale control"],
                 "brine": "Brine concentration for ZLD"
             }
@@ -669,7 +702,7 @@ UNIT_REMOVAL_RATES = {
         "Radium-228": "99%"
     },
 
-    "MD": {
+    "Vacuum membrane distillation (VMD)": {
         "pH": "variable",
         "Oil": "90-99%",
         "Conductivity": "95-99%",
@@ -699,7 +732,7 @@ UNIT_REMOVAL_RATES = {
     },
 
     # =========================================================
-    # Membrane desalination
+    # Vacuum membrane distillation
     # =========================================================
     "LSRRO": {
         "Conductivity": "95-99%",

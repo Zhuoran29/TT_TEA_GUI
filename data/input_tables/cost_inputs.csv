@@ -5,6 +5,17 @@ DEFAULT,Variable O&M,variable_opex_per_m3,0,$/m3,Variable operating cost per cub
 MVC,Capital,capex_per_flow,1104,$/(m3/day),Equipment MVC capital cost per unit daily capacity,Veolia,Industrial data
 MVC,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed MVC CAPEX,WaterTAP MVC and planning-level auxiliary O&M allowance,Open source documentation
 MVC,Variable O&M,variable_opex_per_m3,0,$/m3,Variable MVC operating cost per cubic meter treated,WaterTAP MVC and planning-level auxiliary O&M allowance,Open source documentation
+Vacuum membrane distillation (VMD),Pumps,low_pressure_pump_cost,889,USD_2018/(L/s),Low-pressure pump installed cost coefficient,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Heat exchanger,heat_exchanger_material_factor,1,factor,Heat exchanger material factor,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Heat exchanger,heat_exchanger_unit_cost,300,USD_2020/m2,Heat exchanger unit cost,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Mixer,mixer_unit_cost,361,USD_2018/(L/s),Feed and recycle mixer unit cost,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Heater,heater_unit_cost,0.066,USD_2018/W,Electric heater unit cost,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Heater,heater_efficiency,0.99,fraction,Electric heater efficiency used for equipment sizing,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Chiller,chiller_unit_cost,0.2,USD_2018/W,Chiller unit cost,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Chiller,chiller_cop,7,COP,Chiller coefficient of performance used for equipment sizing,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Membrane,membrane_cost,56,USD_2018/m2,VMD membrane purchase cost,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Membrane,membrane_replacement_fraction,0.2,fraction/yr,Annual VMD membrane replacement fraction,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Fixed O&M,fixed_opex_fraction,0.03,fraction/yr,Annual maintenance labor and chemical cost as a fraction of installed CAPEX,MD Design Model (Surrogate) worksheet,Workbook model
 3-phase separator,Capital,capex_per_flow,72,$/(m3/day),Equipment separator capital cost per unit daily capacity,WaterTAP Primary Separator ZO and US EPA WBS cost-model method,Open source documentation
 3-phase separator,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS cost-model O&M categories and planning-level allowance,Technical report
 3-phase separator,Variable O&M,variable_opex_per_m3,0.01,$/m3,Variable separator operating cost per cubic meter treated,WaterTAP Primary Separator ZO and planning-level auxiliary O&M allowance,Open source documentation
@@ -20,14 +31,25 @@ Ultrafiltration,Replacement,media_replacement_price,35,$/m2,Membrane replacement
 Ultrafiltration,Replacement,media_replacement_fraction,0.12,fraction/yr,Annual membrane replacement fraction placeholder,EPA RO/NF WBS membrane element replacement cost framework,Technical report
 GAC,Capital,capex_per_flow,481.6,$/(m3/day),Equipment GAC contactor capital cost per unit daily capacity,US EPA WBS GAC cost model 2024,Technical report
 GAC,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS GAC cost model 2024,Technical report
-GAC,Variable O&M,variable_opex_per_m3,0.89,$/m3,Variable GAC operating cost per cubic meter treated,US EPA WBS GAC cost model 2024,Technical report
-GAC,Replacement,media_replacement_price,2.5,$/kg,GAC media replacement cost,US EPA WBS GAC cost model 2024 and GAC supplier pricing,Vendor data
-GAC,Replacement,media_replacement_fraction,1,fraction/yr,Annual GAC replacement fraction,US EPA WBS GAC cost model 2024; carbon life is site-specific,Technical report
+GAC,Variable O&M,cost_method,0,0=feed TOC; 1=TOC removal,Select feed-TOC breakthrough or removal-based cost correlation,NMSU GAC model,Model option
+GAC,Media,gac_media_cost,5.706666667,$/kg,GAC media purchase cost derived from the source model coefficient,NMSU GAC model based on Journal of Environmental Chemical Engineering 2025 117026,Model input
+GAC,Disposal,solid_disposal_cost,0.11,$/kg,Spent GAC disposal cost,Journal of Environmental Chemical Engineering 2025 117026,Publication
+GAC,Removal correlation,reference_media_cost_coefficient,0.321,$/m3,Reference GAC media cost coefficient at the reference TOC removal,Journal of Environmental Chemical Engineering 2025 117026,Publication
+GAC,Removal correlation,reference_toc_removal,0.67,fraction,Reference TOC removal for the removal-based cost method,NMSU GAC model,Model input
 Zeolite,Capital,capex_per_flow,774.4,$/(m3/day),Equipment zeolite bed capital cost per unit daily capacity,US EPA WBS Ion Exchange PFAS cost model 2024 and zeolite supplier specs,Technical report
 Zeolite,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS Ion Exchange PFAS cost model 2024,Technical report
-Zeolite,Variable O&M,variable_opex_per_m3,1.51,$/m3,Variable zeolite operating cost per cubic meter treated,US EPA WBS Ion Exchange PFAS cost model 2024 and zeolite regeneration literature,Technical report
-Zeolite,Replacement,media_replacement_price,0.8,$/kg,Zeolite media replacement cost,Clinoptilolite zeolite supplier media pricing assumption,Vendor data
-Zeolite,Replacement,media_replacement_fraction,0.5,fraction/yr,Annual zeolite replacement fraction,Zeolite regeneration and replacement planning assumption; site-specific pilot data needed,Engineering estimate
+Zeolite,Media,zeolite_price,0.16,$/kg,Zeolite purchase price,NMSU zeolite model and student information,Pilot input
+Zeolite,Media,media_loss_fraction,0.1,fraction/cycle,Zeolite makeup fraction per regeneration cycle,NMSU zeolite model and supporting literature,Model input
+Zeolite,Disposal,solid_disposal_cost,0.11,$/kg,Spent zeolite disposal cost,Journal of Environmental Chemical Engineering 2025 117026,Publication
+Zeolite,Regeneration,regeneration_reuses,5,count,Number of uses represented by the regenerant reuse assumption,NMSU bench-scale zeolite model,Pilot input
+Zeolite,Regeneration,bench_regenerant_volume,0.9,L,Regenerant volume for the bench zeolite mass,NMSU bench-scale zeolite model,Pilot input
+Zeolite,Regeneration,bench_zeolite_mass,0.00824,kg,Bench zeolite mass associated with regenerant volume,NMSU bench-scale zeolite model,Pilot input
+Zeolite,Regeneration,salt_mass_fraction,0.1,fraction,Salt mass fraction in regenerant,NMSU zeolite model and supporting literature,Model input
+Zeolite,Regeneration,salt_solution_density,1.071,kg/L,Density of salt regenerant solution,NMSU zeolite model and supporting literature,Model input
+Zeolite,Regeneration,salt_price,0.03,$/kg,Salt purchase price,NMSU zeolite model and student information,Pilot input
+Zeolite,Product credit,nh4cl_price,250,$/metric tonne,NH4Cl product value,NMSU zeolite model,Model input
+Zeolite,Product credit,nh4cl_recovery_factor,0.954477239,fraction,Nitrogen recovery factor for NH4Cl product,NMSU zeolite model,Model input
+Zeolite,Product credit,nh4cl_capture_fraction,1,fraction,Fraction of recoverable NH4Cl captured as saleable product,NMSU zeolite model,Model input
 Evaporation pond,Capital,capex_per_flow,8,$/(m3/day),Equipment pond inlet/distribution capital per unit daily capacity,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,Industrial report
 Evaporation pond,Capital,land_cost_per_m2,0.8,$/m2,Land acquisition or use cost before investment factor,Planning-level land cost assumption; replace with parcel-specific land value,Engineering estimate
 Evaporation pond,Capital,liner_cost_per_m2,4.8,$/m2,Liner and earthwork cost per pond area before investment factor,SCS Engineers HDPE-lined produced-water evaporation ponds 2015 and geomembrane liner cost allowance,Industrial report

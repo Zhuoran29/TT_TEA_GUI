@@ -5,11 +5,26 @@ import pandas as pd
 import streamlit as st
 from config import APP_VERSION, DATA_VERSION
 from feedback import render_report_button
-from matplotlib import pyplot as plt
-from matplotlib.patches import Patch
-from tea_models.scaling_tendency import calculate_scaling_tendency
 from tea_models.water_quality import calculate_brine_quality, water_quality_comparison_table
 from treatment_config import ALL_WATER_QUALITY_PARAMS
+
+try:
+    from matplotlib import pyplot as plt
+    from matplotlib.patches import Patch
+except Exception as exc:  # Keep the results page usable when the runtime lacks matplotlib.
+    plt = None
+    Patch = None
+    MATPLOTLIB_IMPORT_ERROR = exc
+else:
+    MATPLOTLIB_IMPORT_ERROR = None
+
+try:
+    from tea_models.scaling_tendency import calculate_scaling_tendency
+except Exception as exc:  # Reaktoro is only needed for the optional scaling dialog.
+    calculate_scaling_tendency = None
+    SCALING_IMPORT_ERROR = exc
+else:
+    SCALING_IMPORT_ERROR = None
 
 
 st.set_page_config(page_title="04_TEA_Results", layout="wide")
@@ -370,6 +385,8 @@ def format_model_value(value, mode, unit=""):
     if str(unit).strip() in {"", "-"}:
         return f"{numeric_value:.3g}"
     if mode == "cost":
+        if "/m3" in str(unit).lower():
+            return f"{numeric_value:,.3f}"
         return f"{numeric_value:,.0f}"
     if abs(numeric_value) > 10:
         return f"{numeric_value:,.1f}"
@@ -562,6 +579,14 @@ def show_scaling_tendency_dialog(unit_result, stream_name="Outlet", water_qualit
         st.info("Scaling tendency is not applied to brine management units yet.")
         return
 
+    if calculate_scaling_tendency is None:
+        st.error(
+            "Scaling tendency is unavailable because Reaktoro is not installed in "
+            "the Python environment running Streamlit."
+        )
+        st.caption(f"Reaktoro import error: {SCALING_IMPORT_ERROR}")
+        return
+
     if water_quality is None:
         water_quality = unit_result.get("technical_results", {}).get("water_quality_out", {})
     if not water_quality:
@@ -594,6 +619,25 @@ def show_scaling_tendency_dialog(unit_result, stream_name="Outlet", water_qualit
 def render_lcow_cost_breakdown(unit_results, lcow_unit):
     st.subheader("LCOW cost breakdown")
     cost_breakdown = unit_results.sort_values("sequence").copy()
+    if plt is None or Patch is None:
+        st.warning(
+            "The chart could not be loaded because Matplotlib is unavailable in the "
+            "Python environment running Streamlit. The same breakdown is shown below."
+        )
+        fallback = cost_breakdown.set_index(
+            cost_breakdown.apply(
+                lambda row: f"{int(row['sequence'])}. {row['unit_process']}", axis=1
+            )
+        )[["capital_lcow_contribution", "opex_lcow_contribution"]].rename(
+            columns={
+                "capital_lcow_contribution": "CAPEX contribution",
+                "opex_lcow_contribution": "OPEX contribution",
+            }
+        )
+        st.bar_chart(fallback)
+        st.caption(f"Matplotlib import error: {MATPLOTLIB_IMPORT_ERROR}")
+        return
+
     fig, ax = plt.subplots(figsize=BREAKDOWN_FIGSIZE)
     palette = [
         "#1f77b4",
@@ -680,6 +724,30 @@ def render_energy_breakdown(unit_results):
         return
 
     energy_breakdown = unit_results.sort_values("sequence").copy()
+    if plt is None or Patch is None:
+        st.warning(
+            "The chart could not be loaded because Matplotlib is unavailable in the "
+            "Python environment running Streamlit. The same breakdown is shown below."
+        )
+        fallback = energy_breakdown.set_index(
+            energy_breakdown.apply(
+                lambda row: f"{int(row['sequence'])}. {row['unit_process']}", axis=1
+            )
+        )[
+            [
+                "electricity_intensity_kwh_per_bbl_feed",
+                "thermal_energy_intensity_kwh_per_bbl_feed",
+            ]
+        ].rename(
+            columns={
+                "electricity_intensity_kwh_per_bbl_feed": "Electricity (kWh/bbl feed)",
+                "thermal_energy_intensity_kwh_per_bbl_feed": "Thermal energy (kWh/bbl feed)",
+            }
+        )
+        st.bar_chart(fallback)
+        st.caption(f"Matplotlib import error: {MATPLOTLIB_IMPORT_ERROR}")
+        return
+
     fig, ax = plt.subplots(figsize=BREAKDOWN_FIGSIZE)
     palette = [
         "#1f77b4",
