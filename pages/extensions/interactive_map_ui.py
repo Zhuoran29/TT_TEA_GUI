@@ -2166,6 +2166,72 @@ def add_waterstar_quantity_legend(map_obj, min_quantity, max_quantity):
     )
 
 
+def add_brackish_groundwater_legend(map_obj, max_volume):
+    min_volume = 0.0
+    mid_volume = max_volume / 2.0
+    labels = [
+        f"{value:,.0f}"
+        for value in (min_volume, mid_volume, max_volume)
+        if math.isfinite(value)
+    ]
+    if len(labels) != 3:
+        return
+
+    gradient_colors = [
+        "#F7FCF5",
+        "#E5F5E0",
+        "#C7E9C0",
+        "#A1D99B",
+        "#74C476",
+        "#41AB5D",
+        "#238B45",
+        "#006D2C",
+        "#00441B",
+    ]
+    map_obj.get_root().html.add_child(
+        folium.Element(
+            f"""
+            <div class="legend brackish-groundwater-legend">
+                <div class="brackish-groundwater-legend-title">Available brackish groundwater (AFY)</div>
+                <div class="brackish-groundwater-legend-gradient"></div>
+                <div class="brackish-groundwater-legend-labels">
+                    <span>{labels[0]}</span>
+                    <span>{labels[1]}</span>
+                    <span>{labels[2]}</span>
+                </div>
+            </div>
+            <style>
+                .brackish-groundwater-legend {{
+                    bottom: 28px;
+                    line-height: 1.2;
+                    position: fixed;
+                    left: 28px;
+                    width: 260px;
+                    z-index: 9999;
+                }}
+                .brackish-groundwater-legend-title {{
+                    font-size: 12px;
+                    font-weight: 700;
+                    margin-bottom: 6px;
+                }}
+                .brackish-groundwater-legend-gradient {{
+                    background: linear-gradient(90deg, {", ".join(gradient_colors)});
+                    border: 1px solid rgba(15, 23, 42, 0.18);
+                    height: 12px;
+                    width: 100%;
+                }}
+                .brackish-groundwater-legend-labels {{
+                    display: flex;
+                    font-size: 11px;
+                    justify-content: space-between;
+                    margin-top: 4px;
+                }}
+            </style>
+            """
+        )
+    )
+
+
 def add_waterstar_produced_water_layer(map_obj):
     if not WATERSTAR_PRODUCED_WATER_PATH.exists():
         return
@@ -2261,22 +2327,19 @@ def add_geojson_layers(
 
     if show_brackish and BRACKISH_GROUNDWATER_PATH.exists():
         brackish_data = load_geojson(str(BRACKISH_GROUNDWATER_PATH))
-        min_volume, max_volume = geojson_numeric_range(
-            brackish_data,
-            "Brack_Avai",
-        )
+        min_volume = 0.0
+        _, max_volume = geojson_numeric_range(brackish_data, "Brack_Avai")
+        if not math.isfinite(max_volume) or max_volume <= min_volume:
+            max_volume = 1.0
         brackish_colormap = linear.Greens_09.scale(min_volume, max_volume).to_step(9)
-        brackish_colormap.caption = "Available brackish groundwater (AFY)"
-        brackish_colormap.tick_labels = [
-            f"{value:,.0f}"
-            for value in [min_volume, min_volume + (max_volume - min_volume) / 2, max_volume]
-        ]
 
         def brackish_style(feature):
             properties = feature.get("properties", {})
             try:
                 volume = float(properties.get("Brack_Avai", 0.0) or 0.0)
             except (TypeError, ValueError):
+                volume = None
+            if volume is not None and not math.isfinite(volume):
                 volume = None
             return {
                 "color": "#0B5F62",
@@ -2304,7 +2367,7 @@ def add_geojson_layers(
                 sticky=True,
             ),
         ).add_to(map_obj)
-        brackish_colormap.add_to(map_obj)
+        add_brackish_groundwater_legend(map_obj, max_volume)
 
     if show_waterstar_produced_water:
         add_waterstar_produced_water_layer(map_obj)
@@ -2423,8 +2486,8 @@ def render_map_workspace():
         st.markdown("**Base Map**")
         base_map = st.radio(
             "Base Map",
-            ["County boundary", "Oil & Gas Production Area"],
-            index=1,
+            ["None", "County boundary", "Oil & Gas Production Area"],
+            index=2,
             label_visibility="collapsed",
         )
     with control_cols[1]:

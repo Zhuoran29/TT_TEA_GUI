@@ -18,6 +18,7 @@ st.sidebar.caption(f"v{APP_VERSION} | {DATA_VERSION}")
 
 BREAKDOWN_FIGSIZE = (7.2, 5.8)
 BREAKDOWN_BAR_WIDTH = 0.22
+BBL_PER_M3 = 6.289810770432
 HIDDEN_COST_OUTPUTS = {
     "flow_capacity_equipment_capital_cost",
     "power_capacity_capital_cost",
@@ -70,6 +71,25 @@ def format_lcow(value, unit):
     if str(unit).startswith("$/"):
         return f"${value:,.2f}/{str(unit)[2:]}"
     return f"${value:,.2f} {unit}"
+
+
+def product_lcow_bbl(results):
+    """Return LCOW normalized by annual product-water volume in bbl."""
+    product_flow = float(results.get("final_product_flow", 0.0) or 0.0)
+    product_flow_unit = str(results.get("final_product_flow_unit", "m3/day")).lower()
+    if product_flow_unit == "m3/day":
+        product_flow_bbl_day = product_flow * BBL_PER_M3
+    else:
+        product_flow_bbl_day = product_flow
+
+    operating_days = float(
+        st.session_state.get("tea_context", {}).get("operating_days_per_year", 365.0)
+        or 365.0
+    )
+    annual_product_volume = product_flow_bbl_day * operating_days
+    if annual_product_volume <= 0.0:
+        return 0.0
+    return float(results.get("total_annual_cost", 0.0) or 0.0) / annual_product_volume
 
 
 def export_csv_number(value):
@@ -765,6 +785,7 @@ summary_values.update({
         results["levelized_cost_of_water"],
         results.get("levelized_cost_unit", "$/m3 feed"),
     ),
+    "LCOW product": format_lcow(product_lcow_bbl(results), "$/bbl product"),
 })
 
 render_summary_cells(summary_values)
