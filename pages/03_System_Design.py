@@ -188,6 +188,9 @@ def get_ordered_unit_processes(train):
     sequence = 1
     for section, units in sections:
         for unit_process in units:
+            # Migrate treatment trains saved before the generic RO placeholder
+            # was replaced by the explicit BWRO model.
+            unit_process = "BWRO" if unit_process == "RO" else unit_process
             ordered_units.append({
                 "sequence": sequence,
                 "section": section,
@@ -482,6 +485,8 @@ def result_unit(result, name):
 def energy_basis_flow_m3_day(technical_result, intensity_unit):
     """Select the flow basis that matches an energy-intensity unit."""
     unit_text = str(intensity_unit or "").lower()
+    if "product" in unit_text or "permeate" in unit_text:
+        return result_value(technical_result, "outlet_flow")
     if "disposed" in unit_text:
         return result_value(
             technical_result,

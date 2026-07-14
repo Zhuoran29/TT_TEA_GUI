@@ -36,7 +36,6 @@ DESALINATION_UNIT_OPTIONS = [
     "MD",
     "LSRRO",
     "OARO",
-    "RO",
     "BWRO",
     "NF",
 ]

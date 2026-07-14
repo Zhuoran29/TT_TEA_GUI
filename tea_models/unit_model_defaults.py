@@ -149,9 +149,20 @@ TECHNICAL_MODEL_DEFAULTS = {
     "BWRO": {
         "unit_kind": "pressure_membrane",
         "recovery": 0.80,
-        "energy_intensity": 0.9,
-        "membrane_flux": 24.0,
-        "operating_pressure": 16.0,
+        "feed_tds_g_l": 0.8,
+        "feed_temperature": 25.0,
+        "array_stages": 0,
+        "elements_per_vessel": 6,
+        "design_flux_lmh": 18.0,
+        "concentration_polarization": 1.05,
+        "fouling_factor": 0.85,
+        "high_pressure_pump_efficiency": 0.85,
+        "feed_pump_efficiency": 0.80,
+        "feed_pump_pressure_bar": 1.0,
+        "piping_loss_bar": 0.5,
+        "has_erd": 0,
+        "erd_efficiency": 0.95,
+        "pretreatment_energy_intensity": 0.0,
     },
     "NF": {
         "unit_kind": "pressure_membrane",
@@ -310,7 +321,25 @@ COST_MODEL_DEFAULTS = {
     "LSRRO": {"capex_per_flow": 480.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.10, "media_replacement_price": 45.0, "media_replacement_fraction": 0.12},
     "OARO": {"capex_per_flow": 600.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.12, "media_replacement_price": 50.0, "media_replacement_fraction": 0.12},
     "RO": {"capex_per_flow": 360.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.08, "media_replacement_price": 40.0, "media_replacement_fraction": 0.12},
-    "BWRO": {"capex_per_flow": 260.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.06, "media_replacement_price": 35.0, "media_replacement_fraction": 0.12},
+    "BWRO": {
+        "total_installed_cost": 0.0,
+        "unit_capex": 0.0,
+        "reference_unit_capex": 1500.0,
+        "reference_capacity": 1000.0,
+        "capex_scaling_exponent": -0.15,
+        "cost_index_factor": 1.0,
+        "fixed_om_fraction": 0.035,
+        "insurance_fraction": 0.005,
+        "membrane_cost": 30.0,
+        "membrane_replacement_fraction": 0.20,
+        "chemical_cost_per_m3_product": 0.03,
+        "labor_cost_per_m3_product": 0.05,
+        "pretreatment_cost_per_m3_product": 0.0,
+        "posttreatment_cost_per_m3_product": 0.0,
+        "other_variable_cost_per_m3_product": 0.0,
+        "intake_water_cost_per_m3_feed": 0.0,
+        "brine_disposal_cost_per_m3_concentrate": 0.0,
+    },
     "NF": {"capex_per_flow": 220.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.05, "media_replacement_price": 35.0, "media_replacement_fraction": 0.12},
     "Ammonia stripping": {"capex_per_flow": 128.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.05},
     "Ion exchange / EDI": {"capex_per_flow": 440.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.35, "chemical_price": 0.5, "media_replacement_price": 5.0, "media_replacement_fraction": 0.25},
@@ -358,6 +387,20 @@ TECHNICAL_INPUT_SPECS = {
     "power_capacity": ("Energy", "kW", "Installed PV power capacity"),
     "capacity_factor": ("Energy", "fraction", "Annual average PV capacity factor"),
     "blend_fraction": ("Blending", "fraction", "Supplemental blend or additive stream fraction"),
+    "feed_tds_g_l": ("Feed", "g/L", "Fallback feed TDS when the stream has no TDS value"),
+    "feed_temperature": ("Feed", "deg C", "BWRO feed temperature"),
+    "array_stages": ("Membrane array", "count", "Concentrate stages; 0 selects automatically"),
+    "elements_per_vessel": ("Membrane array", "count", "Membrane elements per pressure vessel"),
+    "design_flux_lmh": ("Membrane array", "L/m2-h", "Selected design permeate flux"),
+    "concentration_polarization": ("Membrane", "factor", "Concentration-polarization factor"),
+    "fouling_factor": ("Membrane", "fraction", "Membrane permeability fouling allowance"),
+    "high_pressure_pump_efficiency": ("Pumps", "fraction", "High-pressure pump efficiency"),
+    "feed_pump_efficiency": ("Pumps", "fraction", "Intake/feed pump efficiency"),
+    "feed_pump_pressure_bar": ("Pumps", "bar", "Feed-pump discharge pressure"),
+    "piping_loss_bar": ("Pumps", "bar", "High-pressure piping loss allowance"),
+    "has_erd": ("Energy recovery", "0/1", "Enable concentrate energy recovery device"),
+    "erd_efficiency": ("Energy recovery", "fraction", "Energy recovery device efficiency"),
+    "pretreatment_energy_intensity": ("Energy", "kWh/m3 product", "BWRO-island pretreatment energy not modeled in upstream units"),
 }
 
 
@@ -369,6 +412,23 @@ COST_INPUT_SPECS = {
     "chemical_price": ("Chemicals", "$/kg", "Chemical or regenerant price"),
     "media_replacement_price": ("Replacement", "$/unit", "Replacement media, membrane, cartridge, or bag price"),
     "media_replacement_fraction": ("Replacement", "fraction/yr", "Annual replacement fraction"),
+    "total_installed_cost": ("Capital", "USD", "Optional installed BWRO CAPEX; 0 uses unit/correlation CAPEX"),
+    "unit_capex": ("Capital", "USD/(m3/day product)", "Optional installed unit CAPEX; 0 uses the correlation"),
+    "reference_unit_capex": ("Capital", "USD/(m3/day product)", "Screening installed unit CAPEX at reference capacity"),
+    "reference_capacity": ("Capital", "m3/day product", "Reference product capacity for CAPEX scaling"),
+    "capex_scaling_exponent": ("Capital", "exponent", "Product-capacity scaling exponent"),
+    "cost_index_factor": ("Capital", "factor", "User-supplied common currency-year escalation factor"),
+    "fixed_om_fraction": ("Fixed O&M", "fraction/yr", "Annual fixed O&M as fraction of installed CAPEX"),
+    "insurance_fraction": ("Fixed O&M", "fraction/yr", "Annual insurance as fraction of installed CAPEX"),
+    "membrane_cost": ("Replacement", "USD/m2", "Membrane purchase cost per active area"),
+    "membrane_replacement_fraction": ("Replacement", "fraction/yr", "Annual fraction of membrane area replaced"),
+    "chemical_cost_per_m3_product": ("Variable O&M", "USD/m3 product", "Chemical cost normalized to product volume"),
+    "labor_cost_per_m3_product": ("Variable O&M", "USD/m3 product", "Labor cost normalized to product volume"),
+    "pretreatment_cost_per_m3_product": ("Variable O&M", "USD/m3 product", "BWRO-island non-energy pretreatment cost"),
+    "posttreatment_cost_per_m3_product": ("Variable O&M", "USD/m3 product", "BWRO-island non-energy post-treatment cost"),
+    "other_variable_cost_per_m3_product": ("Variable O&M", "USD/m3 product", "Other product-normalized variable cost"),
+    "intake_water_cost_per_m3_feed": ("Variable O&M", "USD/m3 feed", "Source-water purchase or extraction cost"),
+    "brine_disposal_cost_per_m3_concentrate": ("Variable O&M", "USD/m3 concentrate", "Concentrate disposal cost; leave zero when modeled as a separate unit"),
 }
 
 
@@ -792,6 +852,20 @@ COST_INPUT_METADATA_BY_UNIT = {
 
 TECHNICAL_INPUT_ORDER = [
     "recovery",
+    "feed_tds_g_l",
+    "feed_temperature",
+    "array_stages",
+    "elements_per_vessel",
+    "design_flux_lmh",
+    "concentration_polarization",
+    "fouling_factor",
+    "high_pressure_pump_efficiency",
+    "feed_pump_efficiency",
+    "feed_pump_pressure_bar",
+    "piping_loss_bar",
+    "has_erd",
+    "erd_efficiency",
+    "pretreatment_energy_intensity",
     "energy_intensity",
     "thermal_energy_intensity",
     "chemical_dose",
@@ -817,6 +891,23 @@ TECHNICAL_INPUT_ORDER = [
 ]
 
 COST_INPUT_ORDER = [
+    "total_installed_cost",
+    "unit_capex",
+    "reference_unit_capex",
+    "reference_capacity",
+    "capex_scaling_exponent",
+    "cost_index_factor",
+    "fixed_om_fraction",
+    "insurance_fraction",
+    "membrane_cost",
+    "membrane_replacement_fraction",
+    "chemical_cost_per_m3_product",
+    "labor_cost_per_m3_product",
+    "pretreatment_cost_per_m3_product",
+    "posttreatment_cost_per_m3_product",
+    "other_variable_cost_per_m3_product",
+    "intake_water_cost_per_m3_feed",
+    "brine_disposal_cost_per_m3_concentrate",
     "capex_per_flow",
     "capex_per_kw",
     "fixed_opex_fraction",
@@ -844,10 +935,17 @@ def cost_defaults(unit_process):
 
 
 def _metadata_for(metadata_by_unit, metadata_by_parameter, unit_process, parameter):
-    return metadata_by_unit.get(unit_process, {}).get(
-        parameter,
-        metadata_by_parameter.get(parameter, ("", "")),
-    )
+    unit_metadata = metadata_by_unit.get(unit_process, {})
+    if parameter in unit_metadata:
+        return unit_metadata[parameter]
+    if parameter in metadata_by_parameter:
+        return metadata_by_parameter[parameter]
+    if unit_process == "BWRO":
+        return (
+            "SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults",
+            "model source",
+        )
+    return ("", "")
 
 
 def technical_input_rows(unit_process):

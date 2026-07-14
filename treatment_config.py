@@ -171,7 +171,7 @@ def get_brine_category(brine_unit):
 
 
 def normalize_treatment_train_config(config):
-    """Normalize brine config to include a category and editable unit list."""
+    """Normalize unit names and brine config for the editable treatment train."""
     brine = config.get("brine", [])
     if isinstance(brine, str):
         brine_units = [brine]
@@ -191,6 +191,12 @@ def normalize_treatment_train_config(config):
     ]
 
     normalized = config.copy()
+    # RO was the former generic placeholder.  All current RO positions use the
+    # explicit BWRO technical and cost models, including secondary desalination.
+    normalized["desalination"] = [
+        "BWRO" if unit == "RO" else unit
+        for unit in config.get("desalination", [])
+    ]
     normalized["brine_category"] = brine_category
     normalized["brine"] = brine_units
     return normalized
@@ -214,58 +220,62 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             primary_desal = ["NF", "MD"]
         elif desal_type == "Mechanical Vapor Compression (MVC)":
             primary_desal = ["NF", "MVC"]
-        elif desal_type == "Reverse osmosis (RO)":
-            primary_desal = ["RO"]
+        elif desal_type in {
+            "BWRO",
+            "Brackish-water reverse osmosis (BWRO)",
+            "Reverse osmosis (RO)",
+        }:
+            primary_desal = ["BWRO"]
         else:
-            primary_desal = ["NF", "RO"]
+            primary_desal = ["NF", "BWRO"]
 
         configs = {
             "Drinking water quality oriented(e.g. groundwater recharge)": {
                 "pretreatment": ["Well pumping", "Raw water storage", "Cartridge filter"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["ZIX-Zak IX"],
                 "brine_category": "Brine valorization",
                 "brine": ["Chemical precipitation", "Crystallization"]
             },
             "Agricultural use": {
                 "pretreatment": ["Media filtration", "Cartridge filter", "Antiscalant dosing"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["Selective ED", "Blending / salinity adjustment", "pH adjustment"],
                 "brine": "Bipolar membrane ED"
             },
             "Surface water discharge": {
                 "pretreatment": ["Well pumping", "Media filtration", "Cartridge filter"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["GAC", "Chlorination"],
                 "brine": "Saltwater disposal well"
             },
             "Powerplant cooling water": {
                 "pretreatment": ["Well pumping", "Media filtration", "Cartridge filter", "Antiscalant dosing"],
-                "desalination": ["NF", "RO"],
+                "desalination": ["NF", "BWRO"],
                 "posttreatment": ["Scale inhibitor dosing", "pH adjustment"],
                 "brine": "Brine disposal"
             },
             "Data center cooling water": {
                 "pretreatment": ["Well pumping", "Media filtration", "Cartridge filter", "Antiscalant dosing"],
-                "desalination": ["NF", "RO"],
+                "desalination": ["NF", "BWRO"],
                 "posttreatment": ["Biocide dosing", "Fine filter", "pH adjustment"],
                 "brine": "Brine disposal"
             },
             "Feedwater to UPW production": {
                 "pretreatment": ["Well pumping", "Media filtration", "Ultrafiltration", "Antiscalant dosing"],
-                "desalination": ["RO", "RO"],
+                "desalination": ["BWRO", "BWRO"],
                 "posttreatment": ["GAC", "Ion exchange / EDI"],
                 "brine": "Brine valorization"
             },
             "On-site O&G hydraulic fracturing recirculation": {
                 "pretreatment": ["Well pumping", "Media filtration", "Bag filter"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["Adjust TDS", "Additives blending"],
                 "brine": "Reuse-compatible brine recycle / disposal"
             },
             "Brine valorization(In progress)": {
                 "pretreatment": ["Well pumping", "Media filtration", "Softening / silica control", "Antiscalant dosing"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["Selective ED", "Mineral precipitation / recovery"],
                 "brine": "Crystallizer"
             }
@@ -307,7 +317,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             },
             "Feedwater to UPW production": {
                 "pretreatment": ["DAF", "Ultrafiltration"],
-                "desalination": ["MVC", "pH adjustment","RO"],
+                "desalination": ["MVC", "pH adjustment", "BWRO"],
                 "posttreatment": ["GAC", "Ion exchange"],
                 "brine": "Brine valorization"
             },
@@ -377,53 +387,59 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             }
         }
 
-    elif desal_type in ["RO", "Reverse Osmosis (RO)", "Reverse osmosis (RO)"]:
+    elif desal_type in [
+        "BWRO",
+        "Brackish-water reverse osmosis (BWRO)",
+        "RO",
+        "Reverse Osmosis (RO)",
+        "Reverse osmosis (RO)",
+    ]:
         configs = {
             "Drinking water quality oriented(e.g. groundwater recharge)": {
                 "pretreatment": ["DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment", "Chlorination"],
                 "brine": "Brine disposal"
             },
             "Surface water discharge": {
                 "pretreatment": ["3-phase separator","DAF", "Ultrafiltration", "Antiscalant / pH adjustment"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["GAC", "Zeolite"],
                 "brine": "Brine disposal"
             },
             "Agricultural use": {
                 "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["Boron-selective IX", "Blending / remineralization", "pH adjustment"],
                 "brine": "Brine valorization"
             },
             "Powerplant cooling water": {
                 "pretreatment": ["DAF", "Cartridge filter"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["Scale inhibitor dosing", "Polishing filter"],
                 "brine": "Brine disposal"
             },
             "Data center cooling water": {
                 "pretreatment": ["DAF", "Ultra-fine filtration"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["Biocide dosing", "Fine filter", "Polishing"],
                 "brine": "Brine disposal"
             },
             "Feedwater to UPW production": {
                 "pretreatment": ["DAF", "Air stripping", "Ultrafiltration"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["GAC", "Ion exchange"],
                 "brine": "Brine valorization"
             },
             "On-site O&G hydraulic fracturing recirculation": {
                 "pretreatment": ["DAF", "Bag filter"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["Adjust TDS", "Add additives"],
                 "brine": "On-site O&G hydraulic fracturing recirculation"
             },
             "Brine valorization(In progress)": {
                 "pretreatment": ["DAF", "Media filtration"],
-                "desalination": ["RO"],
+                "desalination": ["BWRO"],
                 "posttreatment": ["Hardness adjustment", "Scale control"],
                 "brine": "Brine concentration for ZLD"
             }
