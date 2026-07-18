@@ -5,6 +5,7 @@ from __future__ import annotations
 
 DEFAULTS = {
     "capex_per_flow": 481.6,
+    "column_capex_multiplier": 1.0,
     "fixed_opex_fraction": 0.04,
     "cost_method": 0.0,
     "gac_media_cost": 0.321 * 8000.0 / 450.0,
@@ -39,9 +40,17 @@ def run(unit_process, technical_result, cost_inputs, context):
     annual_volume = inlet_flow * operating_days
     investment_factor = max(float(context.get("investment_factor", 2.5)), 0.0)
 
-    equipment_capex = _input(
+    bare_equipment_capex = _input(
         cost_inputs, "capex_per_flow", DEFAULTS["capex_per_flow"]
     ) * inlet_flow
+    column_capex_multiplier = _input(
+        cost_inputs,
+        "column_capex_multiplier",
+        DEFAULTS["column_capex_multiplier"],
+    )
+    if column_capex_multiplier < 0.0:
+        raise ValueError("GAC column CAPEX multiplier cannot be negative.")
+    equipment_capex = bare_equipment_capex * column_capex_multiplier
     installed_capex = equipment_capex * investment_factor
     fixed_opex = installed_capex * _input(
         cost_inputs, "fixed_opex_fraction", DEFAULTS["fixed_opex_fraction"]
@@ -99,6 +108,8 @@ def run(unit_process, technical_result, cost_inputs, context):
     return {
         "installed_capital_cost": _result(installed_capex, "USD"),
         "equipment_capital_cost": _result(equipment_capex, "USD"),
+        "bare_equipment_capital_cost": _result(bare_equipment_capex, "USD"),
+        "column_capex_multiplier": _result(column_capex_multiplier, "-"),
         "investment_factor": _result(investment_factor, "-"),
         "opex_calculation_method": _result(method_name, ""),
         "fixed_operating_cost": _result(fixed_opex, "USD/year"),

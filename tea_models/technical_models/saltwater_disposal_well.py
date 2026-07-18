@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import math
-
 
 def _input(values, name, default):
     try:
@@ -32,7 +30,7 @@ def run(unit_process, technical_inputs, stream):
     if energy_intensity <= 0.0:
         energy_intensity = injection_pressure * 100000.0 / pump_efficiency / 3600000.0
 
-    well_count = math.ceil(disposed_flow / max(well_capacity, 1e-9)) if disposed_flow > 0.0 else 0
+    well_count = 1 if disposed_flow > 0.0 else 0
     outlet_stream = {
         "flow_m3_day": outlet_flow,
         "water_quality": water_quality.copy(),

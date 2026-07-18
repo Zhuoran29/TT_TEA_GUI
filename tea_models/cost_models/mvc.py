@@ -31,6 +31,9 @@ def run(unit_process, technical_result, cost_inputs, context):
     investment_factor = _investment_factor(context)
 
     capex_per_flow = _input(cost_inputs, "capex_per_flow", 1104.0)
+    column_capex_multiplier = _input(cost_inputs, "column_capex_multiplier", 1.0)
+    if column_capex_multiplier < 0.0:
+        raise ValueError("MVC column CAPEX multiplier cannot be negative.")
     fixed_opex_fraction = _input(cost_inputs, "fixed_opex_fraction", 0.05)
     variable_opex_per_m3 = _input(cost_inputs, "variable_opex_per_m3", 0.0)
     evaporator_capex = _value(technical_result, "evaporator_capex")
@@ -40,7 +43,8 @@ def run(unit_process, technical_result, cost_inputs, context):
     electricity_price = float(context.get("electricity_price", 0.0))
     electricity_cost = annual_volume * _value(technical_result, "energy_intensity") * electricity_price
 
-    equipment_capex = capex_per_flow * inlet_flow
+    bare_equipment_capex = capex_per_flow * inlet_flow
+    equipment_capex = bare_equipment_capex * column_capex_multiplier
     capex = equipment_capex * investment_factor
     fixed_opex = capex * fixed_opex_fraction
     variable_opex = annual_volume * variable_opex_per_m3
@@ -49,6 +53,8 @@ def run(unit_process, technical_result, cost_inputs, context):
     return {
         "installed_capital_cost": _result(capex, "USD"),
         "equipment_capital_cost": _result(equipment_capex, "USD"),
+        "bare_equipment_capital_cost": _result(bare_equipment_capex, "USD"),
+        "column_capex_multiplier": _result(column_capex_multiplier, "-"),
         "investment_factor": _result(investment_factor, "-"),
         "mvc_surrogate_capital_cost": _result(surrogate_capex, "USD"),
         "evaporator_capital_cost": _result(evaporator_capex, "USD"),

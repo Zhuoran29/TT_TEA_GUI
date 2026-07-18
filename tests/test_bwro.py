@@ -2,7 +2,7 @@ import unittest
 
 from tea_models.registry import run_cost_model, run_technical_model
 from tea_models.unit_model_defaults import cost_defaults, technical_defaults
-from treatment_config import get_treatment_train_config
+from treatment_config import get_treatment_train_config, normalize_treatment_train_config
 
 
 class BWROIntegrationTests(unittest.TestCase):
@@ -60,6 +60,17 @@ class BWROIntegrationTests(unittest.TestCase):
             )
             self.assertIn("BWRO", train["desalination"])
             self.assertNotIn("RO", train["desalination"])
+
+    def test_legacy_brine_disposal_category_migrates_to_swd_unit(self):
+        train = normalize_treatment_train_config({
+            "pretreatment": [],
+            "desalination": ["MVC", "BWRO"],
+            "posttreatment": [],
+            "brine": "Brine disposal",
+        })
+
+        self.assertEqual(train["brine_category"], "Brine disposal")
+        self.assertEqual(train["brine"], ["Saltwater disposal well"])
 
 
 if __name__ == "__main__":

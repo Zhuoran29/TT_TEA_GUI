@@ -53,6 +53,51 @@ class GACIntegrationTests(unittest.TestCase):
             cost["fixed_operating_cost"]["value"] + expected_variable,
         )
 
+    def test_gac_column_multiplier_only_scales_capital_and_fixed_om(self):
+        technical = run_technical_model(
+            "GAC",
+            {
+                "recovery": 0.995,
+                "empty_bed_contact_time": 10.0,
+                "media_bulk_density": 450.0,
+                "energy_intensity": 0.14,
+                "removal_efficiencies": {"TOC": 0.99},
+            },
+            {
+                "flow_m3_day": FLOW_M3_DAY,
+                "water_quality": {"TOC": {"value": 30.0, "unit": "mg/L"}},
+            },
+        )
+        base_cost = run_cost_model(
+            "GAC",
+            technical,
+            {"capex_per_flow": 481.6, "fixed_opex_fraction": 0.04},
+            CONTEXT,
+        )
+        standby_cost = run_cost_model(
+            "GAC",
+            technical,
+            {
+                "capex_per_flow": 481.6,
+                "column_capex_multiplier": 2.0,
+                "fixed_opex_fraction": 0.04,
+            },
+            CONTEXT,
+        )
+
+        self.assertAlmostEqual(
+            standby_cost["installed_capital_cost"]["value"],
+            2.0 * base_cost["installed_capital_cost"]["value"],
+        )
+        self.assertAlmostEqual(
+            standby_cost["fixed_operating_cost"]["value"],
+            2.0 * base_cost["fixed_operating_cost"]["value"],
+        )
+        self.assertAlmostEqual(
+            standby_cost["variable_operating_cost"]["value"],
+            base_cost["variable_operating_cost"]["value"],
+        )
+
 
 class ZeoliteIntegrationTests(unittest.TestCase):
     def test_ammonia_cycle_and_cost_breakdown_match_source_model(self):
@@ -109,6 +154,60 @@ class ZeoliteIntegrationTests(unittest.TestCase):
             + cost["variable_operating_cost"]["value"],
         )
         self.assertAlmostEqual(cost["regeneration_cycles"]["value"], 365.0 / (645.0 * 20.0 / 1440.0))
+
+    def test_zeolite_column_multiplier_only_scales_capital_and_fixed_om(self):
+        technical = run_technical_model(
+            "Zeolite",
+            {
+                "recovery": 0.995,
+                "empty_bed_contact_time": 20.0,
+                "media_bulk_density": 824.0,
+                "energy_intensity": 0.04,
+                "reference_feed_ammonia": 25.0,
+                "reference_ammonia_removal": 0.90,
+                "reference_breakthrough_bv": 645.0,
+                "capacity_removal_coefficient": 0.55,
+                "capacity_feed_coefficient": 0.0035,
+                "capacity_factor_min": 0.45,
+                "capacity_factor_max": 2.15,
+                "removal_efficiencies": {"Ammonia nitrogen": 0.90},
+            },
+            {
+                "flow_m3_day": FLOW_M3_DAY,
+                "water_quality": {
+                    "Ammonia nitrogen": {"value": 25.0, "unit": "mg/L"}
+                },
+            },
+        )
+        base_cost = run_cost_model(
+            "Zeolite",
+            technical,
+            {"capex_per_flow": 774.4, "fixed_opex_fraction": 0.04},
+            CONTEXT,
+        )
+        standby_cost = run_cost_model(
+            "Zeolite",
+            technical,
+            {
+                "capex_per_flow": 774.4,
+                "column_capex_multiplier": 2.0,
+                "fixed_opex_fraction": 0.04,
+            },
+            CONTEXT,
+        )
+
+        self.assertAlmostEqual(
+            standby_cost["installed_capital_cost"]["value"],
+            2.0 * base_cost["installed_capital_cost"]["value"],
+        )
+        self.assertAlmostEqual(
+            standby_cost["fixed_operating_cost"]["value"],
+            2.0 * base_cost["fixed_operating_cost"]["value"],
+        )
+        self.assertAlmostEqual(
+            standby_cost["variable_operating_cost"]["value"],
+            base_cost["variable_operating_cost"]["value"],
+        )
 
 
 if __name__ == "__main__":

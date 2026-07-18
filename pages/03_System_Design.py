@@ -3,12 +3,14 @@ import copy
 import csv
 from html import escape
 import io
+import json
 import re
 
 import pandas as pd
 import streamlit as st
 from config import APP_VERSION, DATA_VERSION
 from feedback import render_report_button
+from treatment_config import get_treatment_train_config, normalize_treatment_train_config
 from ui_helpers import render_card_title
 
 from tea_models.registry import run_cost_model, run_technical_model
@@ -17,6 +19,7 @@ from tea_models.water_quality import (
     apply_removal_overrides,
     calculate_brine_quality,
     collect_feedwater_quality,
+    combine_streams,
     get_default_removal_efficiencies,
     make_stream,
 )
@@ -98,6 +101,14 @@ HIDDEN_COST_OUTPUTS = {
     "land_capital_cost",
     "liner_capital_cost",
 }
+DESALINATION_BRINE_SOURCE_UNITS = {
+    "MVC",
+    "Vacuum membrane distillation (VMD)",
+    "LSRRO",
+    "OARO",
+    "BWRO",
+    "NF",
+}
 
 COST_INPUT_FALLBACKS = {
     "MVC": [
@@ -106,10 +117,10 @@ COST_INPUT_FALLBACKS = {
         ("Variable O&M", "variable_opex_per_m3", 0.0, "$/m3", "Variable MVC operating cost per cubic meter treated"),
     ],
     "Saltwater disposal well": [
-        ("Capital", "capex_per_flow", 48.0, "$/(m3/day)", "Equipment surface facilities capital per unit daily disposal capacity"),
-        ("Capital", "capex_per_well", 600000.0, "$/well", "Equipment capital cost per disposal well"),
-        ("Fixed O&M", "fixed_opex_fraction", 0.04, "fraction/yr", "Annual fixed OPEX as fraction of installed disposal well CAPEX"),
-        ("Variable O&M", "variable_opex_per_m3", 11.4, "$/m3", "Variable disposal cost per cubic meter injected"),
+        ("Capital", "capex_per_flow", 0.0, "$/(m3/day)", "Existing-well screening assumption: no new surface facilities CAPEX"),
+        ("Capital", "capex_per_well", 0.0, "$/well", "Existing-well screening assumption: no new disposal well CAPEX"),
+        ("Fixed O&M", "fixed_opex_fraction", 0.0, "fraction/yr", "Existing-well screening assumption: fixed O&M included in disposal fee"),
+        ("Variable O&M", "variable_opex_per_m3", 6.29, "$/m3", "Variable disposal cost per cubic meter injected"),
     ],
 }
 
@@ -173,6 +184,7 @@ def sync_feed_flow_display_unit():
 
 def get_ordered_unit_processes(train):
     """Flatten the page 02 treatment train into the execution order for page 03."""
+    train = normalize_treatment_train_config(train)
     brine_units = train.get("brine", [])
     if isinstance(brine_units, str):
         brine_units = [brine_units]
@@ -202,6 +214,47 @@ def get_ordered_unit_processes(train):
             sequence += 1
 
     return ordered_units
+
+
+def stable_run_signature(train, context, feedwater_quality):
+    """Capture the user-facing inputs that should make previous results stale."""
+    payload = {
+        "train": normalize_treatment_train_config(train),
+        "context": context,
+        "feedwater_quality": feedwater_quality,
+    }
+    return json.dumps(payload, sort_keys=True, default=str)
+
+
+def _as_unit_list(value):
+    if isinstance(value, list):
+        return value.copy()
+    if value:
+        return [value]
+    return []
+
+
+def current_treatment_train_scenario_signature():
+    ffp_scenarios = st.session_state.get("ffp_scenarios", ["Surface water discharge"])
+    ffp_primary = ffp_scenarios[0] if ffp_scenarios else "Surface water discharge"
+    desal = st.session_state.get("desal_type", "Mechanical Vapor Compression (MVC)")
+    influent = st.session_state.get("influent_type", "Produced water")
+    default_config = get_treatment_train_config(ffp_primary, desal, influent)
+    return (
+        influent,
+        ffp_primary,
+        desal,
+        tuple(default_config.get("pretreatment", [])),
+        tuple(default_config.get("desalination", [])),
+        tuple(default_config.get("posttreatment", [])),
+        default_config.get("brine_category", "Brine disposal"),
+        tuple(_as_unit_list(default_config.get("brine", []))),
+    )
+
+
+def is_desalination_brine_source(unit_process):
+    """Return True for units whose reject stream should feed brine management."""
+    return unit_process in DESALINATION_BRINE_SOURCE_UNITS
 
 
 def load_input_table(path):
@@ -848,7 +901,11 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables,
         total_capital_cost += capital_cost
         total_annual_operating_cost += annual_operating_cost
         brine_flow = result_value(technical_result, "brine_flow")
-        if brine_flow > 0.0 and unit["section"] == "Desalination":
+        if (
+            brine_flow > 0.0
+            and unit["section"] == "Desalination"
+            and is_desalination_brine_source(unit_process)
+        ):
             brine_quality = calculate_brine_quality(
                 technical_result.get("water_quality_in", {}),
                 technical_result.get("water_quality_out", {}),
@@ -856,10 +913,11 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables,
                 outlet_flow,
                 brine_flow,
             )
-            brine_stream = {
+            new_brine_stream = {
                 "flow_m3_day": brine_flow,
                 "water_quality": brine_quality,
             }
+            brine_stream = combine_streams(brine_stream, new_brine_stream)
             technical_result["brine_water_quality"] = brine_quality
         if is_brine_management:
             brine_stream = technical_result.get("outlet_stream", {
@@ -1023,6 +1081,15 @@ st.caption(f"Project: {project_name}")
 
 if "treatment_train" not in st.session_state:
     st.warning("Please save the Treatment Train on the previous page before proceeding.")
+    st.stop()
+
+saved_train_signature = st.session_state.get("treatment_train_scenario_signature")
+current_train_signature = current_treatment_train_scenario_signature()
+if saved_train_signature != current_train_signature:
+    st.warning(
+        "The selected scenario changed after the treatment train was saved. "
+        "Please return to Treatment Train and save the updated train before proceeding."
+    )
     st.stop()
 
 train = st.session_state.treatment_train
@@ -1214,9 +1281,11 @@ with assumption_cols[1]:
 
 operating_days = 365.0 * float(operation_time) / 100.0
 
+current_feedwater_quality = collect_feedwater_quality(st.session_state)
 feedwater_quality = copy.deepcopy(
-    st.session_state.get("feedwater_quality")
-    or collect_feedwater_quality(st.session_state)
+    current_feedwater_quality
+    if current_feedwater_quality.get("water_quality")
+    else st.session_state.get("feedwater_quality") or current_feedwater_quality
 )
 feedwater_quality["flow"] = {"value": float(feed_flow_bbl_day), "unit": "bbl/day"}
 if feedwater_quality.get("water_quality"):
@@ -1291,6 +1360,7 @@ context = {
     "thermal_energy_price": thermal_energy_price,
     "transportation_cost": st.session_state.get("transportation_cost", {}),
 }
+current_run_signature = stable_run_signature(train, context, feedwater_quality)
 
 if st.button("Run TEA Calculation", type="primary"):
     results = calculate_lcow(
@@ -1314,12 +1384,18 @@ if st.button("Run TEA Calculation", type="primary"):
         "removal_efficiencies": removal_tables,
     }
     st.session_state.tea_results = results
+    st.session_state.tea_results_signature = current_run_signature
     st.session_state.tea_results_csv = download_csv.encode("utf-8")
     st.session_state.tea_detailed_results_csv = results_table.to_csv(index=False).encode("utf-8")
     st.session_state.tea_results_filename = results_filename
     st.success("TEA calculation completed.")
 
-if "tea_results" in st.session_state:
+if (
+    "tea_results" in st.session_state
+    and st.session_state.get("tea_results_signature") != current_run_signature
+):
+    st.info("Inputs changed since the last TEA calculation. Run TEA Calculation to refresh the results.")
+elif "tea_results" in st.session_state:
     results = st.session_state.tea_results
     st.markdown("**TEA calculation summary**")
     summary_table = pd.DataFrame([

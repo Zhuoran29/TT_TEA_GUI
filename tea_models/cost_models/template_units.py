@@ -30,6 +30,13 @@ def run_template(technical_result, cost_inputs, context, defaults):
     investment_factor = _investment_factor(context)
 
     capex_per_flow = _input(cost_inputs, "capex_per_flow", defaults.get("capex_per_flow", 0.0))
+    column_capex_multiplier = _input(
+        cost_inputs,
+        "column_capex_multiplier",
+        defaults.get("column_capex_multiplier", 1.0),
+    )
+    if column_capex_multiplier < 0.0:
+        raise ValueError("Column CAPEX multiplier cannot be negative.")
     fixed_opex_fraction = _input(
         cost_inputs,
         "fixed_opex_fraction",
@@ -57,7 +64,8 @@ def run_template(technical_result, cost_inputs, context, defaults):
     liner_cost_per_m2 = _input(cost_inputs, "liner_cost_per_m2", defaults.get("liner_cost_per_m2", 0.0))
     thermal_energy_price = float(context.get("thermal_energy_price", 0.0))
 
-    equipment_capex = capex_per_flow * inlet_flow
+    bare_flow_capex = capex_per_flow * inlet_flow
+    equipment_capex = bare_flow_capex * column_capex_multiplier
     power_capex = _value(technical_result, "power_capacity") * capex_per_kw
     land_capex = _value(technical_result, "pond_area") * land_cost_per_m2
     liner_capex = _value(technical_result, "pond_area") * liner_cost_per_m2
@@ -98,6 +106,8 @@ def run_template(technical_result, cost_inputs, context, defaults):
     return {
         "installed_capital_cost": _result(capex, "USD"),
         "equipment_capital_cost": _result(total_equipment_capex, "USD"),
+        "bare_flow_capital_cost": _result(bare_flow_capex, "USD"),
+        "column_capex_multiplier": _result(column_capex_multiplier, "-"),
         "investment_factor": _result(investment_factor, "-"),
         "fixed_operating_cost": _result(fixed_opex, "USD/year"),
         "variable_operating_cost": _result(variable_opex, "USD/year"),

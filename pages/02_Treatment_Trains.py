@@ -1,7 +1,7 @@
 import csv
 import json
 from pathlib import Path
-from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_config, UNIT_REMOVAL_RATES, ALL_WATER_QUALITY_PARAMS, SIDEBAR_DEFAULTS, BRINE_MANAGEMENT_OPTIONS
+from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_config, UNIT_REMOVAL_RATES, ALL_WATER_QUALITY_PARAMS, SIDEBAR_DEFAULTS, BRINE_MANAGEMENT_OPTIONS, normalize_treatment_train_config
 from tea_models.water_quality import collect_feedwater_quality, parse_removal_rate as parse_config_removal_rate
 import streamlit as st
 from config import APP_VERSION, DATA_VERSION
@@ -168,6 +168,19 @@ def parse_ph_target(value):
 
 def dot_string(value):
     return json.dumps(str(value))
+
+
+def clear_tea_results_cache():
+    for key in [
+        "tea_results",
+        "tea_results_signature",
+        "tea_results_csv",
+        "tea_detailed_results_csv",
+        "tea_results_filename",
+        "tea_context",
+        "tea_unit_inputs",
+    ]:
+        st.session_state.pop(key, None)
 
 
 def format_percent(value):
@@ -622,8 +635,7 @@ if requirements:
     
     # Reset editable train state when the selected scenario or default config changes.
     # This prevents stale units from older defaults from lingering in the UI.
-    TRAIN_CONFIG_VERSION = 2
-    scenario_signature = (influent, ffp_primary, desal)
+    TRAIN_CONFIG_VERSION = 3
 
     def _as_unit_list(value):
         if isinstance(value, list):
@@ -631,6 +643,17 @@ if requirements:
         if value:
             return [value]
         return []
+
+    scenario_signature = (
+        influent,
+        ffp_primary,
+        desal,
+        tuple(pretreatment),
+        tuple(desalination),
+        tuple(posttreatment),
+        brine_category,
+        tuple(_as_unit_list(brine_option)),
+    )
 
     def _load_default_treatment_train():
         st.session_state.current_scenario_signature = scenario_signature
@@ -640,6 +663,9 @@ if requirements:
         st.session_state.treatment_posttreatment = posttreatment.copy()
         st.session_state.treatment_brine = _as_unit_list(brine_option)
         st.session_state.treatment_brine_category = brine_category
+        st.session_state.pop("treatment_train", None)
+        st.session_state.pop("treatment_train_scenario_signature", None)
+        clear_tea_results_cache()
         st.session_state.reset_counter = st.session_state.get("reset_counter", 0) + 1
 
     if (
@@ -708,13 +734,15 @@ if requirements:
         st.graphviz_chart(dot)
         render_water_quality_gap_summary(requirements, pretreatment, desalination, posttreatment)
         if st.button("System Design →", type="primary"):
-            st.session_state.treatment_train = {
+            st.session_state.treatment_train = normalize_treatment_train_config({
                 "pretreatment": pretreatment,
                 "desalination": desalination,
                 "posttreatment": posttreatment,
                 "brine_category": brine_category,
                 "brine": brine_option,
-            }
+            })
+            st.session_state.treatment_train_scenario_signature = scenario_signature
+            clear_tea_results_cache()
             st.success("✓ Treatment train configuration saved! Moving to System Design...")
             st.switch_page("pages/03_System_Design.py")
     
@@ -848,6 +876,9 @@ if requirements:
                 st.session_state.treatment_brine_category = default_config["brine_category"]
                 st.session_state.current_scenario_signature = scenario_signature
                 st.session_state.treatment_config_version = TRAIN_CONFIG_VERSION
+                st.session_state.pop("treatment_train", None)
+                st.session_state.pop("treatment_train_scenario_signature", None)
+                clear_tea_results_cache()
                 
                 # Increment reset counter to force selectbox re-render
                 st.session_state.reset_counter += 1
@@ -1005,13 +1036,15 @@ else:
     dot = generate_treatment_flowchart(influent, ffp_primary, pretreatment, desalination, posttreatment, brine_option)
     st.graphviz_chart(dot)
     if st.button("System Design →", type="primary"):
-        st.session_state.treatment_train = {
+        st.session_state.treatment_train = normalize_treatment_train_config({
             "pretreatment": pretreatment,
             "desalination": desalination,
             "posttreatment": posttreatment,
             "brine_category": brine_category,
             "brine": brine_option,
-        }
+        })
+        st.session_state.treatment_train_scenario_signature = scenario_signature
+        clear_tea_results_cache()
         st.success("✓ Treatment train configuration saved! Moving to System Design...")
         st.switch_page("pages/03_System_Design.py")
 

@@ -2,15 +2,15 @@ unit_process,sub_section,parameter,value,unit,description,source,data_type
 DEFAULT,Capital,capex_per_flow,288,$/(m3/day),Equipment capital cost per unit daily capacity,US EPA Drinking Water Treatment Technology Unit Cost Models WBS method,Technical report
 DEFAULT,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA Drinking Water Treatment Technology Unit Cost Models WBS method,Technical report
 DEFAULT,Variable O&M,variable_opex_per_m3,0,$/m3,Variable operating cost per cubic meter treated,No external source; generic user override placeholder,Engineering estimate
-MVC,Capital,capex_per_flow,1104,$/(m3/day),Equipment MVC capital cost per unit daily capacity,Veolia,Industrial data
+MVC,Capital,capex_per_flow,2100,$/(m3/day),Equipment MVC capital cost per unit daily capacity,Veolia,Industrial data
+MVC,Capital,column_capex_multiplier,1,factor,Optional redundancy multiplier applied to MVC equipment CAPEX; 1 means no standby CAPEX adder,Expert review scenario input,Engineering estimate
 MVC,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed MVC CAPEX,WaterTAP MVC and planning-level auxiliary O&M allowance,Open source documentation
 MVC,Variable O&M,variable_opex_per_m3,0,$/m3,Variable MVC operating cost per cubic meter treated,WaterTAP MVC and planning-level auxiliary O&M allowance,Open source documentation
 Vacuum membrane distillation (VMD),Pumps,low_pressure_pump_cost,889,USD_2018/(L/s),Low-pressure pump installed cost coefficient,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Heat exchanger,heat_exchanger_material_factor,1,factor,Heat exchanger material factor,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Heat exchanger,heat_exchanger_unit_cost,300,USD_2020/m2,Heat exchanger unit cost,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Mixer,mixer_unit_cost,361,USD_2018/(L/s),Feed and recycle mixer unit cost,MD Design Model (Surrogate) worksheet,Workbook model
-Vacuum membrane distillation (VMD),Heater,heater_unit_cost,0.066,USD_2018/W,Electric heater unit cost,MD Design Model (Surrogate) worksheet,Workbook model
-Vacuum membrane distillation (VMD),Heater,heater_efficiency,0.99,fraction,Electric heater efficiency used for equipment sizing,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Heater,heater_unit_cost,0.066,USD_2018/W,Heater unit cost applied to surrogate thermal duty,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Chiller,chiller_unit_cost,0.2,USD_2018/W,Chiller unit cost,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Chiller,chiller_cop,7,COP,Chiller coefficient of performance used for equipment sizing,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Membrane,membrane_cost,56,USD_2018/m2,VMD membrane purchase cost,MD Design Model (Surrogate) worksheet,Workbook model
@@ -30,6 +30,7 @@ Ultrafiltration,Chemicals,chemical_price,1,$/kg,Cleaning chemical price,EPA RO/N
 Ultrafiltration,Replacement,media_replacement_price,35,$/m2,Membrane replacement cost placeholder,EPA RO/NF WBS membrane element replacement cost framework,Technical report
 Ultrafiltration,Replacement,media_replacement_fraction,0.12,fraction/yr,Annual membrane replacement fraction placeholder,EPA RO/NF WBS membrane element replacement cost framework,Technical report
 GAC,Capital,capex_per_flow,481.6,$/(m3/day),Equipment GAC contactor capital cost per unit daily capacity,US EPA WBS GAC cost model 2024,Technical report
+GAC,Capital,column_capex_multiplier,1,factor,Lead/lag and standby column multiplier applied to GAC equipment CAPEX; 1 means no standby CAPEX adder,EPA WBS column-process convention and expert review,Engineering estimate
 GAC,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS GAC cost model 2024,Technical report
 GAC,Variable O&M,cost_method,0,0=feed TOC; 1=TOC removal,Select feed-TOC breakthrough or removal-based cost correlation,NMSU GAC model,Model option
 GAC,Media,gac_media_cost,5.706666667,$/kg,GAC media purchase cost derived from the source model coefficient,NMSU GAC model based on Journal of Environmental Chemical Engineering 2025 117026,Model input
@@ -37,6 +38,7 @@ GAC,Disposal,solid_disposal_cost,0.11,$/kg,Spent GAC disposal cost,Journal of En
 GAC,Removal correlation,reference_media_cost_coefficient,0.321,$/m3,Reference GAC media cost coefficient at the reference TOC removal,Journal of Environmental Chemical Engineering 2025 117026,Publication
 GAC,Removal correlation,reference_toc_removal,0.67,fraction,Reference TOC removal for the removal-based cost method,NMSU GAC model,Model input
 Zeolite,Capital,capex_per_flow,774.4,$/(m3/day),Equipment zeolite bed capital cost per unit daily capacity,US EPA WBS Ion Exchange PFAS cost model 2024 and zeolite supplier specs,Technical report
+Zeolite,Capital,column_capex_multiplier,1,factor,Lead/lag and standby column multiplier applied to zeolite bed equipment CAPEX; 1 means no standby CAPEX adder,EPA WBS column-process convention and expert review,Engineering estimate
 Zeolite,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS Ion Exchange PFAS cost model 2024,Technical report
 Zeolite,Media,zeolite_price,0.16,$/kg,Zeolite purchase price,NMSU zeolite model and student information,Pilot input
 Zeolite,Media,media_loss_fraction,0.1,fraction/cycle,Zeolite makeup fraction per regeneration cycle,NMSU zeolite model and supporting literature,Model input
@@ -55,7 +57,7 @@ Evaporation pond,Capital,land_cost_per_m2,0.8,$/m2,Land acquisition or use cost 
 Evaporation pond,Capital,liner_cost_per_m2,4.8,$/m2,Liner and earthwork cost per pond area before investment factor,SCS Engineers HDPE-lined produced-water evaporation ponds 2015 and geomembrane liner cost allowance,Industrial report
 Evaporation pond,Fixed O&M,fixed_opex_fraction,0.03,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS cost-model O&M categories and planning-level allowance,Technical report
 Evaporation pond,Variable O&M,variable_opex_per_m3,0.01,$/m3,Variable pond management cost per cubic meter handled,SCS Engineers HDPE-lined produced-water evaporation ponds 2015 and pond O&M planning estimate,Industrial report
-Saltwater disposal well,Capital,capex_per_flow,48,$/(m3/day),Equipment surface facilities capital per unit daily disposal capacity,US EPA Underground Injection Wells for Produced Water Disposal and WaterTAP Injection Well Disposal ZO,Technical report
-Saltwater disposal well,Capital,capex_per_well,600000,$/well,Equipment capital cost per disposal well,US EPA Underground Injection Wells for Produced Water Disposal and produced-water SWD planning estimate,Technical report
-Saltwater disposal well,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed disposal well CAPEX,US EPA WBS cost-model O&M categories and planning-level allowance,Technical report
-Saltwater disposal well,Variable O&M,variable_opex_per_m3,11.4,$/m3,Variable disposal cost per cubic meter injected,US EPA Underground Injection Wells for Produced Water Disposal commercial SWD fee range,Technical report
+Saltwater disposal well,Capital,capex_per_flow,0,$/(m3/day),Existing-well screening assumption: no new surface facilities CAPEX,Planning assumption requested for screening case,Engineering estimate
+Saltwater disposal well,Capital,capex_per_well,0,$/well,Existing-well screening assumption: no new disposal well CAPEX,Planning assumption requested for screening case,Engineering estimate
+Saltwater disposal well,Fixed O&M,fixed_opex_fraction,0,fraction/yr,Existing-well screening assumption: fixed O&M included in disposal fee,Planning assumption requested for screening case,Engineering estimate
+Saltwater disposal well,Variable O&M,variable_opex_per_m3,6.29,$/m3,Variable disposal cost per cubic meter injected; equivalent to approximately $1/bbl,Planning assumption requested for screening case,Engineering estimate

@@ -16,17 +16,8 @@ MVC,Heat exchangers,distillate_hx_cold_pres,7000,Pa,Distillate HX cold side pres
 MVC,Heat exchangers,distillate_hx_hot_pres,7000,Pa,Distillate HX hot side pressure change,WaterTAP MVC,Open source documentation
 MVC,Compressor,comp_eff,0.8,,Compressor efficiency,WaterTAP MVC,Open source documentation
 MVC,Evaporator,evap_coeff,3000,W/K-m2,Evaporator heat transfer coefficient,WaterTAP MVC,Open source documentation
-Vacuum membrane distillation (VMD),Feed,feed_tds_mass_fraction,0.035,fraction,Fallback feed TDS mass fraction when stream TDS is unavailable,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Feed,feed_temperature,25,deg C,Feed temperature,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Hydraulics,recovery,0.5,fraction,Permeate recovery from VMD feed,MD Design Model (Surrogate) worksheet,Workbook model
-Vacuum membrane distillation (VMD),Hydraulics,recycle_ratio,6.169,recycle/feed,Continuous recirculation flow divided by feed flow,MD Design Model (Surrogate) worksheet,Workbook model
-Vacuum membrane distillation (VMD),Energy,specific_electric_energy,91.43,kWh/m3 feed,Workbook VMD specific electric energy at the calibration point,MD Design Model (Surrogate) worksheet verified with WaterTAP,Workbook calibration
-Vacuum membrane distillation (VMD),Calibration,reference_feed_flow,84.414643,m3/day,Reference feed capacity corresponding to 0.0223 MGD,MD Design Model (Surrogate) worksheet,Workbook calibration
-Vacuum membrane distillation (VMD),Calibration,reference_recovery,0.5,fraction,Reference recovery for product-based equipment scaling,MD Design Model (Surrogate) worksheet,Workbook calibration
-Vacuum membrane distillation (VMD),Calibration,reference_membrane_area,103.1817,m2,Reference VMD membrane area,MD Design Model (Surrogate) worksheet,Workbook calibration
-Vacuum membrane distillation (VMD),Calibration,reference_heat_exchanger_area,291.08,m2,Reference heat exchanger area,MD Design Model (Surrogate) worksheet,Workbook calibration
-Vacuum membrane distillation (VMD),Calibration,reference_heater_power,268.454,kW,Reference heater thermal duty,MD Design Model (Surrogate) worksheet,Workbook calibration
-Vacuum membrane distillation (VMD),Calibration,reference_chiller_power,274.402,kW,Absolute reference chiller thermal duty,MD Design Model (Surrogate) worksheet,Workbook calibration
 3-phase separator,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered after oil/water separation,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
 3-phase separator,Hydraulics,hydraulic_retention_time,30,min,Separator hydraulic retention time,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
 3-phase separator,Hydraulics,design_factor,1.2,fraction,Oversizing factor applied to separator volume,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
@@ -62,7 +53,22 @@ Evaporation pond,Pond sizing,operating_depth,1.5,m,Operating liquid depth,SCS En
 Evaporation pond,Pond sizing,freeboard,0.5,m,Freeboard allowance,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,industrial report
 Evaporation pond,Energy,energy_intensity,0,kWh/m3,Evaporation pond electricity demand,Passive evaporation pond assumption; auxiliary pumping handled outside this unit,Engieering estimate
 Saltwater disposal well,Disposal,disposal_fraction,1,fraction,Fraction of brine flow injected into disposal well,US EPA Underground Injection Wells for Produced Water Disposal,Technical report
-Saltwater disposal well,Well sizing,injection_well_capacity,2000,m3/day/well,Daily injection capacity per disposal well,WaterTAP Injection Well Disposal ZO documentation and produced-water disposal practice,Open source documentation
+Saltwater disposal well,Well sizing,injection_well_capacity,2000,m3/day/well,Reference daily injection capacity per disposal well; screening model uses one well for any positive disposed flow,WaterTAP Injection Well Disposal ZO documentation and produced-water disposal practice,Open source documentation
 Saltwater disposal well,Injection,injection_pressure,50,bar,Injection pump discharge pressure,US EPA Underground Injection Wells for Produced Water Disposal and injection pump energy calculation,Technical report
 Saltwater disposal well,Injection,pump_efficiency,0.75,fraction,Injection pump efficiency,Hydraulic pump efficiency Engieering assumption,Engieering estimate
 Saltwater disposal well,Energy,energy_intensity,0,kWh/m3,Optional override for disposal well electricity demand; use 0 to calculate from pressure and pump efficiency,Calculated from injection pressure and pump efficiency when override is zero,Engieering calculation
+BWRO,Hydraulics,recovery,0.9,fraction,Fraction of inlet flow recovered as outlet flow,USBR brackish groundwater RO/NF comparison,technical report
+BWRO,Feed,feed_tds_g_l,0.8,g/L,Fallback feed TDS when the stream has no TDS value,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Feed,feed_temperature,25.0,deg C,BWRO feed temperature,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Membrane array,array_stages,0,count,Concentrate stages; 0 selects automatically,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Membrane array,elements_per_vessel,6,count,Membrane elements per pressure vessel,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Membrane array,design_flux_lmh,18.0,L/m2-h,Selected design permeate flux,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Membrane,concentration_polarization,1.05,factor,Concentration-polarization factor,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Membrane,fouling_factor,0.85,fraction,Membrane permeability fouling allowance,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Pumps,high_pressure_pump_efficiency,0.85,fraction,High-pressure pump efficiency,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Pumps,feed_pump_efficiency,0.8,fraction,Intake/feed pump efficiency,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Pumps,feed_pump_pressure_bar,1.0,bar,Feed-pump discharge pressure,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Pumps,piping_loss_bar,0.5,bar,High-pressure piping loss allowance,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Energy recovery,has_erd,0,0/1,Enable concentrate energy recovery device,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Energy recovery,erd_efficiency,0.95,fraction,Energy recovery device efficiency,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+BWRO,Energy,pretreatment_energy_intensity,0.0,kWh/m3 product,BWRO-island pretreatment energy not modeled in upstream units,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source

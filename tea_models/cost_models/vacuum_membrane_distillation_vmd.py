@@ -39,14 +39,13 @@ def run(unit_process, technical_result, cost_inputs, context):
     hx_unit_cost = _input(cost_inputs, "heat_exchanger_unit_cost", 300.0)
     mixer_unit_cost = _input(cost_inputs, "mixer_unit_cost", 361.0)
     heater_unit_cost = _input(cost_inputs, "heater_unit_cost", 0.066)
-    heater_efficiency = _input(cost_inputs, "heater_efficiency", 0.99)
     chiller_unit_cost = _input(cost_inputs, "chiller_unit_cost", 0.20)
     chiller_cop = _input(cost_inputs, "chiller_cop", 7.0)
     membrane_cost = _input(cost_inputs, "membrane_cost", 56.0)
     membrane_replacement = _input(cost_inputs, "membrane_replacement_fraction", 0.20)
     fixed_opex_fraction = _input(cost_inputs, "fixed_opex_fraction", 0.03)
-    if heater_efficiency <= 0.0 or chiller_cop <= 0.0:
-        raise ValueError("VMD heater efficiency and chiller COP must be positive.")
+    if chiller_cop <= 0.0:
+        raise ValueError("VMD chiller COP must be positive.")
     if any(value < 0.0 for value in (
         low_pressure_pump_cost,
         hx_material_factor,
@@ -65,11 +64,11 @@ def run(unit_process, technical_result, cost_inputs, context):
     hx_area = _value(technical_result, "heat_exchanger_area")
     heater_duty = _value(technical_result, "heater_thermal_duty")
     chiller_duty = _value(technical_result, "chiller_thermal_duty")
+    auxiliary_electric_power = _value(technical_result, "auxiliary_electric_power")
 
     membrane_capex = investment_factor * membrane_cost * membrane_area * index_2018
     heater_capex = (
-        investment_factor * heater_unit_cost * heater_duty * 1000.0
-        / heater_efficiency * index_2018
+        investment_factor * heater_unit_cost * heater_duty * 1000.0 * index_2018
     )
     chiller_capex = (
         investment_factor * chiller_unit_cost * chiller_duty * 1000.0
@@ -105,7 +104,12 @@ def run(unit_process, technical_result, cost_inputs, context):
         * _value(technical_result, "energy_intensity")
         * float(context.get("electricity_price", 0.0))
     )
-    annual_opex = fixed_opex + replacement_opex + electricity_opex
+    thermal_energy_opex = (
+        annual_feed
+        * _value(technical_result, "thermal_energy_intensity")
+        * float(context.get("thermal_energy_price", 0.0))
+    )
+    annual_opex = fixed_opex + replacement_opex + electricity_opex + thermal_energy_opex
 
     return {
         "installed_capital_cost": _result(installed_capex, "USD"),
@@ -122,5 +126,8 @@ def run(unit_process, technical_result, cost_inputs, context):
         "fixed_operating_cost": _result(fixed_opex, "USD/year"),
         "membrane_replacement_cost": _result(replacement_opex, "USD/year"),
         "energy_operating_cost": _result(electricity_opex, "USD/year"),
+        "electricity_operating_cost": _result(electricity_opex, "USD/year"),
+        "thermal_energy_operating_cost": _result(thermal_energy_opex, "USD/year"),
+        "auxiliary_electric_power": _result(auxiliary_electric_power, "kW"),
         "total_annual_operating_cost": _result(annual_opex, "USD/year"),
     }

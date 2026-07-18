@@ -212,6 +212,50 @@ def calculate_brine_quality(inlet_quality, outlet_quality, inlet_flow, outlet_fl
     return brine_quality
 
 
+def combine_streams(*streams):
+    """Combine streams with flow-weighted water quality."""
+    combined_flow = 0.0
+    weighted_quality = {}
+    quality_units = {}
+
+    for stream in streams:
+        if not stream:
+            continue
+        try:
+            flow = float(stream.get("flow_m3_day", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            flow = 0.0
+        if flow <= 0.0:
+            continue
+
+        combined_flow += flow
+        for parameter, entry in (stream.get("water_quality", {}) or {}).items():
+            try:
+                value = float(entry.get("value", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                continue
+            weighted_quality[parameter] = weighted_quality.get(parameter, 0.0) + value * flow
+            quality_units.setdefault(
+                parameter,
+                entry.get("unit", ALL_WATER_QUALITY_PARAMS.get(parameter, {}).get("unit", "")),
+            )
+
+    combined_quality = {}
+    if combined_flow > 0.0:
+        combined_quality = {
+            parameter: {
+                "value": value_sum / combined_flow,
+                "unit": quality_units.get(parameter, ""),
+            }
+            for parameter, value_sum in weighted_quality.items()
+        }
+
+    return {
+        "flow_m3_day": combined_flow,
+        "water_quality": combined_quality,
+    }
+
+
 def water_quality_comparison_table(inlet_quality, outlet_quality, removal_efficiencies):
     rows = []
     parameters = list(outlet_quality.keys())

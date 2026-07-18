@@ -724,6 +724,18 @@ def render_energy_breakdown(unit_results):
         return
 
     energy_breakdown = unit_results.sort_values("sequence").copy()
+    energy_breakdown["electricity_intensity_kwh_per_bbl_feed"] = (
+        pd.to_numeric(
+            energy_breakdown["electricity_intensity_kwh_per_bbl_feed"],
+            errors="coerce",
+        ).fillna(0.0)
+    )
+    energy_breakdown["thermal_energy_intensity_kwh_per_bbl_feed"] = (
+        pd.to_numeric(
+            energy_breakdown["thermal_energy_intensity_kwh_per_bbl_feed"],
+            errors="coerce",
+        ).fillna(0.0)
+    )
     if plt is None or Patch is None:
         st.warning(
             "The chart could not be loaded because Matplotlib is unavailable in the "
@@ -823,6 +835,73 @@ def render_energy_breakdown(unit_results):
     fig.subplots_adjust(bottom=0.32)
     st.pyplot(fig, use_container_width=True)
     plt.close(fig)
+
+    total_electricity = max(
+        float(energy_breakdown["electricity_intensity_kwh_per_bbl_feed"].sum()),
+        0.0,
+    )
+    total_thermal = max(
+        float(energy_breakdown["thermal_energy_intensity_kwh_per_bbl_feed"].sum()),
+        0.0,
+    )
+    energy_table = energy_breakdown[
+        [
+            "sequence",
+            "unit_process",
+            "electricity_intensity_kwh_per_bbl_feed",
+            "thermal_energy_intensity_kwh_per_bbl_feed",
+        ]
+    ].copy()
+    energy_table["Unit process"] = energy_table.apply(
+        lambda row: f"{int(row['sequence'])}. {row['unit_process']}",
+        axis=1,
+    )
+    energy_table["Electricity share"] = energy_table[
+        "electricity_intensity_kwh_per_bbl_feed"
+    ].apply(lambda value: value / total_electricity if total_electricity > 0.0 else 0.0)
+    energy_table["Thermal share"] = energy_table[
+        "thermal_energy_intensity_kwh_per_bbl_feed"
+    ].apply(lambda value: value / total_thermal if total_thermal > 0.0 else 0.0)
+    energy_table = energy_table[
+        (
+            energy_table["electricity_intensity_kwh_per_bbl_feed"] > 0.0
+        )
+        | (
+            energy_table["thermal_energy_intensity_kwh_per_bbl_feed"] > 0.0
+        )
+    ][
+        [
+            "Unit process",
+            "electricity_intensity_kwh_per_bbl_feed",
+            "Electricity share",
+            "thermal_energy_intensity_kwh_per_bbl_feed",
+            "Thermal share",
+        ]
+    ].rename(
+        columns={
+            "electricity_intensity_kwh_per_bbl_feed": "Electricity (kWh/bbl feed)",
+            "thermal_energy_intensity_kwh_per_bbl_feed": "Thermal energy (kWh/bbl feed)",
+        }
+    )
+    st.dataframe(
+        energy_table,
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "Electricity (kWh/bbl feed)": st.column_config.NumberColumn(format="%.4f"),
+            "Thermal energy (kWh/bbl feed)": st.column_config.NumberColumn(format="%.4f"),
+            "Electricity share": st.column_config.ProgressColumn(
+                format="%.1f%%",
+                min_value=0.0,
+                max_value=1.0,
+            ),
+            "Thermal share": st.column_config.ProgressColumn(
+                format="%.1f%%",
+                min_value=0.0,
+                max_value=1.0,
+            ),
+        },
+    )
 
 
 if "tea_results" not in st.session_state:

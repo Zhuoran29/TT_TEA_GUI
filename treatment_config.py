@@ -245,6 +245,8 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
         else:
             primary_desal = ["NF", "BWRO"]
 
+        is_vmd_desal = primary_desal[-1] == "Vacuum membrane distillation (VMD)"
+
         configs = {
             "Drinking water quality oriented(e.g. groundwater recharge)": {
                 "pretreatment": ["Well pumping", "Raw water storage", "Cartridge filter"],
@@ -278,9 +280,9 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Brine disposal"
             },
             "Feedwater to UPW production": {
-                "pretreatment": ["Well pumping", "Media filtration", "Ultrafiltration", "Antiscalant dosing"],
-                "desalination": ["BWRO", "BWRO"],
-                "posttreatment": ["GAC", "Ion exchange / EDI"],
+                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration"],
+                "desalination": ["Vacuum membrane distillation (VMD)"] if is_vmd_desal else ["BWRO", "BWRO"],
+                "posttreatment": ["GAC", "Zeolite", "Ion exchange"] if is_vmd_desal else ["GAC", "Ion exchange / EDI"],
                 "brine": "Brine valorization"
             },
             "On-site O&G hydraulic fracturing recirculation": {
@@ -344,10 +346,10 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Brine disposal"
             },
             "Feedwater to UPW production": {
-                "pretreatment": ["DAF", "Ultrafiltration"],
+                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration"],
                 "desalination": ["MVC", "pH adjustment", "BWRO"],
-                "posttreatment": ["GAC", "Ion exchange"],
-                "brine": "Brine valorization"
+                "posttreatment": ["Ion exchange"],
+                "brine": "Brine disposal"
             },
             "On-site O&G hydraulic fracturing recirculation": {
                 "pretreatment": ["DAF", "Bag filter"],
@@ -401,10 +403,10 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Brine disposal"
             },
             "Feedwater to UPW production": {
-                "pretreatment": ["DAF", "Ultrafiltration"],
+                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration"],
                 "desalination": ["Vacuum membrane distillation (VMD)"],
-                "posttreatment": ["GAC", "Ion exchange"],
-                "brine": "Brine valorization"
+                "posttreatment": ["GAC", "Zeolite", "Ion exchange"],
+                "brine": "Brine disposal"
             },
             "On-site O&G hydraulic fracturing recirculation": {
                 "pretreatment": ["DAF", "Bag filter"],
@@ -673,7 +675,7 @@ UNIT_REMOVAL_RATES = {
         "pH": 8,
         "Oil": "95-99%",
         "Conductivity": "99%+",
-        "TDS": "99.9%+",
+        "TDS": "99.385%",
         "TSS": "99%+",
         "Turbidity": "99%+",
         "Hardness": "99.9%+",
@@ -706,13 +708,13 @@ UNIT_REMOVAL_RATES = {
         "pH": "variable",
         "Oil": "90-99%",
         "Conductivity": "95-99%",
-        "TDS": "95-99.5%",
+        "TDS": "99.5%",
         "TSS": "95-99%",
         "Turbidity": "95-99%",
         "Hardness": "95-99%",
         "Alkalinity": "80-98%",
-        "TOC": "30-80%",
-        "Ammonia nitrogen": "0-50%",
+        "TOC": "95%",
+        "Ammonia nitrogen": "90%",
         "Boron": "80-95%",
         "Sodium": "95-99%",
         "Chloride": "95-99%",
@@ -865,29 +867,50 @@ UNIT_REMOVAL_RATES = {
         "Manganese": "10-40%"
     },
     "Ion exchange / EDI": {
-        "Conductivity": "80-99%",
-        "TDS": "80-95%",
-        "Hardness": "99%+",
-        "Ammonia nitrogen": "80-95%",
-        "Boron": "80-95%",
-        "Sodium": "80-95%",
-        "Chloride": "70-95%",
-        "Calcium": "99%+",
-        "Barium": "95-99%",
-        "Strontium": "95-99%",
-        "Arsenic": "90-99%",
-        "Selenium": "90-99%",
-        "Gross Alpha": "90-99%",
-        "Gross Beta": "90-99%"
+        "Conductivity": "99%",
+        "TDS": "99%",
+        "Hardness": "99%",
+        "Ammonia nitrogen": "99%",
+        "Boron": "99%",
+        "Sodium": "99%",
+        "Chloride": "99%",
+        "Sulfate": "99%",
+        "Bicarbonate": "99%",
+        "Calcium": "99%",
+        "Magnesium": "99%",
+        "Barium": "99%",
+        "Strontium": "99%",
+        "Arsenic": "99%",
+        "Selenium": "99%",
+        "Fluoride": "99%",
+        "Uranium": "99%",
+        "Gross Alpha": "99%",
+        "Gross Beta": "99%",
+        "Radium-226": "99%",
+        "Radium-228": "99%"
     },
     "Ion exchange": {
-        "Conductivity": "70-95%",
-        "TDS": "70-95%",
-        "Hardness": "80-99%",
-        "Arsenic": "80-99%",
-        "Uranium": "80-99%",
-        "Gross Alpha": "80-99%",
-        "Gross Beta": "80-99%"
+        "Conductivity": "99%",
+        "TDS": "99%",
+        "Hardness": "99%",
+        "Ammonia nitrogen": "99%",
+        "Boron": "99%",
+        "Sodium": "99%",
+        "Chloride": "99%",
+        "Sulfate": "99%",
+        "Bicarbonate": "99%",
+        "Calcium": "99%",
+        "Magnesium": "99%",
+        "Barium": "99%",
+        "Strontium": "99%",
+        "Arsenic": "99%",
+        "Selenium": "99%",
+        "Fluoride": "99%",
+        "Uranium": "99%",
+        "Gross Alpha": "99%",
+        "Gross Beta": "99%",
+        "Radium-226": "99%",
+        "Radium-228": "99%"
     },
     "Boron-selective IX": {
         "Boron": "95-99%"
