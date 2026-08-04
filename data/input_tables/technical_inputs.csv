@@ -1,7 +1,7 @@
 unit_process,sub_section,parameter,value,unit,description,source,data_type
-DEFAULT,Hydraulics,recovery,0.95,fraction,Fraction of inlet flow recovered as product from this unit,WaterTAP zero-order model guidance and site-specific Engieering defaults,Open source documentation
-DEFAULT,Performance,removal_efficiency,0,fraction,Generic constituent removal efficiency placeholder,No external source; generic user override placeholder,Engieering estimate
-DEFAULT,Energy,energy_intensity,0,kWh/m3,Electricity demand per cubic meter treated,WaterTAP zero-order model guidance and site-specific Engieering defaults,Open source documentation
+DEFAULT,Hydraulics,recovery,0.95,fraction,Fraction of inlet flow recovered as product from this unit,WaterTAP zero-order model guidance and site-specific Engineering defaults,Open source documentation
+DEFAULT,Performance,removal_efficiency,0,fraction,Generic constituent removal efficiency placeholder,No external source; generic user override placeholder,Engineering estimate
+DEFAULT,Energy,energy_intensity,0,kWh/m3,Electricity demand per cubic meter treated,WaterTAP zero-order model guidance and site-specific Engineering defaults,Open source documentation
 DEFAULT,Chemicals,chemical_dose,0,kg/m3,Chemical dose per cubic meter treated,WaterTAP chemical addition defaults and Vendor-specific dose testing guidance,Open source documentation
 MVC,Feed,feed_tds_mass_fraction,0.154,fraction,Feed TDS mass fraction,,User input
 MVC,Feed,feed_temperature,25,deg C,Feed temperature,,User input
@@ -18,45 +18,68 @@ MVC,Compressor,comp_eff,0.8,,Compressor efficiency,WaterTAP MVC,Open source docu
 MVC,Evaporator,evap_coeff,3000,W/K-m2,Evaporator heat transfer coefficient,WaterTAP MVC,Open source documentation
 Vacuum membrane distillation (VMD),Feed,feed_temperature,25,deg C,Feed temperature,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Hydraulics,recovery,0.5,fraction,Permeate recovery from VMD feed,MD Design Model (Surrogate) worksheet,Workbook model
+LSRRO,Hydraulics,recovery,0.5,fraction,Recovery rate,NMPWRC LSRRO TEA assumption,Model input
+LSRRO,Design basis,reference_flow_bbl_day,50000,bbl/day,Reference LSRRO flow basis for scaling model inputs,NMPWRC LSRRO experimental design basis,Experimental data
+LSRRO,Energy,gross_pump_power_kw,3534,kW,Gross pump power at the reference flow,NMPWRC LSRRO experimental design basis,Experimental data
+LSRRO,Energy recovery,energy_recovery_fraction,0.3,fraction,Fraction of gross pump power recovered by the ERD,NMPWRC LSRRO TEA assumption,Model input
+LSRRO,Membrane,membrane_flux,18,L/m2-h,Average membrane operating flux,WaterTAP LSRRO flowsheet context and membrane design screening assumption,Open source documentation
+LSRRO,Membrane,pressure_override_psi,0,psi,Optional operating-pressure override; 0 uses TDS lookup,Atia et al. 2023 and WaterTAP PBSE design-point lookup,Model source
+LSRRO,Membrane,stage_override,0,count,Optional stage-count override; 0 uses TDS lookup,Atia et al. 2023 and WaterTAP PBSE design-point lookup,Model source
+LSRRO,Water quality,clip_negative_permeate,1,0/1,Clip negative regression-predicted permeate concentrations to zero,NMPWRC empirical water-quality regression post-processing option,Empirical
 3-phase separator,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered after oil/water separation,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
 3-phase separator,Hydraulics,hydraulic_retention_time,30,min,Separator hydraulic retention time,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
 3-phase separator,Hydraulics,design_factor,1.2,fraction,Oversizing factor applied to separator volume,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
-3-phase separator,Energy,energy_intensity,0.03,kWh/m3,Pumping and controls electricity demand,Pump/control auxiliary load Engieering estimate; use site-specific pressure drop where available,Engieering estimate
+3-phase separator,Energy,energy_intensity,0.03,kWh/m3,Pumping and controls electricity demand,Pump/control auxiliary load Engineering estimate; use site-specific pressure drop where available,Engineering estimate
 DAF,Hydraulics,recovery,0.98,fraction,Fraction of inlet flow recovered after flotation,Water Corporation DS211 Dissolved Air Flotation Unit Design Guideline 2022,Technical report
 DAF,Hydraulics,surface_loading_rate,8,m/h,DAF surface overflow loading rate,Water Corporation DS211 Dissolved Air Flotation Unit Design Guideline 2022,Technical report
 DAF,Hydraulics,recycle_ratio,0.15,fraction,Pressurized recycle flow as fraction of inlet flow,Water Corporation DS211 Dissolved Air Flotation Unit Design Guideline 2022,Technical report
 DAF,Energy,energy_intensity,0.08,kWh/m3,DAF pumps and air saturation electricity demand,WaterTAP Dissolved Air Flotation ZO documentation and Water Corporation DS211,Open source documentation
 DAF,Chemicals,chemical_dose,0.03,kg/m3,Coagulant or polymer dose,Water Corporation DS211 and DAF pilot coagulant dose literature,Technical report
+Chemical softening,Hydraulics,recovery,0.97,fraction,Fraction of inlet flow recovered after softening clarification,NMPWRC chemical-softening model input,Model input
+Chemical softening,Chemicals,lime_dose_mg_l,10,mg/L,Lime dose as Ca(OH)2 product,KBH/NMPWRC chemical-softening TEA workbook basis,Model input
+Chemical softening,Chemicals,soda_ash_dose_mg_l,4301,mg/L,Soda ash dose as Na2CO3 product,KBH/NMPWRC chemical-softening TEA workbook basis,Model input
+Chemical softening,Conditioning,target_neutral_pH,8,-,Target pH after acid neutralization,NMPWRC Reaktoro chemical-softening simulator target neutralization pH,Model input
+Chemical softening,Chemicals,acid_dose_override_mg_l,0,mg/L,Optional H2SO4 dose override; 0 auto-calculates to target pH,NMPWRC Reaktoro chemical-softening simulator optional user override,Model input
+Chemical softening,Energy,energy_intensity,0.223,kWh/m3 feed,Chemical-softening electricity demand,KBH/NMPWRC chemical-softening workbook electricity basis,Model input
+Electrocoagulation,Hydraulics,recovery,0.98,fraction,Fraction of inlet flow recovered after EC clarification,NMPWRC EC-Al model input,Model input
+Electrocoagulation,Hydraulics,hydraulic_retention_time,30,min,EC hydraulic retention time,Naje et al. 2019 electrocoagulation treatment study,Publication
+Electrocoagulation,Electrodes,current_density_mA_cm2,20,mA/cm2,EC aluminum-electrode current density,Naje et al. 2019 electrocoagulation treatment study,Publication
+Electrocoagulation,Electrodes,electrode_gap_m,0.02,m,Electrode gap used in solution-resistance estimate,WaterTAP electrocoagulation model assumption,Open source documentation
+Electrocoagulation,Energy,energy_intensity,0,kWh/m3 feed,Calculated from conductivity current density and electrode area,NMPWRC EC-Al engineering calculation,Engineering calculation
+Walnut shell filtration,Hydraulics,recovery,0.99,fraction,Fraction of inlet flow recovered through WSF,NMPWRC WSF model input,Model input
+Walnut shell filtration,Filtration,filtration_rate,10,m/h,Design filtration loading rate,Hach Granular Media Filtration for Water Treatment Applications 2012,Industrial report
+Walnut shell filtration,Filtration,bed_depth,1,m,Media bed depth,Hach Granular Media Filtration for Water Treatment Applications 2012,Industrial report
+Walnut shell filtration,Media,media_bulk_density,650,kg/m3,Walnut shell media bulk density,NMPWRC WSF engineering estimate,Engineering estimate
+Walnut shell filtration,Energy,energy_intensity,0.17,kWh/m3 feed,WSF electricity demand,Drover 2022 DOE produced-water pretreatment report,Technical report
 Ultrafiltration,Hydraulics,recovery,0.96,fraction,Net UF filtrate recovery after backwash,WaterTAP Ultra Filtration ZO documentation and membrane treatment literature,Open source documentation
-Ultrafiltration,Membrane,membrane_flux,45,L/m2-h,Average UF operating flux,WaterTAP Ultra Filtration ZO documentation and EPA RO/NF WBS membrane model context,Open source documentation
+Ultrafiltration,Membrane,membrane_flux,45,L/m2-h,Average UF operating flux,Wang et al. 2024 DWPR report and KBH/NMPWRC UF workbook basis,Technical report
 Ultrafiltration,Membrane,backwash_fraction,0.04,fraction,Backwash and cleaning waste fraction,WaterTAP Ultra Filtration ZO documentation and membrane treatment literature,Open source documentation
-Ultrafiltration,Energy,energy_intensity,0.12,kWh/m3,UF feed/backwash pumping electricity demand,Membrane water-treatment plant energy-use literature and WaterTAP Ultra Filtration ZO,Publication
-Ultrafiltration,Chemicals,chemical_dose,0.005,kg/m3,Cleaning chemical dose normalized to feed flow,EPA RO/NF WBS O&M assumptions for membrane cleaning and replacement,Technical report
-GAC,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through GAC contactors,WQA GAC Fact Sheet and US EPA WBS GAC cost model 2024,Technical report
-GAC,Media,empty_bed_contact_time,10,min,GAC empty bed contact time,WQA GAC Fact Sheet and US EPA WBS GAC cost model 2024,Technical report
-GAC,Media,media_bulk_density,450,kg/m3,GAC bulk density,Pilot and laboratory data supplied with the NMSU GAC model,Pilot data
-GAC,Energy,energy_intensity,0.14,kWh/m3 feed,GAC electricity demand,Journal of Environmental Chemical Engineering 2025 117026,Publication
-Zeolite,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through zeolite beds,Veolia ion exchange handbook and zeolite water-treatment literature,industrial reference
-Zeolite,Media,empty_bed_contact_time,20,min,Zeolite empty bed contact time,NMSU bench-scale zeolite model and supporting publications,Pilot data
-Zeolite,Media,media_bulk_density,824,kg/m3,Zeolite bulk density calculated from 8.24 g in a 10 mL bed,NMSU bench-scale zeolite model,Pilot data
-Zeolite,Energy,energy_intensity,0.04,kWh/m3,Zeolite bed headloss pumping electricity demand,WaterTAP Ion Exchange ZO documentation and headloss pumping estimate,Open source documentation
-Zeolite,Capacity calibration,reference_feed_ammonia,25,mg/L,Reference feed ammonia concentration,NMSU bench-scale zeolite model,Pilot data
-Zeolite,Capacity calibration,reference_ammonia_removal,0.9,fraction,Reference ammonia removal,NMSU bench-scale zeolite model,Pilot data
-Zeolite,Capacity calibration,reference_breakthrough_bv,645,bed volumes,Reference breakthrough bed volumes,NMSU bench-scale zeolite model,Pilot data
-Zeolite,Capacity calibration,capacity_removal_coefficient,0.55,factor,Removal sensitivity coefficient,NMSU calibrated zeolite model,Engineering calibration
-Zeolite,Capacity calibration,capacity_feed_coefficient,0.0035,L/mg,Feed concentration sensitivity coefficient,NMSU calibrated zeolite model,Engineering calibration
-Zeolite,Capacity calibration,capacity_factor_min,0.45,factor,Minimum calibrated capacity factor,NMSU calibrated zeolite model,Engineering calibration
-Zeolite,Capacity calibration,capacity_factor_max,2.15,factor,Maximum calibrated capacity factor,NMSU calibrated zeolite model,Engineering calibration
+Ultrafiltration,Chemicals,sodium_bisulfite_dose_mg_l,5,mg/L,Sodium bisulfite dose at UF,KBH/NMPWRC UF workbook sodium bisulfite dosing basis,Model input
+Ultrafiltration,Pumping,pump_tdh_ft,50,ft,UF pump total dynamic head,KBH/NMPWRC UF workbook pump TDH basis,Model input
+Ultrafiltration,Pumping,pump_efficiency,0.75,fraction,Pump efficiency,KBH/NMPWRC UF workbook pump efficiency basis,Model input
+Ultrafiltration,Pumping,motor_efficiency,0.95,fraction,Motor efficiency,KBH/NMPWRC UF workbook motor efficiency basis,Model input
+Ultrafiltration,Pumping,vfd_factor,0.98,factor,VFD or constant motor factor,KBH/NMPWRC UF workbook VFD factor basis,Model input
+GAC,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through GAC contactors,NMPWRC GAC model input,Model input
+GAC,Media,empty_bed_contact_time,10,min,GAC empty bed contact time,WaterTAP GAC design output used by NMPWRC GAC model,Model source
+GAC,Media,media_bulk_density,450,kg/m3,GAC bulk density,NMPWRC GAC model and WaterTAP GAC design output,Model source
+GAC,Media,adsorber_bed_volume_m3,78.783,m3,GAC adsorber bed volume used in BV changeout calculation,WaterTAP GAC design output used by NMPWRC GAC model,Model source
+GAC,Media,fresh_gac_mass_kg,31513,kg,Fresh GAC mass in the adsorber,WaterTAP GAC design output used by NMPWRC GAC model,Model source
+Zeolite,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through zeolite beds,NMPWRC zeolite model input,Model input
+Zeolite,Media,empty_bed_contact_time,20,min,Zeolite empty bed contact time,NMPWRC bench zeolite test and Turan and Turan 2021 fixed-bed equations,Pilot data
+Zeolite,Media,media_bulk_density,824,kg/m3,Zeolite bulk density calculated from bench bed mass and volume,NMPWRC bench zeolite bed mass and volume,Pilot data
+Zeolite,Energy,energy_intensity,0.02,kWh/m3 feed,Zeolite bed pumping electricity demand,NMPWRC zeolite pumping-energy assumption,Engineering estimate
+Zeolite,Performance,ammonia_removal,0.95,fraction,Target NH3-N removal used for zeolite breakthrough sizing,NMPWRC zeolite TEA design target,Model input
+Zeolite,Media,aec_mg_n_g,4,mg N/g zeolite,Ammonium exchange capacity used for zeolite media mass,Deng et al. 2014 ammonium exchange capacity range,Publication
 Evaporation pond,Hydraulics,recovery,1,fraction,Pass-through factor for current sequential brine-management placeholder,WaterTAP Evaporation Pond ZO documentation and produced-water pond practice,Open source documentation
 Evaporation pond,Pond sizing,net_evaporation_rate,1,m/year,Net evaporation rate after rainfall credit,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,industrial report
 Evaporation pond,Pond sizing,operating_depth,1.5,m,Operating liquid depth,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,industrial report
 Evaporation pond,Pond sizing,freeboard,0.5,m,Freeboard allowance,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,industrial report
-Evaporation pond,Energy,energy_intensity,0,kWh/m3,Evaporation pond electricity demand,Passive evaporation pond assumption; auxiliary pumping handled outside this unit,Engieering estimate
+Evaporation pond,Energy,energy_intensity,0,kWh/m3,Evaporation pond electricity demand,Passive evaporation pond assumption; auxiliary pumping handled outside this unit,Engineering estimate
 Saltwater disposal well,Disposal,disposal_fraction,1,fraction,Fraction of brine flow injected into disposal well,US EPA Underground Injection Wells for Produced Water Disposal,Technical report
 Saltwater disposal well,Well sizing,injection_well_capacity,2000,m3/day/well,Reference daily injection capacity per disposal well; screening model uses one well for any positive disposed flow,WaterTAP Injection Well Disposal ZO documentation and produced-water disposal practice,Open source documentation
 Saltwater disposal well,Injection,injection_pressure,50,bar,Injection pump discharge pressure,US EPA Underground Injection Wells for Produced Water Disposal and injection pump energy calculation,Technical report
-Saltwater disposal well,Injection,pump_efficiency,0.75,fraction,Injection pump efficiency,Hydraulic pump efficiency Engieering assumption,Engieering estimate
-Saltwater disposal well,Energy,energy_intensity,0,kWh/m3,Optional override for disposal well electricity demand; use 0 to calculate from pressure and pump efficiency,Calculated from injection pressure and pump efficiency when override is zero,Engieering calculation
+Saltwater disposal well,Injection,pump_efficiency,0.75,fraction,Injection pump efficiency,Hydraulic pump efficiency Engineering assumption,Engineering estimate
+Saltwater disposal well,Energy,energy_intensity,0,kWh/m3,Optional override for disposal well electricity demand; use 0 to calculate from pressure and pump efficiency,Calculated from injection pressure and pump efficiency when override is zero,Engineering calculation
 BWRO,Hydraulics,recovery,0.9,fraction,Fraction of inlet flow recovered as outlet flow,USBR brackish groundwater RO/NF comparison,technical report
 BWRO,Feed,feed_tds_g_l,0.8,g/L,Fallback feed TDS when the stream has no TDS value,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
 BWRO,Feed,feed_temperature,25.0,deg C,BWRO feed temperature,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source

@@ -8,6 +8,13 @@ the complete treatment train by the original feed volume.
 
 from __future__ import annotations
 
+from tea_models.cost_models.cost_utils import (
+    cost_index_factor_to_base,
+    cost_year,
+    escalate_cost,
+    input_value,
+)
+
 
 def _result(value, unit):
     return {"value": value, "unit": unit}
@@ -42,16 +49,29 @@ def run(unit_process, technical_result, cost_inputs, context):
     if product_capacity <= 0 or annual_product <= 0 or not 0 < recovery < 1:
         raise ValueError("BWRO product flow and recovery must be positive.")
 
-    total_installed_cost = _input(cost_inputs, "total_installed_cost", 0.0)
-    unit_capex = _input(cost_inputs, "unit_capex", 0.0)
-    reference_unit_capex = _input(cost_inputs, "reference_unit_capex", 1500.0)
+    total_installed_cost = input_value(cost_inputs, "total_installed_cost", 0.0)
+    unit_capex = input_value(cost_inputs, "unit_capex", 0.0)
+    reference_unit_capex = input_value(cost_inputs, "reference_unit_capex", 1500.0)
     reference_capacity = _input(cost_inputs, "reference_capacity", 1000.0)
     scaling_exponent = _input(cost_inputs, "capex_scaling_exponent", -0.15)
-    cost_index_factor = _input(cost_inputs, "cost_index_factor", 1.0)
+    user_cost_index_factor = _input(cost_inputs, "cost_index_factor", 1.0)
+    auto_cost_index_factor = cost_index_factor_to_base(
+        context,
+        cost_year(cost_inputs, "reference_unit_capex"),
+    )
+    cost_index_factor = user_cost_index_factor * auto_cost_index_factor
     if total_installed_cost > 0:
+        cost_index_factor = user_cost_index_factor * cost_index_factor_to_base(
+            context,
+            cost_year(cost_inputs, "total_installed_cost"),
+        )
         installed_capex = total_installed_cost * cost_index_factor
         capex_method = "user-specified total installed cost"
     elif unit_capex > 0:
+        cost_index_factor = user_cost_index_factor * cost_index_factor_to_base(
+            context,
+            cost_year(cost_inputs, "unit_capex"),
+        )
         installed_capex = unit_capex * product_capacity * cost_index_factor
         capex_method = "user-specified unit CAPEX"
     else:
@@ -65,19 +85,24 @@ def run(unit_process, technical_result, cost_inputs, context):
 
     fixed_om_fraction = _input(cost_inputs, "fixed_om_fraction", 0.035)
     insurance_fraction = _input(cost_inputs, "insurance_fraction", 0.005)
-    membrane_cost = _input(cost_inputs, "membrane_cost", 30.0)
+    membrane_cost = escalate_cost(
+        input_value(cost_inputs, "membrane_cost", 30.0),
+        cost_inputs,
+        "membrane_cost",
+        context,
+    )
     membrane_replacement_fraction = _input(
         cost_inputs, "membrane_replacement_fraction", 0.20
     )
     membrane_area = _value(technical_result, "membrane_area")
 
-    chemical_rate = _input(cost_inputs, "chemical_cost_per_m3_product", 0.03)
-    labor_rate = _input(cost_inputs, "labor_cost_per_m3_product", 0.05)
-    pretreatment_rate = _input(cost_inputs, "pretreatment_cost_per_m3_product", 0.0)
-    posttreatment_rate = _input(cost_inputs, "posttreatment_cost_per_m3_product", 0.0)
-    other_rate = _input(cost_inputs, "other_variable_cost_per_m3_product", 0.0)
-    intake_rate = _input(cost_inputs, "intake_water_cost_per_m3_feed", 0.0)
-    brine_rate = _input(cost_inputs, "brine_disposal_cost_per_m3_concentrate", 0.0)
+    chemical_rate = escalate_cost(input_value(cost_inputs, "chemical_cost_per_m3_product", 0.03), cost_inputs, "chemical_cost_per_m3_product", context)
+    labor_rate = escalate_cost(input_value(cost_inputs, "labor_cost_per_m3_product", 0.05), cost_inputs, "labor_cost_per_m3_product", context)
+    pretreatment_rate = escalate_cost(input_value(cost_inputs, "pretreatment_cost_per_m3_product", 0.0), cost_inputs, "pretreatment_cost_per_m3_product", context)
+    posttreatment_rate = escalate_cost(input_value(cost_inputs, "posttreatment_cost_per_m3_product", 0.0), cost_inputs, "posttreatment_cost_per_m3_product", context)
+    other_rate = escalate_cost(input_value(cost_inputs, "other_variable_cost_per_m3_product", 0.0), cost_inputs, "other_variable_cost_per_m3_product", context)
+    intake_rate = escalate_cost(input_value(cost_inputs, "intake_water_cost_per_m3_feed", 0.0), cost_inputs, "intake_water_cost_per_m3_feed", context)
+    brine_rate = escalate_cost(input_value(cost_inputs, "brine_disposal_cost_per_m3_concentrate", 0.0), cost_inputs, "brine_disposal_cost_per_m3_concentrate", context)
 
     nonnegative = [
         cost_index_factor,

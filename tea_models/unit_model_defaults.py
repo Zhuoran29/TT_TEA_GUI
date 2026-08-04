@@ -16,10 +16,27 @@ TECHNICAL_MODEL_DEFAULTS = {
         "hydraulic_retention_time": 0.75,
         "design_factor": 1.2,
     },
+    "Chemical softening": {
+        "unit_kind": "chemical_clarification",
+        "recovery": 0.97,
+        "lime_dose_mg_l": 10.0,
+        "soda_ash_dose_mg_l": 4301.0,
+        "target_neutral_pH": 8.0,
+        "acid_dose_override_mg_l": 0.0,
+        "energy_intensity": 0.223,
+    },
+    "Electrocoagulation": {
+        "unit_kind": "chemical_clarification",
+        "recovery": 0.98,
+        "current_density_mA_cm2": 20.0,
+        "electrode_gap_m": 0.02,
+        "hydraulic_retention_time": 30.0,
+        "energy_intensity": 0.0,
+    },
     "Walnut shell filtration": {
         "unit_kind": "media_filter",
         "recovery": 0.99,
-        "energy_intensity": 0.05,
+        "energy_intensity": 0.17,
         "filtration_rate": 10.0,
         "bed_depth": 1.0,
         "media_bulk_density": 650.0,
@@ -52,6 +69,17 @@ TECHNICAL_MODEL_DEFAULTS = {
         "backwash_fraction": 0.03,
         "chemical_dose": 0.003,
     },
+    "Ultrafiltration": {
+        "unit_kind": "uf",
+        "recovery": 0.96,
+        "membrane_flux": 45.0,
+        "backwash_fraction": 0.04,
+        "sodium_bisulfite_dose_mg_l": 5.0,
+        "pump_tdh_ft": 50.0,
+        "pump_efficiency": 0.75,
+        "motor_efficiency": 0.95,
+        "vfd_factor": 0.98,
+    },
     "Well pumping": {
         "unit_kind": "pump",
         "recovery": 1.0,
@@ -72,22 +100,6 @@ TECHNICAL_MODEL_DEFAULTS = {
         "energy_intensity": 0.005,
         "hydraulic_retention_time": 12.0,
         "design_factor": 1.1,
-    },
-    "Softening / pH adjustment": {
-        "unit_kind": "chemical_clarification",
-        "recovery": 0.97,
-        "energy_intensity": 0.05,
-        "chemical_dose": 0.15,
-        "hydraulic_retention_time": 0.75,
-        "target_pH": 8.5,
-    },
-    "Softening / silica control": {
-        "unit_kind": "chemical_clarification",
-        "recovery": 0.96,
-        "energy_intensity": 0.07,
-        "chemical_dose": 0.20,
-        "hydraulic_retention_time": 1.0,
-        "target_pH": 8.8,
     },
     "Antiscalant / pH adjustment": {
         "unit_kind": "chemical_dosing",
@@ -124,10 +136,14 @@ TECHNICAL_MODEL_DEFAULTS = {
     },
     "LSRRO": {
         "unit_kind": "pressure_membrane",
-        "recovery": 0.70,
-        "energy_intensity": 3.9,
+        "recovery": 0.50,
+        "reference_flow_bbl_day": 50000.0,
+        "gross_pump_power_kw": 3534.0,
+        "energy_recovery_fraction": 0.30,
         "membrane_flux": 18.0,
-        "operating_pressure": 45.0,
+        "pressure_override_psi": 0.0,
+        "stage_override": 0.0,
+        "clip_negative_permeate": 1.0,
     },
     "OARO": {
         "unit_kind": "pressure_membrane",
@@ -174,6 +190,24 @@ TECHNICAL_MODEL_DEFAULTS = {
         "energy_intensity": 0.12,
         "air_water_ratio": 30.0,
         "tower_loading_rate": 20.0,
+    },
+    "GAC": {
+        "unit_kind": "gac",
+        "recovery": 0.995,
+        "energy_intensity": 0.0,
+        "empty_bed_contact_time": 10.0,
+        "media_bulk_density": 450.0,
+        "adsorber_bed_volume_m3": 78.783,
+        "fresh_gac_mass_kg": 31513.0,
+    },
+    "Zeolite": {
+        "unit_kind": "zeolite",
+        "recovery": 0.995,
+        "energy_intensity": 0.02,
+        "empty_bed_contact_time": 20.0,
+        "media_bulk_density": 824.0,
+        "ammonia_removal": 0.95,
+        "aec_mg_n_g": 4.0,
     },
     "Ion exchange / EDI": {
         "unit_kind": "ion_exchange",
@@ -306,16 +340,55 @@ TECHNICAL_MODEL_DEFAULTS = {
 COST_MODEL_DEFAULTS = {
     "Equalization tank": {"capex_per_flow": 48.0, "fixed_opex_fraction": 0.03, "variable_opex_per_m3": 0.005},
     "Floc n Drop": {"capex_per_flow": 104.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.06, "chemical_price": 0.8},
-    "Walnut shell filtration": {"capex_per_flow": 168.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.08, "media_replacement_price": 0.6, "media_replacement_fraction": 0.25},
+    "Chemical softening": {
+        "reference_direct_cs_capex": 25829456.94,
+        "reference_capacity": 3785.41,
+        "capex_scaling_exponent": 0.87,
+        "lime_price": 0.05,
+        "soda_ash_price": 0.45,
+        "h2so4_price": 0.043,
+        "solid_disposal_cost": 0.11,
+        "labor_fte": 1.0,
+        "labor_cost_per_fte_year": 80000.0,
+        "om_contingency_factor": 0.20,
+    },
+    "Electrocoagulation": {
+        "reference_ec_capex": 1595666.0,
+        "reference_capacity": 11356.0,
+        "capex_scaling_exponent": 0.87,
+        "aluminum_price": 2.23,
+        "solid_disposal_cost": 0.11,
+        "labor_fte": 1.0,
+        "labor_cost_per_fte_year": 80000.0,
+        "om_contingency_factor": 0.20,
+    },
+    "Walnut shell filtration": {
+        "reference_capex_cost_per_bbl": 0.02,
+        "reference_opex_cost_per_bbl": 0.03,
+        "reference_flow_bbl_day": 20000.0,
+        "capex_scaling_exponent": 0.87,
+        "labor_fte": 1.0,
+        "labor_cost_per_fte_year": 80000.0,
+        "om_contingency_factor": 0.20,
+    },
     "Media filtration": {"capex_per_flow": 96.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.04, "media_replacement_price": 0.15, "media_replacement_fraction": 0.10},
     "Cartridge filter": {"capex_per_flow": 36.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.04, "media_replacement_price": 80.0, "media_replacement_fraction": 6.0},
     "Bag filter": {"capex_per_flow": 28.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.03, "media_replacement_price": 35.0, "media_replacement_fraction": 6.0},
     "Ultra-fine filtration": {"capex_per_flow": 180.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.20, "chemical_price": 1.0, "media_replacement_price": 25.0, "media_replacement_fraction": 0.12},
+    "Ultrafiltration": {
+        "reference_uf_flow_gpd": 970000.0,
+        "uf_equipment_unit_cost": 2.0,
+        "uf_building_unit_cost": 300.0,
+        "reference_building_area_ft2": 2000.0,
+        "capex_scaling_exponent": 0.87,
+        "sodium_bisulfite_price": 0.25,
+        "labor_fte": 1.0,
+        "labor_cost_per_fte_year": 80000.0,
+        "om_contingency_factor": 0.20,
+    },
     "Well pumping": {"capex_per_flow": 32.0, "fixed_opex_fraction": 0.03, "variable_opex_per_m3": 0.005},
     "Raw water storage": {"capex_per_flow": 24.0, "fixed_opex_fraction": 0.02, "variable_opex_per_m3": 0.002},
     "Product water storage": {"capex_per_flow": 24.0, "fixed_opex_fraction": 0.02, "variable_opex_per_m3": 0.002},
-    "Softening / pH adjustment": {"capex_per_flow": 152.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.08, "chemical_price": 0.25},
-    "Softening / silica control": {"capex_per_flow": 168.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.10, "chemical_price": 0.30},
     "Antiscalant / pH adjustment": {"capex_per_flow": 14.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.01, "chemical_price": 2.5},
     "Antiscalant dosing": {"capex_per_flow": 10.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 3.0},
     "Air stripping": {"capex_per_flow": 120.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.04},
@@ -333,7 +406,19 @@ COST_MODEL_DEFAULTS = {
         "fixed_opex_fraction": 0.03,
     },
     "MVC": {"capex_per_flow": 2100.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.0},
-    "LSRRO": {"capex_per_flow": 480.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.10, "media_replacement_price": 45.0, "media_replacement_fraction": 0.12},
+    "LSRRO": {
+        "reference_direct_membrane_capex": 20.5e6,
+        "reference_flow_bbl_day": 50000.0,
+        "capex_scaling_exponent": 0.81,
+        "membrane_replacement_factor": 0.20,
+        "antiscalant_dose_mg_l": 3.0,
+        "antiscalant_unit_price": 61.40,
+        "antiscalant_density_kg_l": 1.10,
+        "cip_cost_per_m3_product": 0.07,
+        "labor_fte": 1.0,
+        "labor_cost_per_fte_year": 80000.0,
+        "om_contingency_factor": 0.20,
+    },
     "OARO": {"capex_per_flow": 600.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.12, "media_replacement_price": 50.0, "media_replacement_fraction": 0.12},
     "RO": {"capex_per_flow": 360.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.08, "media_replacement_price": 40.0, "media_replacement_fraction": 0.12},
     "BWRO": {
@@ -357,6 +442,24 @@ COST_MODEL_DEFAULTS = {
     },
     "NF": {"capex_per_flow": 220.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.05, "media_replacement_price": 35.0, "media_replacement_fraction": 0.12},
     "Ammonia stripping": {"capex_per_flow": 128.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.05},
+    "GAC": {
+        "reference_gac_capex": 1345660.0,
+        "reference_capacity": 3760.0,
+        "capex_scaling_exponent": 0.87,
+        "gac_replacement_cost": 4.58,
+        "gac_regeneration_cost": 4.28,
+        "gac_replacement_regeneration_energy": 23.0,
+        "regeneration_fraction": 0.80,
+        "replacement_fraction": 0.20,
+        "om_contingency_factor": 0.20,
+    },
+    "Zeolite": {
+        "equipment_capex_per_gpm": 150.0,
+        "capex_scaling_exponent": 1.0,
+        "zeolite_price": 4.41,
+        "nh4cl_price": 57.5,
+        "om_contingency_factor": 0.20,
+    },
     "Ion exchange / EDI": {"capex_per_flow": 440.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.35, "chemical_price": 0.5, "media_replacement_price": 5.0, "media_replacement_fraction": 0.25},
     "Ion exchange": {"capex_per_flow": 340.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.25, "chemical_price": 0.5, "media_replacement_price": 4.0, "media_replacement_fraction": 0.20},
     "Boron-selective IX": {"capex_per_flow": 380.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.30, "chemical_price": 0.6, "media_replacement_price": 8.0, "media_replacement_fraction": 0.20},
@@ -380,6 +483,18 @@ COST_MODEL_DEFAULTS = {
 
 TECHNICAL_INPUT_SPECS = {
     "recovery": ("Hydraulics", "fraction", "Fraction of inlet flow recovered as outlet flow"),
+    "reference_flow_bbl_day": ("Design basis", "bbl/day", "Reference LSRRO flow basis for scaling model inputs"),
+    "gross_pump_power_kw": ("Energy", "kW", "Gross pump power at the reference flow"),
+    "energy_recovery_fraction": ("Energy recovery", "fraction", "Fraction of gross pump power recovered by the ERD"),
+    "pressure_override_psi": ("Membrane", "psi", "Optional operating-pressure override; 0 uses TDS lookup"),
+    "stage_override": ("Membrane", "count", "Optional stage-count override; 0 uses TDS lookup"),
+    "clip_negative_permeate": ("Water quality", "0/1", "Clip negative regression-predicted permeate concentrations to zero"),
+    "lime_dose_mg_l": ("Chemicals", "mg/L", "Lime dose as Ca(OH)2 product"),
+    "soda_ash_dose_mg_l": ("Chemicals", "mg/L", "Soda ash dose as Na2CO3 product"),
+    "target_neutral_pH": ("Conditioning", "-", "Target pH after acid neutralization"),
+    "acid_dose_override_mg_l": ("Chemicals", "mg/L", "Optional H2SO4 dose override; 0 auto-calculates to target pH"),
+    "current_density_mA_cm2": ("Electrodes", "mA/cm2", "EC aluminum-electrode current density"),
+    "electrode_gap_m": ("Electrodes", "m", "Electrode gap used in solution-resistance estimate"),
     "energy_intensity": ("Energy", "kWh/m3", "Electricity demand per cubic meter treated"),
     "auxiliary_energy_intensity": ("Energy", "kWh/m3", "Regeneration, controls, EDI, or other auxiliary electricity demand"),
     "thermal_energy_intensity": ("Energy", "kWh/m3", "Thermal energy demand per cubic meter treated"),
@@ -392,6 +507,10 @@ TECHNICAL_INPUT_SPECS = {
     "element_capacity": ("Filtration", "m3/day/element", "Nominal cartridge or bag element capacity"),
     "membrane_flux": ("Membrane", "L/m2-h", "Average membrane operating flux"),
     "backwash_fraction": ("Membrane", "fraction", "Backwash or cleaning waste fraction"),
+    "sodium_bisulfite_dose_mg_l": ("Chemicals", "mg/L", "Sodium bisulfite dose at UF"),
+    "pump_tdh_ft": ("Pumping", "ft", "UF pump total dynamic head"),
+    "motor_efficiency": ("Pumping", "fraction", "Motor efficiency"),
+    "vfd_factor": ("Pumping", "factor", "VFD or constant motor factor"),
     "pump_head": ("Pumping", "m", "Total dynamic head for pump energy calculation"),
     "pressure_drop_psi": ("Pumping", "psi", "WaterTAP-style resin bed and column pressure drop"),
     "pump_efficiency": ("Pumping", "fraction", "Pump wire-to-water efficiency"),
@@ -400,6 +519,10 @@ TECHNICAL_INPUT_SPECS = {
     "tower_loading_rate": ("Air stripping", "m/h", "Hydraulic loading rate through stripping tower"),
     "operating_pressure": ("Membrane", "bar", "Representative operating pressure"),
     "empty_bed_contact_time": ("Media", "min", "Empty bed contact time"),
+    "adsorber_bed_volume_m3": ("Media", "m3", "GAC adsorber bed volume used in BV changeout calculation"),
+    "fresh_gac_mass_kg": ("Media", "kg", "Fresh GAC mass in the adsorber"),
+    "ammonia_removal": ("Performance", "fraction", "Target NH3-N removal used for zeolite breakthrough sizing"),
+    "aec_mg_n_g": ("Media", "mg N/g zeolite", "Ammonium exchange capacity used for zeolite media mass"),
     "regenerant_dose": ("Chemicals", "kg/m3", "Regenerant dose normalized to treated flow"),
     "power_capacity": ("Energy", "kW", "Installed PV power capacity"),
     "capacity_factor": ("Energy", "fraction", "Annual average PV capacity factor"),
@@ -422,31 +545,64 @@ TECHNICAL_INPUT_SPECS = {
 
 
 COST_INPUT_SPECS = {
-    "capex_per_flow": ("Capital", "$/(m3/day)", "Equipment capital cost per unit daily capacity"),
+    "reference_direct_membrane_capex": ("Capital", "$(2024)", "Reference direct membrane CAPEX at the LSRRO reference flow"),
+    "reference_direct_cs_capex": ("Capital", "$(2024)", "Reference direct chemical-softening CAPEX"),
+    "reference_ec_capex": ("Capital", "$(2025)", "Reference EC equipment CAPEX"),
+    "reference_gac_capex": ("Capital", "$(2025)", "Reference GAC direct CAPEX"),
+    "reference_flow_bbl_day": ("Capital", "bbl/day", "Reference flow basis for bbl/day CAPEX scaling"),
+    "reference_capex_cost_per_bbl": ("Capital", "$(2022)/bbl", "Reference annualized WSF CAPEX cost"),
+    "reference_opex_cost_per_bbl": ("Variable O&M", "$(2022)/bbl", "Reference WSF operating cost"),
+    "reference_uf_flow_gpd": ("Capital", "gpd", "Reference UF flow basis"),
+    "uf_equipment_unit_cost": ("Capital", "$(2024)/gpd", "UF equipment unit CAPEX"),
+    "uf_building_unit_cost": ("Capital", "$(2024)/ft2", "UF building unit CAPEX"),
+    "reference_building_area_ft2": ("Capital", "ft2", "Reference UF building area"),
+    "equipment_capex_per_gpm": ("Capital", "$(2024)/gpm", "Zeolite vessel equipment CAPEX"),
+    "capex_per_flow": ("Capital", "$(2024)/(m3/day)", "Equipment capital cost per unit daily capacity"),
     "column_capex_multiplier": ("Capital", "factor", "Lead/lag, parallel, and standby column CAPEX multiplier"),
-    "capex_per_kw": ("Capital", "$/kW", "Equipment capital cost per kW capacity"),
+    "capex_per_kw": ("Capital", "$(2024)/kW", "Equipment capital cost per kW capacity"),
     "fixed_opex_fraction": ("Fixed O&M", "fraction/yr", "Annual fixed OPEX as fraction of installed CAPEX"),
-    "variable_opex_per_m3": ("Variable O&M", "$/m3", "Variable operating cost per cubic meter treated"),
-    "chemical_price": ("Chemicals", "$/kg", "Chemical or regenerant price"),
-    "media_replacement_price": ("Replacement", "$/unit", "Replacement media, membrane, cartridge, or bag price"),
+    "variable_opex_per_m3": ("Variable O&M", "$(2024)/m3", "Variable operating cost per cubic meter treated"),
+    "chemical_price": ("Chemicals", "$(2024)/kg", "Chemical or regenerant price"),
+    "lime_price": ("Chemicals", "$(2024)/lb", "Lime purchase price"),
+    "soda_ash_price": ("Chemicals", "$(2024)/lb", "Soda ash purchase price"),
+    "h2so4_price": ("Chemicals", "$(2024)/lb", "Sulfuric acid purchase price"),
+    "aluminum_price": ("Chemicals", "$(2022)/kg", "Aluminum electrode purchase price"),
+    "solid_disposal_cost": ("Disposal", "$(2024)/kg", "Solid waste disposal cost"),
+    "sodium_bisulfite_price": ("Chemicals", "$(2024)/lb", "Sodium bisulfite purchase price"),
+    "gac_replacement_cost": ("Media", "$(2025)/kg", "Fresh GAC replacement cost"),
+    "gac_regeneration_cost": ("Media", "$(2025)/kg", "Spent GAC regeneration cost"),
+    "gac_replacement_regeneration_energy": ("Media", "kWh/kg", "Energy for GAC replacement/regeneration"),
+    "regeneration_fraction": ("Media", "fraction", "Fraction of spent GAC sent to regeneration"),
+    "replacement_fraction": ("Media", "fraction", "Fraction of spent GAC replaced with fresh GAC"),
+    "zeolite_price": ("Media", "$(2014)/kg", "Zeolite media purchase price"),
+    "nh4cl_price": ("Product credit", "$(2024)/metric tonne", "NH4Cl product value"),
+    "media_replacement_price": ("Replacement", "$(2024)/unit", "Replacement media, membrane, cartridge, or bag price"),
     "media_replacement_fraction": ("Replacement", "fraction/yr", "Annual replacement fraction"),
-    "total_installed_cost": ("Capital", "USD", "Optional installed BWRO CAPEX; 0 uses unit/correlation CAPEX"),
-    "unit_capex": ("Capital", "USD/(m3/day product)", "Optional installed unit CAPEX; 0 uses the correlation"),
-    "reference_unit_capex": ("Capital", "USD/(m3/day product)", "Screening installed unit CAPEX at reference capacity"),
-    "reference_capacity": ("Capital", "m3/day product", "Reference product capacity for CAPEX scaling"),
-    "capex_scaling_exponent": ("Capital", "exponent", "Product-capacity scaling exponent"),
+    "total_installed_cost": ("Capital", "$(2024)", "Optional installed BWRO CAPEX; 0 uses unit/correlation CAPEX"),
+    "unit_capex": ("Capital", "$(2024)/(m3/day product)", "Optional installed unit CAPEX; 0 uses the correlation"),
+    "reference_unit_capex": ("Capital", "$(2024)/(m3/day product)", "Screening installed unit CAPEX at reference capacity"),
+    "reference_capacity": ("Capital", "m3/day", "Reference capacity for CAPEX scaling"),
+    "capex_scaling_exponent": ("Capital", "exponent", "CAPEX capacity-scaling exponent"),
     "cost_index_factor": ("Capital", "factor", "User-supplied common currency-year escalation factor"),
     "fixed_om_fraction": ("Fixed O&M", "fraction/yr", "Annual fixed O&M as fraction of installed CAPEX"),
     "insurance_fraction": ("Fixed O&M", "fraction/yr", "Annual insurance as fraction of installed CAPEX"),
-    "membrane_cost": ("Replacement", "USD/m2", "Membrane purchase cost per active area"),
+    "membrane_cost": ("Replacement", "$(2024)/m2", "Membrane purchase cost per active area"),
     "membrane_replacement_fraction": ("Replacement", "fraction/yr", "Annual fraction of membrane area replaced"),
-    "chemical_cost_per_m3_product": ("Variable O&M", "USD/m3 product", "Chemical cost normalized to product volume"),
-    "labor_cost_per_m3_product": ("Variable O&M", "USD/m3 product", "Labor cost normalized to product volume"),
-    "pretreatment_cost_per_m3_product": ("Variable O&M", "USD/m3 product", "BWRO-island non-energy pretreatment cost"),
-    "posttreatment_cost_per_m3_product": ("Variable O&M", "USD/m3 product", "BWRO-island non-energy post-treatment cost"),
-    "other_variable_cost_per_m3_product": ("Variable O&M", "USD/m3 product", "Other product-normalized variable cost"),
-    "intake_water_cost_per_m3_feed": ("Variable O&M", "USD/m3 feed", "Source-water purchase or extraction cost"),
-    "brine_disposal_cost_per_m3_concentrate": ("Variable O&M", "USD/m3 concentrate", "Concentrate disposal cost; leave zero when modeled as a separate unit"),
+    "chemical_cost_per_m3_product": ("Variable O&M", "$(2024)/m3 product", "Chemical cost normalized to product volume"),
+    "labor_cost_per_m3_product": ("Variable O&M", "$(2024)/m3 product", "Labor cost normalized to product volume"),
+    "pretreatment_cost_per_m3_product": ("Variable O&M", "$(2024)/m3 product", "BWRO-island non-energy pretreatment cost"),
+    "posttreatment_cost_per_m3_product": ("Variable O&M", "$(2024)/m3 product", "BWRO-island non-energy post-treatment cost"),
+    "other_variable_cost_per_m3_product": ("Variable O&M", "$(2024)/m3 product", "Other product-normalized variable cost"),
+    "intake_water_cost_per_m3_feed": ("Variable O&M", "$(2024)/m3 feed", "Source-water purchase or extraction cost"),
+    "brine_disposal_cost_per_m3_concentrate": ("Variable O&M", "$(2024)/m3 brine", "Brine disposal cost; leave zero when modeled as a separate unit"),
+    "membrane_replacement_factor": ("Replacement", "fraction/yr", "Annual membrane replacement as a fraction of direct membrane CAPEX"),
+    "antiscalant_dose_mg_l": ("Chemicals", "mg/L", "Antiscalant dose normalized to LSRRO feed volume"),
+    "antiscalant_unit_price": ("Chemicals", "$(2026)/gal", "Antiscalant product price"),
+    "antiscalant_density_kg_l": ("Chemicals", "kg/L", "Antiscalant product density for kg-to-gal conversion"),
+    "cip_cost_per_m3_product": ("Cleaning", "$(2021)/m3 product", "Clean-in-place cost normalized to permeate volume"),
+    "labor_fte": ("Labor", "FTE", "Labor requirement assigned to the LSRRO unit"),
+    "labor_cost_per_fte_year": ("Labor", "$(2024)/FTE-year", "Annual labor cost per full-time equivalent"),
+    "om_contingency_factor": ("Variable O&M", "fraction", "O&M contingency applied to LSRRO operating costs"),
 }
 
 
@@ -571,20 +727,356 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
     },
     "LSRRO": {
         "recovery": (
-            "Atia et al. 2023 Cost optimization of low-salt-rejection reverse osmosis",
+            "NMPWRC LSRRO TEA assumption",
+            "model input",
+        ),
+        "reference_flow_bbl_day": (
+            "NMPWRC LSRRO experimental design basis",
+            "experimental data",
+        ),
+        "gross_pump_power_kw": (
+            "NMPWRC LSRRO experimental design basis",
+            "experimental data",
+        ),
+        "energy_recovery_fraction": (
+            "NMPWRC LSRRO TEA assumption",
+            "model input",
+        ),
+        "membrane_flux": (
+            "WaterTAP LSRRO flowsheet context and membrane design screening assumption",
+            "open source documentation",
+        ),
+        "pressure_override_psi": (
+            "Atia et al. 2023 and WaterTAP PBSE design-point lookup",
+            "model source",
+        ),
+        "stage_override": (
+            "Atia et al. 2023 and WaterTAP PBSE design-point lookup",
+            "model source",
+        ),
+        "clip_negative_permeate": (
+            "NMPWRC empirical water-quality regression post-processing option",
+            "empirical",
+        ),
+    },
+    "Chemical softening": {
+        "lime_dose_mg_l": (
+            "KBH/NMPWRC chemical-softening TEA workbook basis",
+            "model input",
+        ),
+        "soda_ash_dose_mg_l": (
+            "KBH/NMPWRC chemical-softening TEA workbook basis",
+            "model input",
+        ),
+        "target_neutral_pH": (
+            "NMPWRC Reaktoro chemical-softening simulator target neutralization pH",
+            "model input",
+        ),
+        "acid_dose_override_mg_l": (
+            "NMPWRC Reaktoro chemical-softening simulator optional user override",
+            "model input",
+        ),
+        "energy_intensity": (
+            "KBH/NMPWRC chemical-softening workbook electricity basis",
+            "model input",
+        ),
+    },
+    "Electrocoagulation": {
+        "current_density_mA_cm2": (
+            "Naje et al. 2019 electrocoagulation treatment study",
+            "publication",
+        ),
+        "electrode_gap_m": (
+            "WaterTAP electrocoagulation model assumption",
+            "open source documentation",
+        ),
+        "hydraulic_retention_time": (
+            "Naje et al. 2019 electrocoagulation treatment study",
             "publication",
         ),
         "energy_intensity": (
-            "Atia et al. 2023 Cost optimization of low-salt-rejection reverse osmosis",
+            "NMPWRC EC-Al energy calculation from conductivity, current density, and electrode area",
+            "engineering calculation",
+        ),
+    },
+    "Walnut shell filtration": {
+        "energy_intensity": (
+            "Drover 2022 DOE produced-water membrane pretreatment report",
+            "technical report",
+        ),
+    },
+    "Ultrafiltration": {
+        "membrane_flux": (
+            "Wang et al. 2024 DWPR report and KBH/NMPWRC UF workbook basis",
+            "technical report",
+        ),
+        "backwash_fraction": (
+            "WaterTAP Ultra Filtration ZO documentation and membrane treatment literature",
+            "open source documentation",
+        ),
+        "sodium_bisulfite_dose_mg_l": (
+            "KBH/NMPWRC UF workbook sodium bisulfite dosing basis",
+            "model input",
+        ),
+        "pump_tdh_ft": (
+            "KBH/NMPWRC UF workbook pump TDH basis",
+            "model input",
+        ),
+        "pump_efficiency": (
+            "KBH/NMPWRC UF workbook pump efficiency basis",
+            "model input",
+        ),
+        "motor_efficiency": (
+            "KBH/NMPWRC UF workbook motor efficiency basis",
+            "model input",
+        ),
+        "vfd_factor": (
+            "KBH/NMPWRC UF workbook VFD factor basis",
+            "model input",
+        ),
+    },
+    "GAC": {
+        "empty_bed_contact_time": (
+            "WaterTAP GAC design output used by NMPWRC GAC model",
+            "model source",
+        ),
+        "media_bulk_density": (
+            "NMPWRC GAC model and WaterTAP GAC design output",
+            "model source",
+        ),
+        "adsorber_bed_volume_m3": (
+            "WaterTAP GAC design output used by NMPWRC GAC model",
+            "model source",
+        ),
+        "fresh_gac_mass_kg": (
+            "WaterTAP GAC design output used by NMPWRC GAC model",
+            "model source",
+        ),
+    },
+    "Zeolite": {
+        "empty_bed_contact_time": (
+            "NMPWRC bench zeolite test and Turan and Turan 2021 fixed-bed equations",
+            "pilot data",
+        ),
+        "media_bulk_density": (
+            "NMPWRC bench zeolite bed mass and volume",
+            "pilot data",
+        ),
+        "ammonia_removal": (
+            "NMPWRC zeolite TEA design target",
+            "model input",
+        ),
+        "aec_mg_n_g": (
+            "Deng et al. 2014 ammonium exchange capacity range",
             "publication",
         ),
-        "membrane_flux": (
-            "WaterTAP LSRRO flowsheet documentation and LSRRO TEA literature",
-            "open source documentation",
+        "energy_intensity": (
+            "NMPWRC zeolite pumping-energy assumption",
+            "engineering estimate",
         ),
-        "operating_pressure": (
-            "WaterTAP LSRRO flowsheet documentation and LSRRO TEA literature",
-            "open source documentation",
+    },
+    "Chemical softening": {
+        "reference_direct_cs_capex": (
+            "KBH/NMPWRC chemical-softening TEA workbook direct CAPEX basis; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "reference_capacity": (
+            "KBH/NMPWRC chemical-softening TEA workbook 1.0 MGD reference flow",
+            "model input",
+        ),
+        "capex_scaling_exponent": (
+            "NMPWRC chemical-softening TEA scaling assumption",
+            "model input",
+        ),
+        "lime_price": (
+            "KBH/NMPWRC chemical-softening TEA workbook lime price; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "soda_ash_price": (
+            "KBH/NMPWRC chemical-softening TEA workbook soda ash price; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "h2so4_price": (
+            "KBH/NMPWRC chemical-softening TEA workbook sulfuric-acid price; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "solid_disposal_cost": (
+            "NMPWRC solid-waste disposal assumption; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "labor_fte": (
+            "Wang et al. 2024 DWPR report TEA labor assumption",
+            "technical report",
+        ),
+        "labor_cost_per_fte_year": (
+            "Wang et al. 2024 DWPR report TEA labor cost assumption",
+            "technical report",
+        ),
+        "om_contingency_factor": (
+            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
+        ),
+    },
+    "Electrocoagulation": {
+        "reference_ec_capex": (
+            "Lugo et al. 2025 Journal of Environmental Chemical Engineering EC-Al CAPEX basis",
+            "publication",
+        ),
+        "reference_capacity": (
+            "Lugo et al. 2025 Journal of Environmental Chemical Engineering EC-Al reference flow",
+            "publication",
+        ),
+        "capex_scaling_exponent": (
+            "NMPWRC EC-Al TEA scaling assumption",
+            "model input",
+        ),
+        "aluminum_price": (
+            "Abada et al. 2022 Journal of Water Process Engineering aluminum electrode price",
+            "publication",
+        ),
+        "solid_disposal_cost": (
+            "NMPWRC solid-waste disposal assumption; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "labor_fte": (
+            "Wang et al. 2024 DWPR report TEA labor assumption",
+            "technical report",
+        ),
+        "labor_cost_per_fte_year": (
+            "Wang et al. 2024 DWPR report TEA labor cost assumption",
+            "technical report",
+        ),
+        "om_contingency_factor": (
+            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
+        ),
+    },
+    "Walnut shell filtration": {
+        "reference_capex_cost_per_bbl": (
+            "Drover 2022 DOE produced-water pretreatment report DGF+WSF cost basis",
+            "technical report",
+        ),
+        "reference_opex_cost_per_bbl": (
+            "Drover 2022 DOE produced-water pretreatment report DGF+WSF cost basis",
+            "technical report",
+        ),
+        "reference_flow_bbl_day": (
+            "Drover 2022 DOE produced-water pretreatment report DGF+WSF reference flow",
+            "technical report",
+        ),
+        "capex_scaling_exponent": (
+            "NMPWRC WSF TEA scaling assumption",
+            "model input",
+        ),
+        "labor_fte": (
+            "Wang et al. 2024 DWPR report TEA labor assumption",
+            "technical report",
+        ),
+        "labor_cost_per_fte_year": (
+            "Wang et al. 2024 DWPR report TEA labor cost assumption",
+            "technical report",
+        ),
+        "om_contingency_factor": (
+            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
+        ),
+    },
+    "Ultrafiltration": {
+        "reference_uf_flow_gpd": (
+            "KBH/NMPWRC UF TEA workbook reference flow basis; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "uf_equipment_unit_cost": (
+            "KBH/NMPWRC UF TEA workbook equipment unit-cost basis; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "uf_building_unit_cost": (
+            "KBH/NMPWRC UF TEA workbook building unit-cost basis; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "reference_building_area_ft2": (
+            "KBH/NMPWRC UF TEA workbook building area basis",
+            "model input",
+        ),
+        "capex_scaling_exponent": (
+            "NMPWRC UF TEA scaling assumption",
+            "model input",
+        ),
+        "sodium_bisulfite_price": (
+            "KBH/NMPWRC UF TEA workbook sodium bisulfite price; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "labor_fte": (
+            "Wang et al. 2024 DWPR report TEA labor assumption",
+            "technical report",
+        ),
+        "labor_cost_per_fte_year": (
+            "Wang et al. 2024 DWPR report TEA labor cost assumption",
+            "technical report",
+        ),
+        "om_contingency_factor": (
+            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
+        ),
+    },
+    "GAC": {
+        "reference_gac_capex": (
+            "Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC/WaterTAP CAPEX basis",
+            "publication",
+        ),
+        "reference_capacity": (
+            "NMPWRC GAC model flow basis after LSRRO recovery",
+            "model input",
+        ),
+        "capex_scaling_exponent": (
+            "NMPWRC GAC TEA scaling assumption",
+            "model input",
+        ),
+        "gac_replacement_cost": (
+            "Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC OPEX basis",
+            "publication",
+        ),
+        "gac_regeneration_cost": (
+            "Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC OPEX basis",
+            "publication",
+        ),
+        "gac_replacement_regeneration_energy": (
+            "Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC OPEX basis",
+            "publication",
+        ),
+        "regeneration_fraction": (
+            "NMPWRC GAC model spent-media management split",
+            "model input",
+        ),
+        "replacement_fraction": (
+            "NMPWRC GAC model spent-media management split",
+            "model input",
+        ),
+        "om_contingency_factor": (
+            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
+        ),
+    },
+    "Zeolite": {
+        "equipment_capex_per_gpm": (
+            "US EPA Drinking Water Treatment Technology Unit Cost Models ion-exchange vessel CAPEX framework",
+            "technical report",
+        ),
+        "capex_scaling_exponent": (
+            "NMPWRC zeolite TEA scaling assumption",
+            "model input",
+        ),
+        "zeolite_price": (
+            "Deng et al. 2014 Environmental Technology zeolite regeneration economics",
+            "publication",
+        ),
+        "nh4cl_price": (
+            "NMPWRC zeolite TEA NH4Cl product-credit assumption; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "om_contingency_factor": (
+            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
         ),
     },
     "OARO": {
@@ -735,6 +1227,14 @@ COST_INPUT_METADATA = {
         "EPA WBS column-process design convention and expert review: lead/lag or parallel duty with standby columns",
         "engineering estimate",
     ),
+    "reference_capacity": (
+        "Screening CAPEX scaling input; replace with source-specific reference capacity when available",
+        "engineering estimate",
+    ),
+    "capex_scaling_exponent": (
+        "Screening CAPEX scaling input",
+        "engineering estimate",
+    ),
 }
 
 
@@ -754,13 +1254,49 @@ COST_INPUT_METADATA_BY_UNIT = {
         ),
     },
     "LSRRO": {
-        "capex_per_flow": (
-            "Atia et al. 2023 LSRRO cost optimization and WaterTAP costing framework",
+        "reference_direct_membrane_capex": (
+            "NMPWRC LSRRO TEA cost basis; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "reference_flow_bbl_day": (
+            "NMPWRC LSRRO experimental design basis",
+            "experimental data",
+        ),
+        "capex_scaling_exponent": (
+            "NMPWRC empirical LSRRO scale-up correlation",
+            "empirical",
+        ),
+        "membrane_replacement_factor": (
+            "WaterTAP open-source water treatment model library 2024",
+            "open source documentation",
+        ),
+        "antiscalant_dose_mg_l": (
+            "NMPWRC LSRRO TEA antiscalant dosing assumption",
+            "model input",
+        ),
+        "antiscalant_unit_price": (
+            "Applied Membranes AMI antiscalant product information 2026",
+            "vendor data",
+        ),
+        "antiscalant_density_kg_l": (
+            "NMPWRC antiscalant density assumption",
+            "engineering estimate",
+        ),
+        "cip_cost_per_m3_product": (
+            "Jafari et al. 2021 reverse-osmosis and nanofiltration fouling cost",
             "publication",
         ),
-        "variable_opex_per_m3": (
-            "Atia et al. 2023 LSRRO cost optimization and WaterTAP costing framework",
-            "publication",
+        "labor_fte": (
+            "NMPWRC LSRRO TEA labor assumption",
+            "model input",
+        ),
+        "labor_cost_per_fte_year": (
+            "NMPWRC LSRRO TEA labor cost assumption; no explicit cost year, treated as 2024",
+            "model input",
+        ),
+        "om_contingency_factor": (
+            "NMPWRC LSRRO TEA O&M contingency assumption",
+            "model input",
         ),
     },
     "OARO": {
@@ -874,6 +1410,19 @@ COST_INPUT_METADATA_BY_UNIT = {
 
 TECHNICAL_INPUT_ORDER = [
     "recovery",
+    "reference_flow_bbl_day",
+    "gross_pump_power_kw",
+    "energy_recovery_fraction",
+    "membrane_flux",
+    "pressure_override_psi",
+    "stage_override",
+    "clip_negative_permeate",
+    "lime_dose_mg_l",
+    "soda_ash_dose_mg_l",
+    "target_neutral_pH",
+    "acid_dose_override_mg_l",
+    "current_density_mA_cm2",
+    "electrode_gap_m",
     "feed_tds_g_l",
     "feed_temperature",
     "array_stages",
@@ -898,16 +1447,23 @@ TECHNICAL_INPUT_ORDER = [
     "bed_depth",
     "media_bulk_density",
     "element_capacity",
-    "membrane_flux",
     "backwash_fraction",
+    "sodium_bisulfite_dose_mg_l",
+    "pump_tdh_ft",
     "pump_head",
     "pressure_drop_psi",
     "pump_efficiency",
+    "motor_efficiency",
+    "vfd_factor",
     "target_pH",
     "air_water_ratio",
     "tower_loading_rate",
     "operating_pressure",
     "empty_bed_contact_time",
+    "adsorber_bed_volume_m3",
+    "fresh_gac_mass_kg",
+    "ammonia_removal",
+    "aec_mg_n_g",
     "regenerant_dose",
     "power_capacity",
     "capacity_factor",
@@ -918,9 +1474,24 @@ COST_INPUT_ORDER = [
     "total_installed_cost",
     "unit_capex",
     "reference_unit_capex",
+    "reference_direct_membrane_capex",
+    "reference_direct_cs_capex",
+    "reference_ec_capex",
+    "reference_gac_capex",
+    "reference_flow_bbl_day",
+    "reference_capex_cost_per_bbl",
+    "reference_opex_cost_per_bbl",
+    "reference_uf_flow_gpd",
+    "uf_equipment_unit_cost",
+    "uf_building_unit_cost",
+    "reference_building_area_ft2",
+    "equipment_capex_per_gpm",
+    "capex_per_flow",
     "reference_capacity",
     "capex_scaling_exponent",
     "cost_index_factor",
+    "column_capex_multiplier",
+    "capex_per_kw",
     "fixed_om_fraction",
     "insurance_fraction",
     "membrane_cost",
@@ -932,12 +1503,30 @@ COST_INPUT_ORDER = [
     "other_variable_cost_per_m3_product",
     "intake_water_cost_per_m3_feed",
     "brine_disposal_cost_per_m3_concentrate",
-    "capex_per_flow",
-    "column_capex_multiplier",
-    "capex_per_kw",
+    "membrane_replacement_factor",
+    "antiscalant_dose_mg_l",
+    "antiscalant_unit_price",
+    "antiscalant_density_kg_l",
+    "cip_cost_per_m3_product",
+    "labor_fte",
+    "labor_cost_per_fte_year",
+    "om_contingency_factor",
     "fixed_opex_fraction",
     "variable_opex_per_m3",
     "chemical_price",
+    "lime_price",
+    "soda_ash_price",
+    "h2so4_price",
+    "aluminum_price",
+    "solid_disposal_cost",
+    "sodium_bisulfite_price",
+    "gac_replacement_cost",
+    "gac_regeneration_cost",
+    "gac_replacement_regeneration_energy",
+    "regeneration_fraction",
+    "replacement_fraction",
+    "zeolite_price",
+    "nh4cl_price",
     "media_replacement_price",
     "media_replacement_fraction",
 ]
@@ -977,6 +1566,7 @@ def technical_input_rows(unit_process):
     defaults = TECHNICAL_MODEL_DEFAULTS.get(unit_process)
     if not defaults:
         return []
+    row_defaults = defaults.copy()
     rows = []
     for parameter in TECHNICAL_INPUT_ORDER:
         if parameter not in defaults:
@@ -991,7 +1581,7 @@ def technical_input_rows(unit_process):
         rows.append((
             sub_section,
             parameter,
-            defaults[parameter],
+            row_defaults[parameter],
             unit,
             description,
             source,
@@ -1004,9 +1594,13 @@ def cost_input_rows(unit_process):
     defaults = COST_MODEL_DEFAULTS.get(unit_process)
     if not defaults:
         return []
+    row_defaults = defaults.copy()
+    if "capex_per_flow" in row_defaults:
+        row_defaults.setdefault("reference_capacity", 1000.0)
+        row_defaults.setdefault("capex_scaling_exponent", 1.0)
     rows = []
     for parameter in COST_INPUT_ORDER:
-        if parameter not in defaults:
+        if parameter not in row_defaults:
             continue
         sub_section, unit, description = COST_INPUT_SPECS[parameter]
         source, data_type = _metadata_for(
@@ -1018,7 +1612,7 @@ def cost_input_rows(unit_process):
         rows.append((
             sub_section,
             parameter,
-            defaults[parameter],
+            row_defaults[parameter],
             unit,
             description,
             source,

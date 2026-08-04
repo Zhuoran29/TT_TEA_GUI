@@ -38,6 +38,12 @@ CEPCI = {
     2022: 816.0,
     2023: 797.9,
     2024: 798.8,
+    # Chemical Engineering reported the 2025 annual average as 1.6% above
+    # the prior year's annual average; rounded from 798.8 * 1.016.
+    2025: 811.6,
+    # Temporary base-year value from Chemical Engineering's May 2026
+    # preliminary CEPCI. Replace with the annual average when available.
+    2026: 863.6,
 }
 
 WATER_DENSITY_COEFFS = (

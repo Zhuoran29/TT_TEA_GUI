@@ -1,63 +1,105 @@
 unit_process,sub_section,parameter,value,unit,description,source,data_type
-DEFAULT,Capital,capex_per_flow,288,$/(m3/day),Equipment capital cost per unit daily capacity,US EPA Drinking Water Treatment Technology Unit Cost Models WBS method,Technical report
+DEFAULT,Capital,capex_per_flow,288,$(2024)/(m3/day),Equipment capital cost per unit daily capacity,US EPA Drinking Water Treatment Technology Unit Cost Models WBS method,Technical report
+DEFAULT,Capital,reference_capacity,1000,m3/day,Reference capacity for CAPEX scaling,US EPA Drinking Water Treatment Technology Unit Cost Models WBS method,Technical report
+DEFAULT,Capital,capex_scaling_exponent,1,exponent,CAPEX capacity-scaling exponent,Screening default pending unit-specific calibration,Engineering estimate
 DEFAULT,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA Drinking Water Treatment Technology Unit Cost Models WBS method,Technical report
-DEFAULT,Variable O&M,variable_opex_per_m3,0,$/m3,Variable operating cost per cubic meter treated,No external source; generic user override placeholder,Engineering estimate
-MVC,Capital,capex_per_flow,2100,$/(m3/day),Equipment MVC capital cost per unit daily capacity,Veolia,Industrial data
+DEFAULT,Variable O&M,variable_opex_per_m3,0,$(2024)/m3,Variable operating cost per cubic meter treated,No external source; generic user override placeholder,Engineering estimate
+MVC,Capital,capex_per_flow,4000,$(2024)/(m3/day),Equipment MVC capital cost per unit daily capacity,Veolia,Industrial data
+MVC,Capital,reference_capacity,1000,m3/day,Reference capacity for MVC CAPEX scaling,Veolia capital-cost basis,Industrial data
+MVC,Capital,capex_scaling_exponent,1,exponent,CAPEX capacity-scaling exponent,Screening default pending source calibration,Engineering estimate
 MVC,Capital,column_capex_multiplier,1,factor,Optional redundancy multiplier applied to MVC equipment CAPEX; 1 means no standby CAPEX adder,Expert review scenario input,Engineering estimate
 MVC,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed MVC CAPEX,WaterTAP MVC and planning-level auxiliary O&M allowance,Open source documentation
-MVC,Variable O&M,variable_opex_per_m3,0,$/m3,Variable MVC operating cost per cubic meter treated,WaterTAP MVC and planning-level auxiliary O&M allowance,Open source documentation
-Vacuum membrane distillation (VMD),Pumps,low_pressure_pump_cost,889,USD_2018/(L/s),Low-pressure pump installed cost coefficient,MD Design Model (Surrogate) worksheet,Workbook model
+MVC,Variable O&M,variable_opex_per_m3,0,$(2024)/m3,Variable MVC operating cost per cubic meter treated,WaterTAP MVC and planning-level auxiliary O&M allowance,Open source documentation
+Vacuum membrane distillation (VMD),Pumps,low_pressure_pump_cost,889,$(2018)/(L/s),Low-pressure pump installed cost coefficient,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Heat exchanger,heat_exchanger_material_factor,1,factor,Heat exchanger material factor,MD Design Model (Surrogate) worksheet,Workbook model
-Vacuum membrane distillation (VMD),Heat exchanger,heat_exchanger_unit_cost,300,USD_2020/m2,Heat exchanger unit cost,MD Design Model (Surrogate) worksheet,Workbook model
-Vacuum membrane distillation (VMD),Mixer,mixer_unit_cost,361,USD_2018/(L/s),Feed and recycle mixer unit cost,MD Design Model (Surrogate) worksheet,Workbook model
-Vacuum membrane distillation (VMD),Heater,heater_unit_cost,0.066,USD_2018/W,Heater unit cost applied to surrogate thermal duty,MD Design Model (Surrogate) worksheet,Workbook model
-Vacuum membrane distillation (VMD),Chiller,chiller_unit_cost,0.2,USD_2018/W,Chiller unit cost,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Heat exchanger,heat_exchanger_unit_cost,300,$(2020)/m2,Heat exchanger unit cost,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Mixer,mixer_unit_cost,361,$(2018)/(L/s),Feed and recycle mixer unit cost,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Heater,heater_unit_cost,0.066,$(2018)/W,Heater unit cost applied to surrogate thermal duty,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Chiller,chiller_unit_cost,0.2,$(2018)/W,Chiller unit cost,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Chiller,chiller_cop,7,COP,Chiller coefficient of performance used for equipment sizing,MD Design Model (Surrogate) worksheet,Workbook model
-Vacuum membrane distillation (VMD),Membrane,membrane_cost,56,USD_2018/m2,VMD membrane purchase cost,MD Design Model (Surrogate) worksheet,Workbook model
+Vacuum membrane distillation (VMD),Membrane,membrane_cost,56,$(2018)/m2,VMD membrane purchase cost,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Membrane,membrane_replacement_fraction,0.2,fraction/yr,Annual VMD membrane replacement fraction,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Fixed O&M,fixed_opex_fraction,0.03,fraction/yr,Annual maintenance labor and chemical cost as a fraction of installed CAPEX,MD Design Model (Surrogate) worksheet,Workbook model
-3-phase separator,Capital,capex_per_flow,72,$/(m3/day),Equipment separator capital cost per unit daily capacity,WaterTAP Primary Separator ZO and US EPA WBS cost-model method,Open source documentation
+LSRRO,Capital,reference_direct_membrane_capex,20500000,$(2024),Reference direct membrane CAPEX at the LSRRO reference flow,"NMPWRC LSRRO TEA cost basis; no explicit cost year, treated as 2024",Model input
+LSRRO,Capital,reference_flow_bbl_day,50000,bbl/day,Reference flow basis for LSRRO CAPEX scaling,NMPWRC LSRRO experimental design basis,Experimental data
+LSRRO,Capital,capex_scaling_exponent,0.81,exponent,CAPEX capacity-scaling exponent,NMPWRC empirical LSRRO scale-up correlation,Empirical
+LSRRO,Replacement,membrane_replacement_factor,0.2,fraction/yr,Annual membrane replacement as a fraction of direct membrane CAPEX,WaterTAP open-source water treatment model library 2024,Open source documentation
+LSRRO,Chemicals,antiscalant_dose_mg_l,3,mg/L,Antiscalant dose normalized to LSRRO feed volume,NMPWRC LSRRO TEA antiscalant dosing assumption,Model input
+LSRRO,Chemicals,antiscalant_unit_price,61.4,$(2026)/gal,Antiscalant product price,Applied Membranes AMI antiscalant product information 2026,Vendor data
+LSRRO,Chemicals,antiscalant_density_kg_l,1.1,kg/L,Antiscalant product density for kg-to-gal conversion,NMPWRC antiscalant density assumption,Engineering estimate
+LSRRO,Cleaning,cip_cost_per_m3_product,0.07,$(2021)/m3 product,Clean-in-place cost normalized to permeate volume,Jafari et al. 2021 reverse-osmosis and nanofiltration fouling cost,Publication
+LSRRO,Labor,labor_fte,1,FTE,Labor requirement assigned to the LSRRO unit,NMPWRC LSRRO TEA labor assumption,Model input
+LSRRO,Labor,labor_cost_per_fte_year,80000,$(2024)/FTE-year,Annual labor cost per full-time equivalent,"NMPWRC LSRRO TEA labor cost assumption; no explicit cost year, treated as 2024",Model input
+LSRRO,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to LSRRO operating costs,NMPWRC LSRRO TEA O&M contingency assumption,Model input
+3-phase separator,Capital,capex_per_flow,72,$(2024)/(m3/day),Equipment separator capital cost per unit daily capacity,WaterTAP Primary Separator ZO and US EPA WBS cost-model method,Open source documentation
+3-phase separator,Capital,reference_capacity,1000,m3/day,Reference capacity for separator CAPEX scaling,WaterTAP Primary Separator ZO and US EPA WBS cost-model method,Open source documentation
+3-phase separator,Capital,capex_scaling_exponent,1,exponent,CAPEX capacity-scaling exponent,Screening default pending source calibration,Engineering estimate
 3-phase separator,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS cost-model O&M categories and planning-level allowance,Technical report
-3-phase separator,Variable O&M,variable_opex_per_m3,0.01,$/m3,Variable separator operating cost per cubic meter treated,WaterTAP Primary Separator ZO and planning-level auxiliary O&M allowance,Open source documentation
-DAF,Capital,capex_per_flow,128,$/(m3/day),Equipment DAF capital cost per unit daily capacity,WaterTAP Dissolved Air Flotation ZO and Water Corporation DS211,Open source documentation
+3-phase separator,Variable O&M,variable_opex_per_m3,0.01,$(2024)/m3,Variable separator operating cost per cubic meter treated,WaterTAP Primary Separator ZO and planning-level auxiliary O&M allowance,Open source documentation
+DAF,Capital,capex_per_flow,128,$(2024)/(m3/day),Equipment DAF capital cost per unit daily capacity,WaterTAP Dissolved Air Flotation ZO and Water Corporation DS211,Open source documentation
+DAF,Capital,reference_capacity,1000,m3/day,Reference capacity for DAF CAPEX scaling,WaterTAP Dissolved Air Flotation ZO and Water Corporation DS211,Open source documentation
+DAF,Capital,capex_scaling_exponent,1,exponent,CAPEX capacity-scaling exponent,Screening default pending source calibration,Engineering estimate
 DAF,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS cost-model O&M categories and planning-level allowance,Technical report
-DAF,Variable O&M,variable_opex_per_m3,0.03,$/m3,Variable DAF operating cost per cubic meter treated,WaterTAP Dissolved Air Flotation ZO and DAF O&M planning estimate,Open source documentation
-DAF,Chemicals,chemical_price,1.2,$/kg,Chemical price for coagulant/polymer,DAF coagulant/polymer vendor pricing assumption; verify with project quote,Vendor data
-Ultrafiltration,Capital,capex_per_flow,200,$/(m3/day),Equipment UF capital cost per unit daily capacity,EPA RO/NF WBS cost model and WaterTAP Ultra Filtration ZO,Technical report
-Ultrafiltration,Fixed O&M,fixed_opex_fraction,0.05,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS cost-model O&M categories and planning-level allowance,Technical report
-Ultrafiltration,Variable O&M,variable_opex_per_m3,0.36,$/m3,Variable UF operating cost per cubic meter treated,EPA RO/NF WBS membrane O&M categories and membrane plant cost literature,Technical report
-Ultrafiltration,Chemicals,chemical_price,1,$/kg,Cleaning chemical price,EPA RO/NF WBS membrane cleaning O&M assumptions,Technical report
-Ultrafiltration,Replacement,media_replacement_price,35,$/m2,Membrane replacement cost placeholder,EPA RO/NF WBS membrane element replacement cost framework,Technical report
-Ultrafiltration,Replacement,media_replacement_fraction,0.12,fraction/yr,Annual membrane replacement fraction placeholder,EPA RO/NF WBS membrane element replacement cost framework,Technical report
-GAC,Capital,capex_per_flow,481.6,$/(m3/day),Equipment GAC contactor capital cost per unit daily capacity,US EPA WBS GAC cost model 2024,Technical report
-GAC,Capital,column_capex_multiplier,1,factor,Lead/lag and standby column multiplier applied to GAC equipment CAPEX; 1 means no standby CAPEX adder,EPA WBS column-process convention and expert review,Engineering estimate
-GAC,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS GAC cost model 2024,Technical report
-GAC,Variable O&M,cost_method,0,0=feed TOC; 1=TOC removal,Select feed-TOC breakthrough or removal-based cost correlation,NMSU GAC model,Model option
-GAC,Media,gac_media_cost,5.706666667,$/kg,GAC media purchase cost derived from the source model coefficient,NMSU GAC model based on Journal of Environmental Chemical Engineering 2025 117026,Model input
-GAC,Disposal,solid_disposal_cost,0.11,$/kg,Spent GAC disposal cost,Journal of Environmental Chemical Engineering 2025 117026,Publication
-GAC,Removal correlation,reference_media_cost_coefficient,0.321,$/m3,Reference GAC media cost coefficient at the reference TOC removal,Journal of Environmental Chemical Engineering 2025 117026,Publication
-GAC,Removal correlation,reference_toc_removal,0.67,fraction,Reference TOC removal for the removal-based cost method,NMSU GAC model,Model input
-Zeolite,Capital,capex_per_flow,774.4,$/(m3/day),Equipment zeolite bed capital cost per unit daily capacity,US EPA WBS Ion Exchange PFAS cost model 2024 and zeolite supplier specs,Technical report
-Zeolite,Capital,column_capex_multiplier,1,factor,Lead/lag and standby column multiplier applied to zeolite bed equipment CAPEX; 1 means no standby CAPEX adder,EPA WBS column-process convention and expert review,Engineering estimate
-Zeolite,Fixed O&M,fixed_opex_fraction,0.04,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS Ion Exchange PFAS cost model 2024,Technical report
-Zeolite,Media,zeolite_price,0.16,$/kg,Zeolite purchase price,NMSU zeolite model and student information,Pilot input
-Zeolite,Media,media_loss_fraction,0.1,fraction/cycle,Zeolite makeup fraction per regeneration cycle,NMSU zeolite model and supporting literature,Model input
-Zeolite,Disposal,solid_disposal_cost,0.11,$/kg,Spent zeolite disposal cost,Journal of Environmental Chemical Engineering 2025 117026,Publication
-Zeolite,Regeneration,regeneration_reuses,5,count,Number of uses represented by the regenerant reuse assumption,NMSU bench-scale zeolite model,Pilot input
-Zeolite,Regeneration,bench_regenerant_volume,0.9,L,Regenerant volume for the bench zeolite mass,NMSU bench-scale zeolite model,Pilot input
-Zeolite,Regeneration,bench_zeolite_mass,0.00824,kg,Bench zeolite mass associated with regenerant volume,NMSU bench-scale zeolite model,Pilot input
-Zeolite,Regeneration,salt_mass_fraction,0.1,fraction,Salt mass fraction in regenerant,NMSU zeolite model and supporting literature,Model input
-Zeolite,Regeneration,salt_solution_density,1.071,kg/L,Density of salt regenerant solution,NMSU zeolite model and supporting literature,Model input
-Zeolite,Regeneration,salt_price,0.03,$/kg,Salt purchase price,NMSU zeolite model and student information,Pilot input
-Zeolite,Product credit,nh4cl_price,250,$/metric tonne,NH4Cl product value,NMSU zeolite model,Model input
-Zeolite,Product credit,nh4cl_recovery_factor,0.954477239,fraction,Nitrogen recovery factor for NH4Cl product,NMSU zeolite model,Model input
-Zeolite,Product credit,nh4cl_capture_fraction,1,fraction,Fraction of recoverable NH4Cl captured as saleable product,NMSU zeolite model,Model input
-Evaporation pond,Capital,capex_per_flow,8,$/(m3/day),Equipment pond inlet/distribution capital per unit daily capacity,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,Industrial report
-Evaporation pond,Capital,land_cost_per_m2,0.8,$/m2,Land acquisition or use cost before investment factor,Planning-level land cost assumption; replace with parcel-specific land value,Engineering estimate
-Evaporation pond,Capital,liner_cost_per_m2,4.8,$/m2,Liner and earthwork cost per pond area before investment factor,SCS Engineers HDPE-lined produced-water evaporation ponds 2015 and geomembrane liner cost allowance,Industrial report
+DAF,Variable O&M,variable_opex_per_m3,0.03,$(2024)/m3,Variable DAF operating cost per cubic meter treated,WaterTAP Dissolved Air Flotation ZO and DAF O&M planning estimate,Open source documentation
+DAF,Chemicals,chemical_price,1.2,$(2024)/kg,Chemical price for coagulant/polymer,DAF coagulant/polymer vendor pricing assumption; verify with project quote,Vendor data
+Chemical softening,Capital,reference_direct_cs_capex,25829456.94,$(2024),Reference direct chemical-softening CAPEX,"KBH/NMPWRC chemical-softening TEA workbook direct CAPEX basis; no explicit cost year, treated as 2024",Model input
+Chemical softening,Capital,reference_capacity,3785.41,m3/day,Reference capacity for CAPEX scaling,KBH/NMPWRC chemical-softening TEA workbook 1.0 MGD reference flow,Model input
+Chemical softening,Capital,capex_scaling_exponent,0.87,exponent,CAPEX capacity-scaling exponent,NMPWRC chemical-softening TEA scaling assumption,Model input
+Chemical softening,Chemicals,lime_price,0.05,$(2024)/lb,Lime purchase price,"KBH/NMPWRC chemical-softening TEA workbook lime price; no explicit cost year, treated as 2024",Model input
+Chemical softening,Chemicals,soda_ash_price,0.45,$(2024)/lb,Soda ash purchase price,"KBH/NMPWRC chemical-softening TEA workbook soda ash price; no explicit cost year, treated as 2024",Model input
+Chemical softening,Chemicals,h2so4_price,0.043,$(2024)/lb,Sulfuric acid purchase price,"KBH/NMPWRC chemical-softening TEA workbook sulfuric-acid price; no explicit cost year, treated as 2024",Model input
+Chemical softening,Disposal,solid_disposal_cost,0.11,$(2024)/kg,Solid waste disposal cost,"NMPWRC solid-waste disposal assumption; no explicit cost year, treated as 2024",Model input
+Chemical softening,Labor,labor_fte,1,FTE,Labor requirement assigned to chemical softening,Wang et al. 2024 DWPR report TEA labor assumption,Technical report
+Chemical softening,Labor,labor_cost_per_fte_year,80000,$(2024)/FTE-year,Annual labor cost per full-time equivalent,Wang et al. 2024 DWPR report TEA labor cost assumption,Technical report
+Chemical softening,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to unit operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+Electrocoagulation,Capital,reference_ec_capex,1595666,$(2025),Reference EC equipment CAPEX,Lugo et al. 2025 Journal of Environmental Chemical Engineering EC-Al CAPEX basis,Publication
+Electrocoagulation,Capital,reference_capacity,11356,m3/day,Reference capacity for CAPEX scaling,Lugo et al. 2025 Journal of Environmental Chemical Engineering EC-Al reference flow,Publication
+Electrocoagulation,Capital,capex_scaling_exponent,0.87,exponent,CAPEX capacity-scaling exponent,NMPWRC EC-Al TEA scaling assumption,Model input
+Electrocoagulation,Chemicals,aluminum_price,2.23,$(2022)/kg,Aluminum electrode purchase price,Abada et al. 2022 Journal of Water Process Engineering aluminum electrode price,Publication
+Electrocoagulation,Disposal,solid_disposal_cost,0.11,$(2024)/kg,Solid waste disposal cost,"NMPWRC solid-waste disposal assumption; no explicit cost year, treated as 2024",Model input
+Electrocoagulation,Labor,labor_fte,1,FTE,Labor requirement assigned to EC,Wang et al. 2024 DWPR report TEA labor assumption,Technical report
+Electrocoagulation,Labor,labor_cost_per_fte_year,80000,$(2024)/FTE-year,Annual labor cost per full-time equivalent,Wang et al. 2024 DWPR report TEA labor cost assumption,Technical report
+Electrocoagulation,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to unit operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+Walnut shell filtration,Capital,reference_capex_cost_per_bbl,0.02,$(2022)/bbl,Reference annualized WSF CAPEX cost,Drover 2022 DOE produced-water pretreatment report DGF+WSF cost basis,Technical report
+Walnut shell filtration,Variable O&M,reference_opex_cost_per_bbl,0.03,$(2022)/bbl,Reference WSF operating cost,Drover 2022 DOE produced-water pretreatment report DGF+WSF cost basis,Technical report
+Walnut shell filtration,Capital,reference_flow_bbl_day,20000,bbl/day,Reference WSF flow basis,Drover 2022 DOE produced-water pretreatment report DGF+WSF reference flow,Technical report
+Walnut shell filtration,Capital,capex_scaling_exponent,0.87,exponent,CAPEX capacity-scaling exponent,NMPWRC WSF TEA scaling assumption,Model input
+Walnut shell filtration,Labor,labor_fte,1,FTE,Labor requirement assigned to WSF,Wang et al. 2024 DWPR report TEA labor assumption,Technical report
+Walnut shell filtration,Labor,labor_cost_per_fte_year,80000,$(2024)/FTE-year,Annual labor cost per full-time equivalent,Wang et al. 2024 DWPR report TEA labor cost assumption,Technical report
+Walnut shell filtration,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to unit operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+Ultrafiltration,Capital,reference_uf_flow_gpd,970000,gpd,Reference UF flow basis,"KBH/NMPWRC UF TEA workbook reference flow basis; no explicit cost year, treated as 2024",Model input
+Ultrafiltration,Capital,uf_equipment_unit_cost,2,$(2024)/gpd,UF equipment unit CAPEX,"KBH/NMPWRC UF TEA workbook equipment unit-cost basis; no explicit cost year, treated as 2024",Model input
+Ultrafiltration,Capital,uf_building_unit_cost,300,$(2024)/ft2,UF building unit CAPEX,"KBH/NMPWRC UF TEA workbook building unit-cost basis; no explicit cost year, treated as 2024",Model input
+Ultrafiltration,Capital,reference_building_area_ft2,2000,ft2,Reference UF building area,KBH/NMPWRC UF TEA workbook building area basis,Model input
+Ultrafiltration,Capital,capex_scaling_exponent,0.87,exponent,CAPEX capacity-scaling exponent,NMPWRC UF TEA scaling assumption,Model input
+Ultrafiltration,Chemicals,sodium_bisulfite_price,0.25,$(2024)/lb,Sodium bisulfite purchase price,"KBH/NMPWRC UF TEA workbook sodium bisulfite price; no explicit cost year, treated as 2024",Model input
+Ultrafiltration,Labor,labor_fte,1,FTE,Labor requirement assigned to UF,Wang et al. 2024 DWPR report TEA labor assumption,Technical report
+Ultrafiltration,Labor,labor_cost_per_fte_year,80000,$(2024)/FTE-year,Annual labor cost per full-time equivalent,Wang et al. 2024 DWPR report TEA labor cost assumption,Technical report
+Ultrafiltration,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to unit operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+GAC,Capital,reference_gac_capex,1345660,$(2025),Reference GAC direct CAPEX,Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC/WaterTAP CAPEX basis,Publication
+GAC,Capital,reference_capacity,3760,m3/day,Reference GAC flow basis,NMPWRC GAC model flow basis after LSRRO recovery,Model input
+GAC,Capital,capex_scaling_exponent,0.87,exponent,CAPEX capacity-scaling exponent,NMPWRC GAC TEA scaling assumption,Model input
+GAC,Media,gac_replacement_cost,4.58,$(2025)/kg,Fresh GAC replacement cost,Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC OPEX basis,Publication
+GAC,Media,gac_regeneration_cost,4.28,$(2025)/kg,Spent GAC regeneration cost,Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC OPEX basis,Publication
+GAC,Media,gac_replacement_regeneration_energy,23,kWh/kg,Energy for GAC replacement/regeneration,Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC OPEX basis,Publication
+GAC,Media,regeneration_fraction,0.8,fraction,Fraction of spent GAC sent to regeneration,NMPWRC GAC model spent-media management split,Model input
+GAC,Media,replacement_fraction,0.2,fraction,Fraction of spent GAC replaced with fresh GAC,NMPWRC GAC model spent-media management split,Model input
+GAC,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to unit operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+Zeolite,Capital,equipment_capex_per_gpm,150,$(2024)/gpm,Zeolite vessel equipment CAPEX,US EPA Drinking Water Treatment Technology Unit Cost Models ion-exchange vessel CAPEX framework,Technical report
+Zeolite,Capital,capex_scaling_exponent,1,exponent,CAPEX capacity-scaling exponent,NMPWRC zeolite TEA scaling assumption,Model input
+Zeolite,Media,zeolite_price,4.41,$(2014)/kg,Zeolite media purchase price,Deng et al. 2014 Environmental Technology zeolite regeneration economics,Publication
+Zeolite,Product credit,nh4cl_price,57.5,$(2024)/metric tonne,NH4Cl product value,"NMPWRC zeolite TEA NH4Cl product-credit assumption; no explicit cost year, treated as 2024",Model input
+Zeolite,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to unit operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+Evaporation pond,Capital,capex_per_flow,8,$(2024)/(m3/day),Equipment pond inlet/distribution capital per unit daily capacity,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,Industrial report
+Evaporation pond,Capital,reference_capacity,1000,m3/day,Reference capacity for pond inlet/distribution CAPEX scaling,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,Industrial report
+Evaporation pond,Capital,capex_scaling_exponent,1,exponent,CAPEX capacity-scaling exponent,Screening default pending source calibration,Engineering estimate
+Evaporation pond,Capital,land_cost_per_m2,0.8,$(2024)/m2,Land acquisition or use cost before investment factor,Planning-level land cost assumption; replace with parcel-specific land value,Engineering estimate
+Evaporation pond,Capital,liner_cost_per_m2,4.8,$(2024)/m2,Liner and earthwork cost per pond area before investment factor,SCS Engineers HDPE-lined produced-water evaporation ponds 2015 and geomembrane liner cost allowance,Industrial report
 Evaporation pond,Fixed O&M,fixed_opex_fraction,0.03,fraction/yr,Annual fixed OPEX as fraction of installed CAPEX,US EPA WBS cost-model O&M categories and planning-level allowance,Technical report
-Evaporation pond,Variable O&M,variable_opex_per_m3,0.01,$/m3,Variable pond management cost per cubic meter handled,SCS Engineers HDPE-lined produced-water evaporation ponds 2015 and pond O&M planning estimate,Industrial report
-Saltwater disposal well,Capital,capex_per_flow,0,$/(m3/day),Existing-well screening assumption: no new surface facilities CAPEX,Planning assumption requested for screening case,Engineering estimate
-Saltwater disposal well,Capital,capex_per_well,0,$/well,Existing-well screening assumption: no new disposal well CAPEX,Planning assumption requested for screening case,Engineering estimate
+Evaporation pond,Variable O&M,variable_opex_per_m3,0.01,$(2024)/m3,Variable pond management cost per cubic meter handled,SCS Engineers HDPE-lined produced-water evaporation ponds 2015 and pond O&M planning estimate,Industrial report
+Saltwater disposal well,Capital,capex_per_flow,0,$(2024)/(m3/day),Existing-well screening assumption: no new surface facilities CAPEX,Planning assumption requested for screening case,Engineering estimate
+Saltwater disposal well,Capital,reference_capacity,1000,m3/day,Reference capacity for SWD surface-facility CAPEX scaling,Planning assumption requested for screening case,Engineering estimate
+Saltwater disposal well,Capital,capex_scaling_exponent,1,exponent,CAPEX capacity-scaling exponent,Screening default pending source calibration,Engineering estimate
+Saltwater disposal well,Capital,capex_per_well,0,$(2024)/well,Existing-well screening assumption: no new disposal well CAPEX,Planning assumption requested for screening case,Engineering estimate
 Saltwater disposal well,Fixed O&M,fixed_opex_fraction,0,fraction/yr,Existing-well screening assumption: fixed O&M included in disposal fee,Planning assumption requested for screening case,Engineering estimate
-Saltwater disposal well,Variable O&M,variable_opex_per_m3,6.29,$/m3,Variable disposal cost per cubic meter injected; equivalent to approximately $1/bbl,Planning assumption requested for screening case,Engineering estimate
+Saltwater disposal well,Variable O&M,variable_opex_per_m3,6.29,$(2024)/m3,Variable disposal cost per cubic meter injected; equivalent to approximately $1/bbl,Planning assumption requested for screening case,Engineering estimate

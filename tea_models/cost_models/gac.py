@@ -1,17 +1,27 @@
-"""GAC capital/fixed cost plus TOC-dependent operating-cost breakdown."""
+"""GAC cost model using BV-based replacement/regeneration."""
 
 from __future__ import annotations
 
+from tea_models.cost_models.cost_utils import (
+    cost_index_factor_to_base,
+    cost_year,
+    escalate_cost,
+    input_value,
+    investment_factor,
+    value,
+)
+
 
 DEFAULTS = {
-    "capex_per_flow": 481.6,
-    "column_capex_multiplier": 1.0,
-    "fixed_opex_fraction": 0.04,
-    "cost_method": 0.0,
-    "gac_media_cost": 0.321 * 8000.0 / 450.0,
-    "solid_disposal_cost": 0.11,
-    "reference_media_cost_coefficient": 0.321,
-    "reference_toc_removal": 0.67,
+    "reference_gac_capex": 1345660.0,
+    "reference_capacity": 3760.0,
+    "capex_scaling_exponent": 0.87,
+    "gac_replacement_cost": 4.58,
+    "gac_regeneration_cost": 4.28,
+    "gac_replacement_regeneration_energy": 23.0,
+    "regeneration_fraction": 0.80,
+    "replacement_fraction": 0.20,
+    "om_contingency_factor": 0.20,
 }
 
 
@@ -35,89 +45,60 @@ def _input(values, name, default):
 
 
 def run(unit_process, technical_result, cost_inputs, context):
-    inlet_flow = _value(technical_result, "inlet_flow")
+    inlet_flow = value(technical_result, "inlet_flow")
     operating_days = float(context.get("operating_days_per_year", 330.0))
-    annual_volume = inlet_flow * operating_days
-    investment_factor = max(float(context.get("investment_factor", 2.5)), 0.0)
+    investment_factor_value = investment_factor(context)
 
-    bare_equipment_capex = _input(
-        cost_inputs, "capex_per_flow", DEFAULTS["capex_per_flow"]
-    ) * inlet_flow
-    column_capex_multiplier = _input(
+    reference_capex = input_value(cost_inputs, "reference_gac_capex", DEFAULTS["reference_gac_capex"])
+    reference_capacity = _input(cost_inputs, "reference_capacity", DEFAULTS["reference_capacity"])
+    exponent = _input(cost_inputs, "capex_scaling_exponent", DEFAULTS["capex_scaling_exponent"])
+    if reference_capex < 0.0 or reference_capacity <= 0.0 or exponent < 0.0:
+        raise ValueError("GAC CAPEX reference values must be nonnegative with positive reference capacity.")
+    index_factor = cost_index_factor_to_base(context, cost_year(cost_inputs, "reference_gac_capex", 2025))
+    equipment_capex = reference_capex * index_factor * (inlet_flow / reference_capacity) ** exponent
+    installed_capex = equipment_capex * investment_factor_value
+
+    replacement_cost = escalate_cost(
+        input_value(cost_inputs, "gac_replacement_cost", DEFAULTS["gac_replacement_cost"]),
         cost_inputs,
-        "column_capex_multiplier",
-        DEFAULTS["column_capex_multiplier"],
+        "gac_replacement_cost",
+        context,
+        2025,
     )
-    if column_capex_multiplier < 0.0:
-        raise ValueError("GAC column CAPEX multiplier cannot be negative.")
-    equipment_capex = bare_equipment_capex * column_capex_multiplier
-    installed_capex = equipment_capex * investment_factor
-    fixed_opex = installed_capex * _input(
-        cost_inputs, "fixed_opex_fraction", DEFAULTS["fixed_opex_fraction"]
+    regeneration_cost = escalate_cost(
+        input_value(cost_inputs, "gac_regeneration_cost", DEFAULTS["gac_regeneration_cost"]),
+        cost_inputs,
+        "gac_regeneration_cost",
+        context,
+        2025,
     )
-
-    media_cost = _input(cost_inputs, "gac_media_cost", DEFAULTS["gac_media_cost"])
-    disposal_cost = _input(
-        cost_inputs, "solid_disposal_cost", DEFAULTS["solid_disposal_cost"]
-    )
-    density = _value(technical_result, "media_bulk_density", 450.0)
-    breakthrough_bv = _value(technical_result, "breakthrough_bed_volumes")
-    toc_removal = _value(technical_result, "toc_removal")
-    cost_method = int(round(_input(cost_inputs, "cost_method", 0.0)))
-    if cost_method not in (0, 1):
-        raise ValueError("GAC cost_method must be 0 (feed TOC) or 1 (TOC removal).")
-    if min(media_cost, disposal_cost, density) < 0.0:
-        raise ValueError("GAC media cost, disposal cost, and density cannot be negative.")
-
-    if cost_method == 1:
-        reference_coefficient = _input(
-            cost_inputs,
-            "reference_media_cost_coefficient",
-            DEFAULTS["reference_media_cost_coefficient"],
-        )
-        reference_removal = _input(
-            cost_inputs, "reference_toc_removal", DEFAULTS["reference_toc_removal"]
-        )
-        media_rate = reference_coefficient * toc_removal / max(reference_removal, 1e-12)
-        disposal_rate = (
-            reference_coefficient
-            * disposal_cost
-            / max(media_cost, 1e-12)
-            * toc_removal
-            / max(reference_removal, 1e-12)
-        )
-        method_name = "TOC-removal correlation"
-    else:
-        media_rate = density * media_cost / max(breakthrough_bv, 1e-12)
-        disposal_rate = density * disposal_cost / max(breakthrough_bv, 1e-12)
-        if breakthrough_bv <= 0.0:
-            media_rate = 0.0
-            disposal_rate = 0.0
-        method_name = "feed-TOC breakthrough correlation"
-
-    media_opex = annual_volume * media_rate
-    disposal_opex = annual_volume * disposal_rate
-    energy_opex = (
-        annual_volume
-        * _value(technical_result, "energy_intensity")
-        * float(context.get("electricity_price", 0.0))
-    )
-    variable_opex = media_opex + disposal_opex + energy_opex
-    total_opex = fixed_opex + variable_opex
+    media_energy = _input(cost_inputs, "gac_replacement_regeneration_energy", DEFAULTS["gac_replacement_regeneration_energy"])
+    regeneration_fraction = _input(cost_inputs, "regeneration_fraction", DEFAULTS["regeneration_fraction"])
+    replacement_fraction = _input(cost_inputs, "replacement_fraction", DEFAULTS["replacement_fraction"])
+    contingency_factor = _input(cost_inputs, "om_contingency_factor", DEFAULTS["om_contingency_factor"])
+    annual_usage = value(technical_result, "annual_gac_usage")
+    operating_fraction = operating_days / 365.0
+    annual_usage *= operating_fraction
+    replacement_kg = annual_usage * replacement_fraction
+    regeneration_kg = annual_usage * regeneration_fraction
+    replacement_opex = replacement_kg * replacement_cost
+    regeneration_opex = regeneration_kg * regeneration_cost
+    material_energy_opex = annual_usage * media_energy * float(context.get("electricity_price", 0.0))
+    opex_before_contingency = replacement_opex + regeneration_opex + material_energy_opex
+    contingency = opex_before_contingency * contingency_factor
+    total_opex = opex_before_contingency + contingency
 
     return {
         "installed_capital_cost": _result(installed_capex, "USD"),
         "equipment_capital_cost": _result(equipment_capex, "USD"),
-        "bare_equipment_capital_cost": _result(bare_equipment_capex, "USD"),
-        "column_capex_multiplier": _result(column_capex_multiplier, "-"),
-        "investment_factor": _result(investment_factor, "-"),
-        "opex_calculation_method": _result(method_name, ""),
-        "fixed_operating_cost": _result(fixed_opex, "USD/year"),
-        "gac_media_operating_cost": _result(media_opex, "USD/year"),
-        "solid_disposal_operating_cost": _result(disposal_opex, "USD/year"),
-        "energy_operating_cost": _result(energy_opex, "USD/year"),
-        "variable_operating_cost": _result(variable_opex, "USD/year"),
+        "cost_index_factor": _result(index_factor, "factor"),
+        "capex_scaling_exponent": _result(exponent, "exponent"),
+        "investment_factor": _result(investment_factor_value, "-"),
+        "gac_replacement_operating_cost": _result(replacement_opex, "USD/year"),
+        "gac_regeneration_operating_cost": _result(regeneration_opex, "USD/year"),
+        "gac_replacement_regeneration_energy_cost": _result(material_energy_opex, "USD/year"),
+        "om_contingency": _result(contingency, "USD/year"),
+        "variable_operating_cost": _result(total_opex, "USD/year"),
         "total_annual_operating_cost": _result(total_opex, "USD/year"),
-        "gac_media_cost_rate": _result(media_rate, "USD/m3 feed"),
-        "solid_disposal_cost_rate": _result(disposal_rate, "USD/m3 feed"),
+        "annual_gac_usage": _result(annual_usage, "kg/year"),
     }

@@ -3,7 +3,7 @@
 WATER_QUALITY_REQUIREMENTS = {
     "Surface water discharge": {
         "pH": {"unit": "-", "range": "6.5-8.5"},
-        "Conductivity": {"unit": "µS/cm", "limit": 900.0},
+        "Conductivity": {"unit": "uS/cm", "limit": 900.0},
         "DO": {"unit": "mg/L", "limit": 4.0},
         "TDS": {"unit": "mg/L", "limit": 500.0},
         "TOC": {"unit": "mg/L", "limit": 5.0},
@@ -26,7 +26,7 @@ WATER_QUALITY_REQUIREMENTS = {
     "Agricultural use": {
         "pH": {"unit": "-", "range": "6.5-8.4"},
         "TDS": {"unit": "mg/L", "limit": 450.0},
-        "Conductivity": {"unit": "µS/cm", "limit": 700.0},
+        "Conductivity": {"unit": "uS/cm", "limit": 700.0},
         "SAR": {"unit": "-", "limit": 3.0},
         "Boron": {"unit": "mg/L", "limit": 0.7},
         "Sodium": {"unit": "mg/L", "limit": 70.0},
@@ -60,7 +60,7 @@ WATER_QUALITY_REQUIREMENTS = {
     "Powerplant cooling water": {
         "TSS": {"unit": "mg/L", "limit": 10.0},
         "Oil": {"unit": "mg/L", "limit": 5.0},
-        "Conductivity": {"unit": "µS/cm", "limit": 5000.0},
+        "Conductivity": {"unit": "uS/cm", "limit": 5000.0},
         "Hardness": {"unit": "mg/L as CaCO3", "limit": 500.0},
         "Alkalinity": {"unit": "mg/L as CaCO3", "limit": 300.0},
         "Silica": {"unit": "mg/L", "limit": 40.0},
@@ -74,7 +74,7 @@ WATER_QUALITY_REQUIREMENTS = {
     },
     "Data center cooling water": {
         "TSS": {"unit": "mg/L", "limit": 5.0},
-        "Conductivity": {"unit": "µS/cm", "limit": 2000.0},
+        "Conductivity": {"unit": "uS/cm", "limit": 2000.0},
         "Hardness": {"unit": "mg/L as CaCO3", "limit": 100.0},
         "Silica": {"unit": "mg/L", "limit": 20.0},
         "TOC": {"unit": "mg/L", "limit": 3.0},
@@ -88,7 +88,7 @@ WATER_QUALITY_REQUIREMENTS = {
     },
     "Feedwater to UPW production": {
         "TDS": {"unit": "mg/L", "limit": 190.0},
-        "Conductivity": {"unit": "µS/cm", "limit": 330.0},
+        "Conductivity": {"unit": "uS/cm", "limit": 330.0},
         "Hardness": {"unit": "mg/L as CaCO3", "limit": 130.0},
         "TOC": {"unit": "mg/L", "limit": 2.8},
         "Silica": {"unit": "mg/L", "limit": 19.0},
@@ -162,6 +162,24 @@ BRINE_CATEGORY_DEFAULT_UNIT = {
 }
 
 
+LEGACY_UNIT_NAME_MAP = {
+    "Softening / pH adjustment": "Chemical softening",
+    "Softening / silica control": "Chemical softening",
+}
+
+
+def normalize_unit_name(unit):
+    return LEGACY_UNIT_NAME_MAP.get(unit, unit)
+
+
+def use_default_brine_disposal(config):
+    """Return a train config with the current default brine-management choice."""
+    updated = config.copy()
+    updated["brine_category"] = "Brine disposal"
+    updated["brine"] = ["Saltwater disposal well"]
+    return updated
+
+
 def get_brine_category(brine_unit):
     """Return the high-level brine management category for a brine unit."""
     for category, units in BRINE_MANAGEMENT_OPTIONS.items():
@@ -193,15 +211,23 @@ def normalize_treatment_train_config(config):
     normalized = config.copy()
     # RO was the former generic placeholder.  All current RO positions use the
     # explicit BWRO technical and cost models, including secondary desalination.
+    normalized["pretreatment"] = [
+        normalize_unit_name(unit)
+        for unit in config.get("pretreatment", [])
+    ]
     normalized["desalination"] = [
         (
             "BWRO"
             if unit == "RO"
             else "Vacuum membrane distillation (VMD)"
             if unit in {"MD", "VMD"}
-            else unit
+            else normalize_unit_name(unit)
         )
         for unit in config.get("desalination", [])
+    ]
+    normalized["posttreatment"] = [
+        normalize_unit_name(unit)
+        for unit in config.get("posttreatment", [])
     ]
     normalized["brine_category"] = brine_category
     normalized["brine"] = brine_units
@@ -292,7 +318,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Reuse-compatible brine recycle / disposal"
             },
             "Brine valorization(In progress)": {
-                "pretreatment": ["Well pumping", "Media filtration", "Softening / silica control", "Antiscalant dosing"],
+                "pretreatment": ["Well pumping", "Media filtration", "Chemical softening", "Antiscalant dosing"],
                 "desalination": ["BWRO"],
                 "posttreatment": ["Selective ED", "Mineral precipitation / recovery"],
                 "brine": "Crystallizer"
@@ -311,12 +337,12 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 primary_desal[-1] if unit == "BWRO" else unit
                 for unit in configured_desalination
             ]
-        return normalize_treatment_train_config(selected)
+        return normalize_treatment_train_config(use_default_brine_disposal(selected))
 
     if desal_type == "Mechanical Vapor Compression (MVC)":
         configs = {
             "Drinking water quality oriented(e.g. groundwater recharge)": {
-                "pretreatment": ["DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
+                "pretreatment": ["DAF", "Ultrafiltration", "Chemical softening", "Antiscalant / pH adjustment"],
                 "desalination": ["MVC"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment", "Chlorination"],
                 "brine": "Brine disposal"
@@ -328,7 +354,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Brine disposal"
             },
             "Agricultural use": {
-                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
+                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Chemical softening", "Antiscalant / pH adjustment"],
                 "desalination": ["MVC"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment"],
                 "brine": "Brine disposal"
@@ -373,7 +399,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
     }:
         configs = {
             "Drinking water quality oriented(e.g. groundwater recharge)": {
-                "pretreatment": ["DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
+                "pretreatment": ["DAF", "Ultrafiltration", "Chemical softening", "Antiscalant / pH adjustment"],
                 "desalination": ["Vacuum membrane distillation (VMD)"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment", "Chlorination"],
                 "brine": "Brine disposal"
@@ -385,7 +411,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Brine disposal"
             },
             "Agricultural use": {
-                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
+                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Chemical softening", "Antiscalant / pH adjustment"],
                 "desalination": ["Vacuum membrane distillation (VMD)"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment"],
                 "brine": "Brine valorization"
@@ -431,7 +457,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
     ]:
         configs = {
             "Drinking water quality oriented(e.g. groundwater recharge)": {
-                "pretreatment": ["DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
+                "pretreatment": ["DAF", "Ultrafiltration", "Chemical softening", "Antiscalant / pH adjustment"],
                 "desalination": ["BWRO"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment", "Chlorination"],
                 "brine": "Brine disposal"
@@ -443,7 +469,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Brine disposal"
             },
             "Agricultural use": {
-                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
+                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Chemical softening", "Antiscalant / pH adjustment"],
                 "desalination": ["BWRO"],
                 "posttreatment": ["Boron-selective IX", "Blending / remineralization", "pH adjustment"],
                 "brine": "Brine valorization"
@@ -483,7 +509,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
     else: # LSRRO
         configs = {
             "Drinking water quality oriented(e.g. groundwater recharge)": {
-                "pretreatment": ["DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
+                "pretreatment": ["DAF", "Ultrafiltration", "Chemical softening", "Antiscalant / pH adjustment"],
                 "desalination": ["LSRRO"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment", "Chlorination"],
                 "brine": "Brine disposal"
@@ -495,7 +521,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Brine disposal"
             },
             "Agricultural use": {
-                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Softening / silica control", "Antiscalant / pH adjustment"],
+                "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Chemical softening", "Antiscalant / pH adjustment"],
                 "desalination": ["LSRRO"],
                 "posttreatment": ["Boron-selective IX", "Blending / remineralization", "pH adjustment"],
                 "brine": "Brine valorization"
@@ -532,14 +558,16 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             }
         }
 
-    return normalize_treatment_train_config(configs.get(ffp_scenario, configs["Surface water discharge"]))
+    return normalize_treatment_train_config(
+        use_default_brine_disposal(configs.get(ffp_scenario, configs["Surface water discharge"]))
+    )
 
 
 # All available water quality parameters for user selection
 ALL_WATER_QUALITY_PARAMS = {
     "pH": {"unit": "-", "limit": 9.0},
     "Oil": {"unit": "mg/L", "limit": 10.0},
-    "Conductivity": {"unit": "µS/cm", "limit": 5000.0},
+    "Conductivity": {"unit": "uS/cm", "limit": 5000.0},
     "TDS": {"unit": "mg/L", "limit": 2000.0},
     "TSS": {"unit": "mg/L", "limit": 30.0},
     "Turbidity": {"unit": "NTU", "limit": 5.0},
@@ -637,22 +665,38 @@ UNIT_REMOVAL_RATES = {
     # =========================================================
     # Chemical conditioning / pretreatment
     # =========================================================
-    "Softening / pH adjustment": {
-        "pH": 10,
-        "Hardness": "60-95%",
-        "Calcium": "50-95%",
-        "Barium": "20-70%",
-        "Strontium": "10-50%",
-        "Iron": "20-60%",
-        "Manganese": "10-50%"
+    "Chemical softening": {
+        "pH": 8,
+        "Hardness": "42%",
+        "Calcium": "42%",
+        "Magnesium": "42%",
+        "Barium": "44%",
+        "Strontium": "4%",
+        "Silica": "34%",
+        "Sulfate": "42%"
     },
 
-    "Softening / silica control": {
-        "Hardness": "60-95%",
-        "Calcium": "50-95%",
-        "Silica": "20-60%",
-        "Barium": "20-70%",
-        "Strontium": "10-50%"
+    "Electrocoagulation": {
+        "Conductivity": "10%",
+        "TDS": "10%",
+        "TSS": "58%",
+        "Alkalinity": "60%",
+        "Hardness": "42%",
+        "TOC": "53%",
+        "Ammonia nitrogen": "56%",
+        "Barium": "44%",
+        "Boron": "6%",
+        "Calcium": "42%",
+        "Magnesium": "42%",
+        "Silica": "34%",
+        "Sodium": "4%",
+        "Strontium": "4%",
+        "Iron": "31%",
+        "Chloride": "16%",
+        "Sulfate": "42%",
+        "Oil": "77%",
+        "BTEX": "98%",
+        "PAHs": "98%"
     },
 
     "Antiscalant / pH adjustment": {},
@@ -737,30 +781,36 @@ UNIT_REMOVAL_RATES = {
     # Vacuum membrane distillation
     # =========================================================
     "LSRRO": {
-        "Conductivity": "95-99%",
-        "TDS": "95-99%",
-        "TSS": "90-99%",
+        "Conductivity": "99.21%",
+        "TDS": "99.40%",
+        "TSS": "93.12%",
         "Turbidity": "90-99%",
-        "Hardness": "95-99%",
-        "Alkalinity": "70-95%",
-        "TOC": "20-60%",
-        "Ammonia nitrogen": "10-40%",
-        "Boron": "30-70%",
-        "Sodium": "90-99%",
-        "Chloride": "90-99%",
-        "Silica": "80-95%",
-        "Iron": "80-95%",
+        "Hardness": "99.41%",
+        "Alkalinity": "Regression",
+        "TOC": "91.55%",
+        "Ammonia nitrogen": "Regression; average-removal fallback 98.38%",
+        "Boron": "98.11%",
+        "Sodium": "99.24%",
+        "Chloride": "Regression",
+        "Silica": "98.55%",
+        "Iron": "98.41%",
         "Manganese": "80-95%",
-        "Calcium": "95-99%",
-        "Barium": "90-99%",
+        "Calcium": "Regression",
+        "Barium": "99.85%",
         "Lithium": "50-90%",
-        "Strontium": "90-99%",
+        "Strontium": "99.63%",
         "Arsenic": "80-95%",
         "Selenium": "80-95%",
-        "Sulfate": "95-99%",
+        "Sulfate": "87.97%",
         "Bicarbonate": "70-95%",
-        "Gross Alpha": "90-99%",
-        "Gross Beta": "90-99%"
+        "Gross Alpha": "99.36%",
+        "Gross Beta": "99.32%",
+        "Radium-226": "97.58%",
+        "Radium-228": "99.82%",
+        "Oil": "72.75%",
+        "TPH": "94.08%",
+        "PAHs": "91.55%",
+        "BTEX": "Regression"
     },
 
     "OARO": {
@@ -856,15 +906,13 @@ UNIT_REMOVAL_RATES = {
         "Ammonia nitrogen": "99.9%"
     },
     "GAC": {
-        "TOC": "99%",
-        "Oil": "10-40%",
-        "BTEX": "99%",
-        "PAHs": "99%"
+        "TOC": "74.98%",
+        "Oil": "74.98%",
+        "BTEX": "74.98%",
+        "PAHs": "74.98%"
     },
     "Zeolite": {
-        "Ammonia nitrogen": "99.9%+",
-        "Iron": "10-40%",
-        "Manganese": "10-40%"
+        "Ammonia nitrogen": "95%"
     },
     "Ion exchange / EDI": {
         "Conductivity": "99%",
@@ -1039,7 +1087,7 @@ SIDEBAR_DEFAULTS = {
     "Barium": 12.0,
     "Boron": 76.5,
     "Calcium": 8200.0,
-    "Mangesium": 1800.0,
+    "Magnesium": 1800.0,
     "Silica": 195.0,
     "Sodium": 49000.0,
     "Strontium": 1404.0,
@@ -1064,7 +1112,7 @@ SIDEBAR_DEFAULTS = {
     "Barium": 5.6,
     "Boron": 42.3,
     "Calcium": 3800.0,
-    "Mangesium": 745.0,
+    "Magnesium": 745.0,
     "Silica": 107.0,
     "Sodium": 41000.0,
     "Strontium": 450.0,
@@ -1089,7 +1137,7 @@ SIDEBAR_DEFAULTS = {
     "Barium": 2.2,
     "Boron": 17.2,
     "Calcium": 1200.0,
-    "Mangesium": 295.0,
+    "Magnesium": 295.0,
     "Silica": 47.5,
     "Sodium": 33600.0,
     "Strontium": 235.0,

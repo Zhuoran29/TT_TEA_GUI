@@ -2,7 +2,7 @@ import streamlit as st
 from config import APP_VERSION, DATA_VERSION
 from feedback import render_report_button
 
-st.set_page_config(page_title="Produced Water TEA — Home", layout="wide")
+st.set_page_config(page_title="Produced Water TEA - Home", layout="wide")
 
 st.sidebar.caption(f"v{APP_VERSION} | {DATA_VERSION}")
 
@@ -100,9 +100,9 @@ concentration = st.selectbox(
     label_visibility="collapsed"
 )
 
-st.markdown("##### Fit‑for‑purpose scenario")
+st.markdown("##### Fit-for-purpose scenario")
 ffp = st.selectbox(
-    "Fit‑for‑purpose scenario",
+    "Fit-for-purpose scenario",
     [
         "Agricultural use",
         "Drinking water quality oriented(e.g. groundwater recharge)",
@@ -138,7 +138,7 @@ desal = st.selectbox("Primary desalination type",
                     ), label_visibility="collapsed")
 
 # Next button with automatic session state save
-if st.button("Configure Treatment Train →", type="primary"):
+if st.button("Configure Treatment Train ->", type="primary"):
     previous_signature = (
         st.session_state.get("influent_type"),
         st.session_state.get("ffp_scenarios", [""])[0] if st.session_state.get("ffp_scenarios") else "",
@@ -153,5 +153,5 @@ if st.button("Configure Treatment Train →", type="primary"):
     st.session_state.ffp_scenarios = [ffp]
     st.session_state.desal_type = desal
     st.session_state.conc_level = concentration
-    st.success("✓ Selections saved! Moving to Treatment Train configuration...")
+    st.success("Selections saved. Moving to Treatment Train configuration...")
     st.switch_page("pages/02_Treatment_Trains.py")

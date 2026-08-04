@@ -1430,7 +1430,7 @@ def render_local_electricity_card():
 
 
 def render_water_market_card():
-    with st.expander("Water Market", expanded=False):
+    with st.expander("Water Market (In progress)", expanded=False):
         st.markdown(
             '<span class="map-tool-panel-marker"></span>',
             unsafe_allow_html=True,
@@ -1733,7 +1733,7 @@ def render_targets_panel():
     action_cols = st.columns([0.38, 0.28, 1.34], gap="small")
     with action_cols[0]:
         if st.button(
-            "Click to add facility",
+            "Click here to add facility",
             key="activate_transportation_location_click",
             type="primary" if is_transportation_mode else "secondary",
         ):
@@ -1757,7 +1757,7 @@ def render_targets_panel():
             st.rerun()
 
     st.radio(
-        "Click to add facility",
+        "Click here to add facility",
         ASSET_TYPES,
         key="map_click_target",
         horizontal=True,
@@ -2494,7 +2494,7 @@ def render_map_workspace():
         st.markdown("**Layers**")
         show_produced_water = st.checkbox("Produced water resource", value=False)
         show_waterstar_produced_water = st.checkbox("WaterSTAR produced water", value=False)
-        show_brackish = st.checkbox("Brackish groundwater resource", value=False)
+        show_brackish = st.checkbox("Brackish groundwater resource (takes ~10 seconds to load)", value=False)
         show_pv_wind = st.checkbox("PV and wind (pre-calculated performance)", value=False)
         
     sync_possible_routes()

@@ -1,3 +1,11 @@
+from tea_models.cost_models.cost_utils import (
+    escalate_cost,
+    input_value,
+    investment_factor,
+    scaled_capex_from_unit_cost,
+)
+
+
 def _value(result, name, default=0.0):
     entry = result.get(name, {})
     if isinstance(entry, dict):
@@ -16,20 +24,13 @@ def _result(value, unit):
     return {"value": value, "unit": unit}
 
 
-def _investment_factor(context):
-    try:
-        return max(float(context.get("investment_factor", 2.5)), 0.0)
-    except (TypeError, ValueError):
-        return 2.5
-
-
 def run_template(technical_result, cost_inputs, context, defaults):
     inlet_flow = _value(technical_result, "inlet_flow")
     operating_days = float(context.get("operating_days_per_year", 330))
     annual_volume = inlet_flow * operating_days
-    investment_factor = _investment_factor(context)
+    investment_factor_value = investment_factor(context)
 
-    capex_per_flow = _input(cost_inputs, "capex_per_flow", defaults.get("capex_per_flow", 0.0))
+    capex_per_flow = input_value(cost_inputs, "capex_per_flow", defaults.get("capex_per_flow", 0.0))
     column_capex_multiplier = _input(
         cost_inputs,
         "column_capex_multiplier",
@@ -42,35 +43,58 @@ def run_template(technical_result, cost_inputs, context, defaults):
         "fixed_opex_fraction",
         defaults.get("fixed_opex_fraction", 0.04),
     )
-    variable_opex_per_m3 = _input(
+    variable_opex_per_m3 = escalate_cost(
+        input_value(cost_inputs, "variable_opex_per_m3", defaults.get("variable_opex_per_m3", 0.0)),
         cost_inputs,
         "variable_opex_per_m3",
-        defaults.get("variable_opex_per_m3", 0.0),
+        context,
     )
     electricity_price = float(context.get("electricity_price", 0.0))
-    chemical_price = _input(cost_inputs, "chemical_price", defaults.get("chemical_price", 0.0))
-    media_replacement_price = _input(
+    chemical_price = escalate_cost(
+        input_value(cost_inputs, "chemical_price", defaults.get("chemical_price", 0.0)),
+        cost_inputs,
+        "chemical_price",
+        context,
+    )
+    media_replacement_price = escalate_cost(
+        input_value(cost_inputs, "media_replacement_price", defaults.get("media_replacement_price", 0.0)),
         cost_inputs,
         "media_replacement_price",
-        defaults.get("media_replacement_price", 0.0),
+        context,
     )
-    media_replacement_fraction = _input(
+    media_replacement_fraction = _input(cost_inputs, "media_replacement_fraction", defaults.get("media_replacement_fraction", 0.0))
+    capex_per_kw = escalate_cost(
+        input_value(cost_inputs, "capex_per_kw", defaults.get("capex_per_kw", 0.0)),
         cost_inputs,
-        "media_replacement_fraction",
-        defaults.get("media_replacement_fraction", 0.0),
+        "capex_per_kw",
+        context,
     )
-    capex_per_kw = _input(cost_inputs, "capex_per_kw", defaults.get("capex_per_kw", 0.0))
-    land_cost_per_m2 = _input(cost_inputs, "land_cost_per_m2", defaults.get("land_cost_per_m2", 0.0))
-    liner_cost_per_m2 = _input(cost_inputs, "liner_cost_per_m2", defaults.get("liner_cost_per_m2", 0.0))
+    land_cost_per_m2 = escalate_cost(
+        input_value(cost_inputs, "land_cost_per_m2", defaults.get("land_cost_per_m2", 0.0)),
+        cost_inputs,
+        "land_cost_per_m2",
+        context,
+    )
+    liner_cost_per_m2 = escalate_cost(
+        input_value(cost_inputs, "liner_cost_per_m2", defaults.get("liner_cost_per_m2", 0.0)),
+        cost_inputs,
+        "liner_cost_per_m2",
+        context,
+    )
     thermal_energy_price = float(context.get("thermal_energy_price", 0.0))
 
-    bare_flow_capex = capex_per_flow * inlet_flow
+    bare_flow_capex = scaled_capex_from_unit_cost(
+        capex_per_flow,
+        inlet_flow,
+        cost_inputs,
+        context,
+    )
     equipment_capex = bare_flow_capex * column_capex_multiplier
     power_capex = _value(technical_result, "power_capacity") * capex_per_kw
     land_capex = _value(technical_result, "pond_area") * land_cost_per_m2
     liner_capex = _value(technical_result, "pond_area") * liner_cost_per_m2
     total_equipment_capex = equipment_capex + power_capex + land_capex + liner_capex
-    capex = total_equipment_capex * investment_factor
+    capex = total_equipment_capex * investment_factor_value
 
     fixed_opex = capex * fixed_opex_fraction
     variable_opex = annual_volume * variable_opex_per_m3
@@ -108,7 +132,7 @@ def run_template(technical_result, cost_inputs, context, defaults):
         "equipment_capital_cost": _result(total_equipment_capex, "USD"),
         "bare_flow_capital_cost": _result(bare_flow_capex, "USD"),
         "column_capex_multiplier": _result(column_capex_multiplier, "-"),
-        "investment_factor": _result(investment_factor, "-"),
+        "investment_factor": _result(investment_factor_value, "-"),
         "fixed_operating_cost": _result(fixed_opex, "USD/year"),
         "variable_operating_cost": _result(variable_opex, "USD/year"),
         "energy_operating_cost": _result(energy_opex, "USD/year"),

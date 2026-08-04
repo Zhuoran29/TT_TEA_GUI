@@ -1,7 +1,8 @@
 import csv
 import json
 from pathlib import Path
-from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_config, UNIT_REMOVAL_RATES, ALL_WATER_QUALITY_PARAMS, SIDEBAR_DEFAULTS, BRINE_MANAGEMENT_OPTIONS, normalize_treatment_train_config
+from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_config, UNIT_REMOVAL_RATES, ALL_WATER_QUALITY_PARAMS, SIDEBAR_DEFAULTS, BRINE_MANAGEMENT_OPTIONS, normalize_treatment_train_config, normalize_unit_name
+from tea_models.lsrro_core import predict_permeate
 from tea_models.water_quality import collect_feedwater_quality, parse_removal_rate as parse_config_removal_rate
 import streamlit as st
 from config import APP_VERSION, DATA_VERSION
@@ -17,14 +18,14 @@ PRETREATMENT_UNIT_OPTIONS = [
     "3-phase separator",
     "DAF",
     "Floc n Drop",
+    "Chemical softening",
+    "Electrocoagulation",
     "Walnut shell filtration",
     "Media filtration",
     "Cartridge filter",
     "Bag filter",
     "Ultrafiltration",
     "Ultra-fine filtration",
-    "Softening / pH adjustment",
-    "Softening / silica control",
     "Antiscalant / pH adjustment",
     "Antiscalant dosing",
     "Air stripping",
@@ -143,15 +144,22 @@ brine_category_default = train_config.get("brine_category", "Brine disposal")
 brine_option = brine_default
 brine_category = brine_category_default
 
-if requirements:
-    # Brine management radio button
-    st.markdown("##### Brine management approach")
-    brine_options = list(BRINE_MANAGEMENT_OPTIONS.keys())
-    try:
-        default_index = brine_options.index(brine_category_default)
-    except ValueError:
-        default_index = 0
-    brine_category = st.radio("", brine_options, index=default_index, label_visibility="collapsed", horizontal=True)
+# Brine management approach selection is temporarily hidden while the default
+# brine path is standardized to Brine disposal / Saltwater disposal well.
+# if requirements:
+#     st.markdown("##### Brine management approach")
+#     brine_options = list(BRINE_MANAGEMENT_OPTIONS.keys())
+#     try:
+#         default_index = brine_options.index(brine_category_default)
+#     except ValueError:
+#         default_index = 0
+#     brine_category = st.radio(
+#         "",
+#         brine_options,
+#         index=default_index,
+#         label_visibility="collapsed",
+#         horizontal=True,
+#     )
 
 # Helper function to parse removal rates from string
 def parse_removal_rate(rate_str):
@@ -185,6 +193,20 @@ def clear_tea_results_cache():
 
 def format_percent(value):
     return f"{value * 100.0:.1f}%"
+
+
+def estimate_unit_outlet_concentration(unit, parameter, concentration):
+    if unit == "LSRRO":
+        outlet, _method = predict_permeate(parameter, float(concentration))
+        return max(float(outlet), 0.0)
+
+    removal_info = UNIT_REMOVAL_RATES.get(unit, {})
+    if parameter == "pH" and parameter in removal_info:
+        ph_target = parse_ph_target(removal_info.get(parameter))
+        return ph_target if ph_target is not None else concentration
+
+    removal_rate = parse_removal_rate(removal_info.get(parameter, 0.0))
+    return float(concentration) * (1.0 - removal_rate)
 
 
 def unit_tooltip_text(unit, removal_info, tracked_constituent=None):
@@ -295,13 +317,12 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
                 use_html_label = True
             if tracked_constituent and current_conc is not None:
                 inlet_conc = current_conc
-                if tracked_constituent in removal_info:
-                    if tracked_constituent == "pH":
-                        ph_target = parse_ph_target(removal_info[tracked_constituent])
-                        outlet_conc = ph_target if ph_target is not None else current_conc
-                    else:
-                        removal_rate = parse_removal_rate(removal_info[tracked_constituent])
-                        outlet_conc = current_conc * (1 - removal_rate)
+                if unit == "LSRRO" or tracked_constituent in removal_info:
+                    outlet_conc = estimate_unit_outlet_concentration(
+                        unit,
+                        tracked_constituent,
+                        current_conc,
+                    )
                     concentrations[node_id] = outlet_conc
                     session_key = f"wq_target_{tracked_constituent}".replace(" ", "_")
                     # Get target value from session state, default to requirement limit
@@ -517,14 +538,11 @@ def estimate_product_concentration(parameter, feed_concentration, pretreat_list,
     internal_param = REQUIREMENT_TO_INTERNAL_PARAM.get(parameter, parameter)
     concentration = float(feed_concentration)
     for unit in [*pretreat_list, *desal_list, *posttreat_list]:
-        removal_info = UNIT_REMOVAL_RATES.get(unit, {})
-        if internal_param == "pH" and internal_param in removal_info:
-            ph_target = parse_ph_target(removal_info.get(internal_param))
-            if ph_target is not None:
-                concentration = ph_target
-            continue
-        removal_rate = parse_removal_rate(removal_info.get(internal_param, 0.0))
-        concentration *= 1.0 - removal_rate
+        concentration = estimate_unit_outlet_concentration(
+            unit,
+            internal_param,
+            concentration,
+        )
     return max(concentration, 0.0)
 
 
@@ -635,7 +653,7 @@ if requirements:
     
     # Reset editable train state when the selected scenario or default config changes.
     # This prevents stale units from older defaults from lingering in the UI.
-    TRAIN_CONFIG_VERSION = 3
+    TRAIN_CONFIG_VERSION = 5
 
     def _as_unit_list(value):
         if isinstance(value, list):
@@ -690,6 +708,16 @@ if requirements:
     if "reset_counter" not in st.session_state:
         st.session_state.reset_counter = 0
 
+    for stage_key in (
+        "treatment_pretreatment",
+        "treatment_desalination",
+        "treatment_posttreatment",
+    ):
+        st.session_state[stage_key] = [
+            normalize_unit_name(unit)
+            for unit in st.session_state.get(stage_key, [])
+        ]
+
     if st.session_state.treatment_brine_category != brine_category:
         st.session_state.treatment_brine_category = brine_category
         default_units = BRINE_MANAGEMENT_OPTIONS.get(brine_category, ["Brine disposal"])
@@ -733,7 +761,7 @@ if requirements:
             dot = generate_treatment_flowchart(influent, ffp_primary, pretreatment, desalination, posttreatment, brine_option)
         st.graphviz_chart(dot)
         render_water_quality_gap_summary(requirements, pretreatment, desalination, posttreatment)
-        if st.button("System Design →", type="primary"):
+        if st.button("System Design ->", type="primary"):
             st.session_state.treatment_train = normalize_treatment_train_config({
                 "pretreatment": pretreatment,
                 "desalination": desalination,
@@ -743,7 +771,7 @@ if requirements:
             })
             st.session_state.treatment_train_scenario_signature = scenario_signature
             clear_tea_results_cache()
-            st.success("✓ Treatment train configuration saved! Moving to System Design...")
+            st.success("Treatment train configuration saved. Moving to System Design...")
             st.switch_page("pages/03_System_Design.py")
     
     with design_col:
@@ -772,12 +800,12 @@ if requirements:
                         st.rerun()
                 
                 with col_remove:
-                    if st.button("✕", key=f"remove_pretreat_{i}", use_container_width=True):
+                    if st.button("x", key=f"remove_pretreat_{i}", use_container_width=True):
                         st.session_state.treatment_pretreatment.pop(i)
                         st.rerun()
             
             # Add button for pretreatment
-            if st.button("➕", key="add_pretreat", use_container_width=True):
+            if st.button("Add", key="add_pretreat", use_container_width=True):
                 st.session_state.treatment_pretreatment.append(stage_options(PRETREATMENT_UNIT_OPTIONS)[0])
                 st.rerun()
             
@@ -799,12 +827,12 @@ if requirements:
                         st.rerun()
                 
                 with col_remove:
-                    if st.button("✕", key=f"remove_desal_{i}", use_container_width=True):
+                    if st.button("x", key=f"remove_desal_{i}", use_container_width=True):
                         st.session_state.treatment_desalination.pop(i)
                         st.rerun()
             
             # Add button for desalination
-            if st.button("➕", key="add_desal", use_container_width=True):
+            if st.button("Add", key="add_desal", use_container_width=True):
                 st.session_state.treatment_desalination.append(stage_options(DESALINATION_UNIT_OPTIONS)[0])
                 st.rerun()
             
@@ -826,12 +854,12 @@ if requirements:
                         st.rerun()
                 
                 with col_remove:
-                    if st.button("✕", key=f"remove_posttreat_{i}", use_container_width=True):
+                    if st.button("x", key=f"remove_posttreat_{i}", use_container_width=True):
                         st.session_state.treatment_posttreatment.pop(i)
                         st.rerun()
             
             # Add button for posttreatment
-            if st.button("➕", key="add_posttreat", use_container_width=True):
+            if st.button("Add", key="add_posttreat", use_container_width=True):
                 st.session_state.treatment_posttreatment.append(stage_options(POSTTREATMENT_UNIT_OPTIONS)[0])
                 st.rerun()
             
@@ -854,17 +882,17 @@ if requirements:
                         st.rerun()
 
                 with col_remove:
-                    if st.button("✕", key=f"remove_brine_{i}", use_container_width=True):
+                    if st.button("x", key=f"remove_brine_{i}", use_container_width=True):
                         st.session_state.treatment_brine.pop(i)
                         st.rerun()
 
-            if st.button("➕", key="add_brine", use_container_width=True):
+            if st.button("Add", key="add_brine", use_container_width=True):
                 st.session_state.treatment_brine.append(stage_options(brine_units)[0])
                 st.rerun()
             
             # Reset button
             st.markdown("---")
-            if st.button("🔄 Reset to Default", use_container_width=True):
+            if st.button("Reset to Default", use_container_width=True):
                 # Get default config from treatment_config
                 default_config = get_treatment_train_config(ffp_primary, desal, influent)
                 
@@ -966,7 +994,7 @@ if requirements:
                                 label_visibility="collapsed"
                             )
                         with col_remove:
-                            if st.button("✕", key=f"remove_{added_param}", use_container_width=True):
+                            if st.button("x", key=f"remove_{added_param}", use_container_width=True):
                                 st.session_state[session_key_added].remove(added_param)
                                 st.rerun()
                 
@@ -988,7 +1016,7 @@ if requirements:
                         new_param = None
                 
                 with add_col2:
-                    if available_params and st.button("➕", key="btn_add_param", use_container_width=True):
+                    if available_params and st.button("Add", key="btn_add_param", use_container_width=True):
                         if new_param and new_param not in st.session_state[session_key_added]:
                             st.session_state[session_key_added].append(new_param)
                             st.rerun()
@@ -1012,7 +1040,7 @@ if requirements:
                     if intro:
                         # Replace \n with double newline for markdown rendering
                         intro = intro.replace('\\n', '\n\n')
-                        st.markdown(f"💡 {intro}")
+                        st.markdown(f"Note: {intro}")
                     
                     # Display bullet items
                     st.markdown("**Key requirements:**")
@@ -1025,17 +1053,17 @@ if requirements:
                     # Display as regular info for simple notes
                     notes_text = re.sub(r'\s+', ' ', notes_text)  # Normalize internal spaces
                     notes_text = notes_text.replace('\\n', '\n\n')  # Replace \n with double newline
-                    st.markdown(f"💡 {notes_text}")
+                    st.markdown(f"Note: {notes_text}")
             
             # Display references url if available
             if "url" in requirements:
                 for ref, url in requirements["url"].items():
-                    st.link_button(f"🔗 {ref}", url=url)
+                    st.link_button(ref, url=url)
 else:
     # Fallback if no flowchart
     dot = generate_treatment_flowchart(influent, ffp_primary, pretreatment, desalination, posttreatment, brine_option)
     st.graphviz_chart(dot)
-    if st.button("System Design →", type="primary"):
+    if st.button("System Design ->", type="primary"):
         st.session_state.treatment_train = normalize_treatment_train_config({
             "pretreatment": pretreatment,
             "desalination": desalination,
@@ -1045,7 +1073,7 @@ else:
         })
         st.session_state.treatment_train_scenario_signature = scenario_signature
         clear_tea_results_cache()
-        st.success("✓ Treatment train configuration saved! Moving to System Design...")
+        st.success("Treatment train configuration saved. Moving to System Design...")
         st.switch_page("pages/03_System_Design.py")
 
 
@@ -1145,7 +1173,7 @@ with add_input_col1:
         new_additional_param = None
 
 with add_input_col2:
-    if available_additional_params and st.button("➕", key="btn_add_additional_param", use_container_width=True):
+    if available_additional_params and st.button("Add", key="btn_add_additional_param", use_container_width=True):
         if new_additional_param and new_additional_param not in st.session_state.additional_input_params_added:
             st.session_state.additional_input_params_added.append(new_additional_param)
             st.rerun()
@@ -1172,7 +1200,7 @@ if st.session_state.additional_input_params_added:
                 label_visibility="collapsed"
             )
         with col_remove:
-            if st.button("✕", key=f"remove_additional_{added_additional_param}", use_container_width=True):
+            if st.button("x", key=f"remove_additional_{added_additional_param}", use_container_width=True):
                 st.session_state.additional_input_params_added.remove(added_additional_param)
                 st.rerun()
 

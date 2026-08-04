@@ -153,8 +153,8 @@ with left_col:
     )
 
     render_extension_card(
-        title="Process Optimization",
-        subtitle="Unit-level and train-level optimization using WaterTAP-compatible models.",
+        title="Scenario comparison (In progress)",
+        subtitle="Side-by-side comparison of TEA results for alternative treatment scenarios.",
    
         inputs=[
             # "Selected treatment train, unit model parameters, bounds, and design constraints.",
@@ -170,7 +170,7 @@ with left_col:
 
 with right_col:
     render_extension_card(
-        title="Socio-economic Analysis",
+        title="Socio-economic Analysis (In progress, report values only)",
         subtitle="Community, workforce, and regional impact indicators tied to TEA scenarios.",
 
         inputs=[
@@ -187,7 +187,7 @@ with right_col:
     )
 
     render_extension_card(
-        title="Sensitivity Analysis",
+        title="Sensitivity Analysis (In progress)",
         subtitle="Range-based exploration of uncertain assumptions and key result drivers.",
 
         inputs=[

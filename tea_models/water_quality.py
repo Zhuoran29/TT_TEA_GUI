@@ -132,6 +132,12 @@ def make_stream(feedwater_quality, feed_flow_m3_day=None):
 
 def get_default_removal_efficiencies(unit_process, quality):
     """Return defaults for the currently tracked water-quality parameters."""
+    if unit_process == "LSRRO":
+        from tea_models.lsrro_core import predict_water_quality
+
+        _outlet, removals, _methods = predict_water_quality(quality)
+        return removals
+
     unit_rates = UNIT_REMOVAL_RATES.get(unit_process, {})
     defaults = {}
     for parameter in quality:

@@ -1,5 +1,12 @@
 """Saltwater disposal well cost template model."""
 
+from tea_models.cost_models.cost_utils import (
+    escalate_cost,
+    input_value,
+    investment_factor,
+    scaled_capex_from_unit_cost,
+)
+
 
 def _value(result, name, default=0.0):
     entry = result.get(name, {})
@@ -19,30 +26,38 @@ def _result(value, unit):
     return {"value": value, "unit": unit}
 
 
-def _investment_factor(context):
-    try:
-        return max(float(context.get("investment_factor", 2.5)), 0.0)
-    except (TypeError, ValueError):
-        return 2.5
-
-
 def run(unit_process, technical_result, cost_inputs, context):
     disposed_flow = _value(technical_result, "disposed_flow", _value(technical_result, "inlet_flow"))
     operating_days = float(context.get("operating_days_per_year", 330))
     annual_disposed_volume = disposed_flow * operating_days
-    investment_factor = _investment_factor(context)
+    investment_factor_value = investment_factor(context)
 
-    capex_per_flow = _input(cost_inputs, "capex_per_flow", 0.0)
-    capex_per_well = _input(cost_inputs, "capex_per_well", 0.0)
+    capex_per_flow = input_value(cost_inputs, "capex_per_flow", 0.0)
+    capex_per_well = escalate_cost(
+        input_value(cost_inputs, "capex_per_well", 0.0),
+        cost_inputs,
+        "capex_per_well",
+        context,
+    )
     fixed_opex_fraction = _input(cost_inputs, "fixed_opex_fraction", 0.0)
-    variable_opex_per_m3 = _input(cost_inputs, "variable_opex_per_m3", 6.29)
+    variable_opex_per_m3 = escalate_cost(
+        input_value(cost_inputs, "variable_opex_per_m3", 6.29),
+        cost_inputs,
+        "variable_opex_per_m3",
+        context,
+    )
     electricity_price = float(context.get("electricity_price", 0.0))
 
     well_count = _value(technical_result, "injection_well_count")
-    flow_capex = capex_per_flow * disposed_flow
+    flow_capex = scaled_capex_from_unit_cost(
+        capex_per_flow,
+        disposed_flow,
+        cost_inputs,
+        context,
+    )
     well_capex = capex_per_well * well_count
     equipment_capex = flow_capex + well_capex
-    capex = equipment_capex * investment_factor
+    capex = equipment_capex * investment_factor_value
 
     fixed_opex = capex * fixed_opex_fraction
     variable_opex = annual_disposed_volume * variable_opex_per_m3
@@ -52,7 +67,7 @@ def run(unit_process, technical_result, cost_inputs, context):
     return {
         "installed_capital_cost": _result(capex, "USD"),
         "equipment_capital_cost": _result(equipment_capex, "USD"),
-        "investment_factor": _result(investment_factor, "-"),
+        "investment_factor": _result(investment_factor_value, "-"),
         "flow_capacity_capital_cost": _result(flow_capex, "USD"),
         "well_capital_cost": _result(well_capex, "USD"),
         "fixed_operating_cost": _result(fixed_opex, "USD/year"),

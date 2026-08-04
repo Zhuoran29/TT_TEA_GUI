@@ -14,6 +14,7 @@ from treatment_config import get_treatment_train_config, normalize_treatment_tra
 from ui_helpers import render_card_title
 
 from tea_models.registry import run_cost_model, run_technical_model
+from tea_models.registry import model_key as unit_model_key
 from tea_models.unit_model_defaults import cost_input_rows, technical_input_rows
 from tea_models.water_quality import (
     apply_removal_overrides,
@@ -89,6 +90,7 @@ st.markdown("""
 APP_ROOT = Path(__file__).resolve().parents[1]
 TECHNICAL_INPUT_PATH = APP_ROOT / "data" / "input_tables" / "technical_inputs.csv"
 COST_INPUT_PATH = APP_ROOT / "data" / "input_tables" / "cost_inputs.csv"
+MODEL_DOCS_PATH = APP_ROOT / "tea_models" / "model_docs"
 RESULTS_OUTPUT_PATH = APP_ROOT / "data" / "results" / "tea_results.csv"
 BBL_TO_M3 = 0.158987294928
 M3_TO_BBL = 1 / BBL_TO_M3
@@ -101,26 +103,21 @@ HIDDEN_COST_OUTPUTS = {
     "land_capital_cost",
     "liner_capital_cost",
 }
-DESALINATION_BRINE_SOURCE_UNITS = {
-    "MVC",
-    "Vacuum membrane distillation (VMD)",
-    "LSRRO",
-    "OARO",
-    "BWRO",
-    "NF",
-}
-
 COST_INPUT_FALLBACKS = {
     "MVC": [
-        ("Capital", "capex_per_flow", 1104.0, "$/(m3/day)", "Equipment MVC capital cost per unit daily capacity"),
+        ("Capital", "capex_per_flow", 1104.0, "$(2024)/(m3/day)", "Equipment MVC capital cost per unit daily capacity"),
+        ("Capital", "reference_capacity", 1000.0, "m3/day", "Reference capacity for MVC CAPEX scaling"),
+        ("Capital", "capex_scaling_exponent", 1.0, "exponent", "CAPEX capacity-scaling exponent"),
         ("Fixed O&M", "fixed_opex_fraction", 0.05, "fraction/yr", "Annual fixed OPEX as fraction of installed MVC CAPEX"),
-        ("Variable O&M", "variable_opex_per_m3", 0.0, "$/m3", "Variable MVC operating cost per cubic meter treated"),
+        ("Variable O&M", "variable_opex_per_m3", 0.0, "$(2024)/m3", "Variable MVC operating cost per cubic meter treated"),
     ],
     "Saltwater disposal well": [
-        ("Capital", "capex_per_flow", 0.0, "$/(m3/day)", "Existing-well screening assumption: no new surface facilities CAPEX"),
-        ("Capital", "capex_per_well", 0.0, "$/well", "Existing-well screening assumption: no new disposal well CAPEX"),
+        ("Capital", "capex_per_flow", 0.0, "$(2024)/(m3/day)", "Existing-well screening assumption: no new surface facilities CAPEX"),
+        ("Capital", "reference_capacity", 1000.0, "m3/day", "Reference capacity for SWD surface-facility CAPEX scaling"),
+        ("Capital", "capex_scaling_exponent", 1.0, "exponent", "CAPEX capacity-scaling exponent"),
+        ("Capital", "capex_per_well", 0.0, "$(2024)/well", "Existing-well screening assumption: no new disposal well CAPEX"),
         ("Fixed O&M", "fixed_opex_fraction", 0.0, "fraction/yr", "Existing-well screening assumption: fixed O&M included in disposal fee"),
-        ("Variable O&M", "variable_opex_per_m3", 6.29, "$/m3", "Variable disposal cost per cubic meter injected"),
+        ("Variable O&M", "variable_opex_per_m3", 6.29, "$(2024)/m3", "Variable disposal cost per cubic meter injected"),
     ],
 }
 
@@ -252,9 +249,12 @@ def current_treatment_train_scenario_signature():
     )
 
 
-def is_desalination_brine_source(unit_process):
-    """Return True for units whose reject stream should feed brine management."""
-    return unit_process in DESALINATION_BRINE_SOURCE_UNITS
+def empty_stream():
+    """Return an empty stream for brine management when no waste has accumulated."""
+    return {
+        "flow_m3_day": 0.0,
+        "water_quality": {},
+    }
 
 
 def load_input_table(path):
@@ -336,6 +336,31 @@ def input_row_tooltip(row):
 def input_key_fragment(value):
     """Return a stable widget-key fragment for table section and parameter names."""
     return re.sub(r"[^a-zA-Z0-9_]+", "_", str(value)).strip("_") or "input"
+
+
+def unit_model_doc_path(unit_process):
+    """Return the first local documentation file found for a unit process."""
+    key = unit_model_key(unit_process)
+    for extension in (".md", ".html", ".htm"):
+        path = MODEL_DOCS_PATH / f"{key}{extension}"
+        if path.exists():
+            return path
+    return None
+
+
+@st.dialog("Unit model description")
+def show_unit_model_doc(unit_process):
+    st.markdown(f"**{unit_process}**")
+    doc_path = unit_model_doc_path(unit_process)
+    if doc_path is None:
+        st.info("Model documentation will be added.")
+        return
+
+    content = doc_path.read_text(encoding="utf-8")
+    if doc_path.suffix.lower() in {".html", ".htm"}:
+        st.html(content)
+    else:
+        st.markdown(content)
 
 
 def render_grouped_input_tables(rows, key_prefix):
@@ -462,20 +487,42 @@ def render_grouped_input_tables(rows, key_prefix):
 def table_to_input_dict(table):
     """Convert edited table rows into the dictionary expected by unit models."""
     values = {}
+    cost_years = {}
     for _, row in table.iterrows():
         parameter = row.get("parameter")
         if not parameter:
             continue
         values[str(parameter)] = float(row.get("value", 0.0) or 0.0)
+        unit = str(row.get("unit", "") or "")
+        year_match = re.search(r"(?:USD_|\$\()(\d{4})", unit)
+        if year_match:
+            cost_years[str(parameter)] = int(year_match.group(1))
+    if cost_years:
+        values["_cost_years"] = cost_years
     return values
 
 
-def current_removal_efficiencies(unit, feedwater_quality):
+def quality_payload(feedwater_quality_or_quality):
+    """Accept either a feedwater payload or a direct water-quality dictionary."""
+    if not isinstance(feedwater_quality_or_quality, dict):
+        return {}
+    if "water_quality" in feedwater_quality_or_quality:
+        return feedwater_quality_or_quality.get("water_quality", {}) or {}
+    return feedwater_quality_or_quality
+
+
+def current_removal_efficiencies(unit, feedwater_quality_or_quality):
     """Return editable constituent removals for one unit process."""
-    quality = feedwater_quality.get("water_quality", {})
+    quality = quality_payload(feedwater_quality_or_quality)
     defaults = get_default_removal_efficiencies(unit["unit_process"], quality)
     if not defaults:
         return {}
+    if unit["unit_process"] == "LSRRO":
+        return {
+            parameter: value
+            for parameter, value in defaults.items()
+            if parameter not in REMOVAL_EFFICIENCY_EXCLUDED_PARAMETERS
+        }
 
     override_store = st.session_state.setdefault("unit_removal_overrides", {})
     sequence_key = str(unit["sequence"])
@@ -489,15 +536,37 @@ def current_removal_efficiencies(unit, feedwater_quality):
 
 
 @st.dialog("Removal efficiencies")
-def show_removal_efficiency_dialog(unit, feedwater_quality):
+def show_removal_efficiency_dialog(unit, feedwater_quality_or_quality):
     """Edit removal efficiencies in a modal dialog."""
-    quality = feedwater_quality.get("water_quality", {})
+    quality = quality_payload(feedwater_quality_or_quality)
     defaults = get_default_removal_efficiencies(unit["unit_process"], quality)
-    merged = current_removal_efficiencies(unit, feedwater_quality)
+    merged = current_removal_efficiencies(unit, feedwater_quality_or_quality)
     override_store = st.session_state.setdefault("unit_removal_overrides", {})
     sequence_key = str(unit["sequence"])
 
     st.markdown(f"**{unit['sequence']}. {unit['unit_process']}**")
+    if unit["unit_process"] == "LSRRO":
+        from tea_models.lsrro_core import removal_preview_rows
+
+        removal_rows = pd.DataFrame(removal_preview_rows(quality))
+        if removal_rows.empty:
+            st.info("No tracked water-quality inputs are available for LSRRO.")
+            return
+        st.caption("Computed from the current train stream using the LSRRO water-quality model.")
+        st.dataframe(
+            removal_rows,
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                "parameter": st.column_config.TextColumn("Parameter"),
+                "feed_concentration": st.column_config.NumberColumn("Feed", format="%.4g"),
+                "predicted_permeate": st.column_config.NumberColumn("Predicted permeate", format="%.4g"),
+                "removal_efficiency": st.column_config.NumberColumn("Removal efficiency", format="%.4f"),
+                "method": st.column_config.TextColumn("Method"),
+            },
+        )
+        return
+
     removal_rows = pd.DataFrame([
         {
             "parameter": parameter,
@@ -877,7 +946,13 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables,
         technical_inputs["removal_efficiencies"] = removal_tables.get(unit["sequence"], {})
         cost_inputs = table_to_input_dict(cost_tables[unit["sequence"]])
 
-        model_stream = brine_stream if is_brine_management and brine_stream is not None else stream
+        model_stream = (
+            brine_stream
+            if is_brine_management and brine_stream is not None
+            else empty_stream()
+            if is_brine_management
+            else stream
+        )
         technical_result = run_technical_model(unit_process, technical_inputs, model_stream)
         cost_result = run_cost_model(unit_process, technical_result, cost_inputs, context)
 
@@ -901,18 +976,16 @@ def calculate_lcow(ordered_units, technical_tables, cost_tables, removal_tables,
         total_capital_cost += capital_cost
         total_annual_operating_cost += annual_operating_cost
         brine_flow = result_value(technical_result, "brine_flow")
-        if (
-            brine_flow > 0.0
-            and unit["section"] == "Desalination"
-            and is_desalination_brine_source(unit_process)
-        ):
-            brine_quality = calculate_brine_quality(
-                technical_result.get("water_quality_in", {}),
-                technical_result.get("water_quality_out", {}),
-                result_value(technical_result, "inlet_flow"),
-                outlet_flow,
-                brine_flow,
-            )
+        if brine_flow > 0.0 and not is_brine_management:
+            brine_quality = technical_result.get("brine_water_quality")
+            if not brine_quality:
+                brine_quality = calculate_brine_quality(
+                    technical_result.get("water_quality_in", {}),
+                    technical_result.get("water_quality_out", {}),
+                    result_value(technical_result, "inlet_flow"),
+                    outlet_flow,
+                    brine_flow,
+                )
             new_brine_stream = {
                 "flow_m3_day": brine_flow,
                 "water_quality": brine_quality,
@@ -1216,6 +1289,7 @@ with assumption_cols[1]:
 
         row_cols = st.columns([2.2, 1.2, 1.0])
         row_cols[0].markdown("CRF")
+        row_cols[0].caption("Auto-calculated, unless overwritten by user")
         with row_cols[1]:
             capital_recovery_factor = st.number_input(
                 "CRF",
@@ -1229,6 +1303,7 @@ with assumption_cols[1]:
 
         row_cols = st.columns([2.2, 1.2, 1.0])
         row_cols[0].markdown("Investment factor")
+        row_cols[0].caption("Total CAPEX / Equipment CAPEX")
         with row_cols[1]:
             investment_factor = st.number_input(
                 "Investment factor",
@@ -1243,11 +1318,12 @@ with assumption_cols[1]:
 
         row_cols = st.columns([2.2, 1.2, 1.0])
         row_cols[0].markdown("Base currency year")
+        row_cols[0].caption("CEPCI range: 2001-2026 (May 2026 preliminary)")
         with row_cols[1]:
             base_currency_year = st.number_input(
                 "Base currency year",
                 min_value=2001,
-                max_value=2024,
+                max_value=2026,
                 value=2024,
                 step=1,
                 key="tea_base_currency_year",
@@ -1307,16 +1383,29 @@ if feedwater_quality.get("water_quality"):
 technical_tables = {}
 cost_tables = {}
 removal_tables = {}
+preview_stream = make_stream(feedwater_quality, feed_flow_m3_day)
+preview_brine_stream = None
 
 for unit in ordered_units:
     label = f"{unit['sequence']}. {unit['section']} - {unit['unit_process']}"
     is_brine_management = unit["section"].startswith("Brine management")
-    title_col, removal_button_col = st.columns([4, 1])
+    preview_model_stream = (
+        preview_brine_stream
+        if is_brine_management and preview_brine_stream is not None
+        else empty_stream()
+        if is_brine_management
+        else preview_stream
+    )
+    preview_quality = preview_model_stream.get("water_quality", {})
+    title_col, doc_button_col, removal_button_col = st.columns([3.6, 0.7, 1.0])
     with title_col:
         st.subheader(label)
+    with doc_button_col:
+        if st.button("Info", key=f"show_doc_{unit['sequence']}", use_container_width=True):
+            show_unit_model_doc(unit["unit_process"])
     with removal_button_col:
         if not is_brine_management and st.button("Removal efficiencies", key=f"show_removal_{unit['sequence']}", type="primary"):
-            show_removal_efficiency_dialog(unit, feedwater_quality)
+            show_removal_efficiency_dialog(unit, preview_quality)
     tech_col, cost_col = st.columns(2)
 
     technical_rows = get_inputs_for_unit(technical_template, unit["unit_process"])
@@ -1334,7 +1423,7 @@ for unit in ordered_units:
         )
         removal_tables[unit["sequence"]] = current_removal_efficiencies(
             unit,
-            feedwater_quality,
+            preview_quality,
         )
 
     with cost_col:
@@ -1343,6 +1432,49 @@ for unit in ordered_units:
             cost_rows,
             f"cost_inputs_{unit['sequence']}_{unit['unit_process']}",
         )
+
+    try:
+        preview_technical_inputs = table_to_input_dict(technical_tables[unit["sequence"]])
+        preview_technical_inputs["removal_efficiencies"] = removal_tables.get(
+            unit["sequence"],
+            {},
+        )
+        preview_result = run_technical_model(
+            unit["unit_process"],
+            preview_technical_inputs,
+            preview_model_stream,
+        )
+        preview_outlet_flow = result_value(preview_result, "outlet_flow")
+        preview_brine_flow = result_value(preview_result, "brine_flow")
+        if preview_brine_flow > 0.0 and not is_brine_management:
+            preview_brine_quality = preview_result.get("brine_water_quality")
+            if not preview_brine_quality:
+                preview_brine_quality = calculate_brine_quality(
+                    preview_result.get("water_quality_in", {}),
+                    preview_result.get("water_quality_out", {}),
+                    result_value(preview_result, "inlet_flow"),
+                    preview_outlet_flow,
+                    preview_brine_flow,
+                )
+            preview_brine_stream = combine_streams(
+                preview_brine_stream,
+                {
+                    "flow_m3_day": preview_brine_flow,
+                    "water_quality": preview_brine_quality,
+                },
+            )
+        if is_brine_management:
+            preview_brine_stream = preview_result.get("outlet_stream", {
+                "flow_m3_day": preview_outlet_flow,
+                "water_quality": {},
+            })
+        else:
+            preview_stream = preview_result.get("outlet_stream", {
+                "flow_m3_day": preview_outlet_flow,
+                "water_quality": preview_stream.get("water_quality", {}),
+            })
+    except Exception:
+        pass
 
 context = {
     "feed_flow_bbl_day": feed_flow_bbl_day,
