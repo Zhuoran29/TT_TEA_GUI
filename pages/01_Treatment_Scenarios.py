@@ -113,7 +113,7 @@ concentration = st.selectbox(
     concentration_options,
     index=option_index(
         concentration_options,
-        normalize_concentration_level(st.session_state.get("conc_level", "Medium")),
+        normalize_concentration_level(st.session_state.get("conc_level", "Low")),
         default=option_index(concentration_options, "Medium"),
     ),
     format_func=CONCENTRATION_OPTION_LABELS.get,
