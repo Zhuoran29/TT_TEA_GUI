@@ -16,6 +16,7 @@ DEFAULTS = {
     "equipment_capex_per_gpm": 150.0,
     "capex_scaling_exponent": 1.0,
     "zeolite_price": 4.41,
+    "media_replacement_fraction_per_cycle": 0.0,
     "nh4cl_price": 57.5,
     "om_contingency_factor": 0.20,
 }
@@ -48,14 +49,26 @@ def run(unit_process, technical_result, cost_inputs, context):
     installed_capex = equipment_capex * investment_factor(context)
 
     zeolite_price = escalate_cost(input_value(cost_inputs, "zeolite_price", DEFAULTS["zeolite_price"]), cost_inputs, "zeolite_price", context, 2014)
+    media_replacement_fraction = _input(
+        cost_inputs,
+        "media_replacement_fraction_per_cycle",
+        DEFAULTS["media_replacement_fraction_per_cycle"],
+    )
     nh4cl_price = escalate_cost(input_value(cost_inputs, "nh4cl_price", DEFAULTS["nh4cl_price"]), cost_inputs, "nh4cl_price", context, 2024)
     contingency_factor = _input(cost_inputs, "om_contingency_factor", DEFAULTS["om_contingency_factor"])
-    if any(v < 0.0 for v in [zeolite_price, nh4cl_price, contingency_factor]):
+    if any(v < 0.0 for v in [zeolite_price, media_replacement_fraction, nh4cl_price, contingency_factor]):
         raise ValueError("Zeolite OPEX inputs cannot be negative.")
 
     cycles_per_year = value(technical_result, "cycles_per_year")
     zeolite_mass = value(technical_result, "zeolite_mass_from_aec")
-    annual_media_replacement = zeolite_mass * zeolite_price * cycles_per_year * operating_days / 365.0
+    annual_media_replacement = (
+        zeolite_mass
+        * zeolite_price
+        * cycles_per_year
+        * operating_days
+        / 365.0
+        * media_replacement_fraction
+    )
     annual_removed_n = value(technical_result, "ammonia_removed") * operating_days
     nh4cl_tonne_year = annual_removed_n * N_TO_NH4CL_MASS_RATIO / 1000.0
     nh4cl_credit = nh4cl_tonne_year * nh4cl_price
@@ -72,6 +85,7 @@ def run(unit_process, technical_result, cost_inputs, context):
         "investment_factor": _result(investment_factor(context), "-"),
         "energy_operating_cost": _result(energy, "USD/year"),
         "zeolite_media_replacement_cost": _result(annual_media_replacement, "USD/year"),
+        "media_replacement_fraction_per_cycle": _result(media_replacement_fraction, "fraction/cycle"),
         "om_contingency": _result(contingency, "USD/year"),
         "nh4cl_revenue_credit": _result(-nh4cl_credit, "USD/year"),
         "total_annual_operating_cost": _result(total_opex, "USD/year"),

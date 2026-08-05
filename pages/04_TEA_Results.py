@@ -1,10 +1,12 @@
 import csv
 import io
+from importlib import import_module
 
 import pandas as pd
 import streamlit as st
 from config import APP_VERSION, DATA_VERSION
 from feedback import render_report_button
+from tea_models.registry import model_key as unit_model_key
 from tea_models.water_quality import calculate_brine_quality, water_quality_comparison_table
 from treatment_config import ALL_WATER_QUALITY_PARAMS
 
@@ -35,10 +37,29 @@ BREAKDOWN_FIGSIZE = (7.2, 5.8)
 BREAKDOWN_BAR_WIDTH = 0.22
 BBL_PER_M3 = 6.289810770432
 HIDDEN_COST_OUTPUTS = {
+    "bare_equipment_capital_cost",
+    "bare_flow_capital_cost",
     "flow_capacity_equipment_capital_cost",
     "power_capacity_capital_cost",
     "land_capital_cost",
     "liner_capital_cost",
+    "mvc_surrogate_capital_cost",
+    "evaporator_capital_cost",
+    "compressor_capital_cost",
+}
+HIDDEN_TECHNICAL_COST_OUTPUTS = {
+    "evaporator_capex",
+    "compressor_capex",
+    "electricity_cost",
+    "capex_opex_ratio",
+    "surrogate_lcow_feed",
+    "surrogate_lcow_permeate",
+}
+HIDDEN_UNIT_MODEL_TECHNICAL_OUTPUTS = {
+    "chemical_dose",
+    "regenerant_dose",
+    "chemical_consumption",
+    "constituent_removal_efficiency",
 }
 
 st.markdown("""
@@ -116,6 +137,35 @@ def export_csv_number(value):
     if pd.isna(numeric_value):
         return ""
     return f"{numeric_value:.6g}"
+
+
+def uses_default_technical_model(unit_process):
+    """Return True when the registry would fall back to the default model."""
+    module_name = f"tea_models.technical_models.{unit_model_key(unit_process)}"
+    try:
+        import_module(module_name)
+        return False
+    except ModuleNotFoundError as exc:
+        if exc.name != module_name:
+            return False
+
+    try:
+        generic_model = import_module("tea_models.technical_models.generic_unit_library")
+    except ModuleNotFoundError:
+        generic_model = None
+    return not (generic_model is not None and generic_model.supports(unit_process))
+
+
+def should_hide_model_result(unit_process, model_type, result_name):
+    if model_type == "cost":
+        return result_name in HIDDEN_COST_OUTPUTS
+    if model_type != "technical":
+        return False
+    if result_name in HIDDEN_TECHNICAL_COST_OUTPUTS:
+        return True
+    if result_name in HIDDEN_UNIT_MODEL_TECHNICAL_OUTPUTS:
+        return not uses_default_technical_model(unit_process)
+    return False
 
 
 def export_unit_scaling_summary(unit_result):
@@ -274,7 +324,11 @@ def build_results_download_csv(results):
         detailed_columns = ["sequence", "section", "unit_process", "model_type", "result_name", "value", "unit"]
         writer.writerow(detailed_columns)
         for row in detailed_rows:
-            if row.get("model_type") == "cost" and row.get("result_name") in HIDDEN_COST_OUTPUTS:
+            if should_hide_model_result(
+                row.get("unit_process", ""),
+                row.get("model_type", ""),
+                row.get("result_name", ""),
+            ):
                 continue
             writer.writerow([row.get(column, "") for column in detailed_columns])
     else:
@@ -401,6 +455,8 @@ def format_output_table(table, mode="technical"):
     output = table.copy()
     if mode == "cost":
         output = output[~output["result_name"].isin(HIDDEN_COST_OUTPUTS)].copy()
+    elif mode == "technical":
+        output = output[~output["result_name"].isin(HIDDEN_TECHNICAL_COST_OUTPUTS)].copy()
     output["result_name"] = output["result_name"].apply(format_output_parameter)
     output["value"] = output.apply(
         lambda row: format_model_value(row["value"], mode, row.get("unit", "")),
@@ -421,8 +477,16 @@ def display_height(table, min_height=150, max_height=700):
 
 def unit_output_table(results_table, unit_result, model_type):
     """Read one unit/model output table from the exported long-form results."""
+    unit_process = unit_result.get("unit_process", "")
     if results_table.empty:
-        return model_results_table(unit_result.get(f"{model_type}_results", {}))
+        output = model_results_table(unit_result.get(f"{model_type}_results", {}))
+        if output.empty:
+            return output
+        return output[
+            ~output["result_name"].apply(
+                lambda name: should_hide_model_result(unit_process, model_type, name)
+            )
+        ].reset_index(drop=True)
 
     mask = (
         (results_table["sequence"].astype(str) == str(unit_result["sequence"]))
@@ -432,7 +496,14 @@ def unit_output_table(results_table, unit_result, model_type):
     output = results_table.loc[mask, ["result_name", "value", "unit"]].copy()
 
     if output.empty:
-        return model_results_table(unit_result.get(f"{model_type}_results", {}))
+        output = model_results_table(unit_result.get(f"{model_type}_results", {}))
+    if output.empty:
+        return output
+    output = output[
+        ~output["result_name"].apply(
+            lambda name: should_hide_model_result(unit_process, model_type, name)
+        )
+    ]
     return output.reset_index(drop=True)
 
 
@@ -895,14 +966,6 @@ for unit_result in sorted(results["unit_results"], key=lambda row: row["sequence
     with tech_col:
         st.markdown("_Technical outputs_")
         technical_outputs = unit_output_table(results_table, unit_result, "technical")
-        if (
-            unit_result["unit_process"] == "MVC"
-            and not has_result(technical_outputs, "brine_salinity")
-        ):
-            st.warning(
-                "MVC surrogate outputs are not in this saved result. "
-                "Run TEA Calculation again on the System Design page."
-            )
         st.dataframe(
             format_output_table(technical_outputs, mode="technical"),
             hide_index=True,

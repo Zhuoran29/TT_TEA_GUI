@@ -185,11 +185,16 @@ TECHNICAL_MODEL_DEFAULTS = {
         "operating_pressure": 10.0,
     },
     "Ammonia stripping": {
-        "unit_kind": "air_stripping",
+        "unit_kind": "ammonia_stripping",
         "recovery": 0.995,
         "energy_intensity": 0.12,
-        "air_water_ratio": 30.0,
-        "tower_loading_rate": 20.0,
+        "feed_temperature": 68.0,
+        "target_ammonia_mg_l": 1.0,
+        "henry_cp_25c": 0.59,
+        "henry_conversion_factor": 2479.0,
+        "stripping_design_factor": 20.0,
+        "kla_s": 6.3611111111111114e-5,
+        "tower_diameter_in": 10.0,
     },
     "GAC": {
         "unit_kind": "gac",
@@ -441,7 +446,7 @@ COST_MODEL_DEFAULTS = {
         "brine_disposal_cost_per_m3_concentrate": 0.0,
     },
     "NF": {"capex_per_flow": 220.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.05, "media_replacement_price": 35.0, "media_replacement_fraction": 0.12},
-    "Ammonia stripping": {"capex_per_flow": 128.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.05},
+    "Ammonia stripping": {"capital_cost_multiplier": 1.0, "opex_cost_multiplier": 1.0, "variable_opex_per_m3": 0.0},
     "GAC": {
         "reference_gac_capex": 1345660.0,
         "reference_capacity": 3760.0,
@@ -457,6 +462,7 @@ COST_MODEL_DEFAULTS = {
         "equipment_capex_per_gpm": 150.0,
         "capex_scaling_exponent": 1.0,
         "zeolite_price": 4.41,
+        "media_replacement_fraction_per_cycle": 0.0,
         "nh4cl_price": 57.5,
         "om_contingency_factor": 0.20,
     },
@@ -528,7 +534,13 @@ TECHNICAL_INPUT_SPECS = {
     "capacity_factor": ("Energy", "fraction", "Annual average PV capacity factor"),
     "blend_fraction": ("Blending", "fraction", "Supplemental blend or additive stream fraction"),
     "feed_tds_g_l": ("Feed", "g/L", "Fallback feed TDS when the stream has no TDS value"),
-    "feed_temperature": ("Feed", "deg C", "BWRO feed temperature"),
+    "feed_temperature": ("Feed", "deg C", "Feed temperature"),
+    "target_ammonia_mg_l": ("Performance", "mg/L", "Target ammonia-nitrogen concentration after ammonia stripping"),
+    "henry_cp_25c": ("Air stripping", "mol/m3/Pa", "Henry's law constant for ammonia at 25 deg C"),
+    "henry_conversion_factor": ("Air stripping", "factor", "Conversion from H_cp to the worksheet dimensionless gas/liquid basis"),
+    "stripping_design_factor": ("Air stripping", "factor", "Safety factor applied to the minimum air-to-water ratio"),
+    "kla_s": ("Air stripping", "1/s", "Overall liquid-side mass-transfer coefficient"),
+    "tower_diameter_in": ("Air stripping", "in", "Tower diameter used in packed-height sizing"),
     "array_stages": ("Membrane array", "count", "Concentrate stages; 0 selects automatically"),
     "elements_per_vessel": ("Membrane array", "count", "Membrane elements per pressure vessel"),
     "design_flux_lmh": ("Membrane array", "L/m2-h", "Selected design permeate flux"),
@@ -562,6 +574,8 @@ COST_INPUT_SPECS = {
     "capex_per_kw": ("Capital", "$(2024)/kW", "Equipment capital cost per kW capacity"),
     "fixed_opex_fraction": ("Fixed O&M", "fraction/yr", "Annual fixed OPEX as fraction of installed CAPEX"),
     "variable_opex_per_m3": ("Variable O&M", "$(2024)/m3", "Variable operating cost per cubic meter treated"),
+    "capital_cost_multiplier": ("Capital", "factor", "Multiplier applied to the workbook ammonia-stripper capital-cost curve"),
+    "opex_cost_multiplier": ("Variable O&M", "factor", "Multiplier applied to the workbook ammonia-stripper O&M-cost curve"),
     "chemical_price": ("Chemicals", "$(2024)/kg", "Chemical or regenerant price"),
     "lime_price": ("Chemicals", "$(2024)/lb", "Lime purchase price"),
     "soda_ash_price": ("Chemicals", "$(2024)/lb", "Soda ash purchase price"),
@@ -575,6 +589,7 @@ COST_INPUT_SPECS = {
     "regeneration_fraction": ("Media", "fraction", "Fraction of spent GAC sent to regeneration"),
     "replacement_fraction": ("Media", "fraction", "Fraction of spent GAC replaced with fresh GAC"),
     "zeolite_price": ("Media", "$(2014)/kg", "Zeolite media purchase price"),
+    "media_replacement_fraction_per_cycle": ("Media", "fraction/cycle", "Fraction of zeolite media replaced per regeneration cycle"),
     "nh4cl_price": ("Product credit", "$(2024)/metric tonne", "NH4Cl product value"),
     "media_replacement_price": ("Replacement", "$(2024)/unit", "Replacement media, membrane, cartridge, or bag price"),
     "media_replacement_fraction": ("Replacement", "fraction/yr", "Annual replacement fraction"),
@@ -757,6 +772,44 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
         "clip_negative_permeate": (
             "NMPWRC empirical water-quality regression post-processing option",
             "empirical",
+        ),
+    },
+    "Ammonia stripping": {
+        "recovery": (
+            "NMPWRC Produced Water Valorization v1.xlsm, NH3 Stripping Design Model worksheet",
+            "workbook model",
+        ),
+        "energy_intensity": (
+            "Planning-level blower energy placeholder; workbook cost curve already includes O&M",
+            "engineering estimate",
+        ),
+        "feed_temperature": (
+            "NMPWRC Produced Water Valorization v1.xlsm, NH3 Stripping Design Model worksheet cell C5",
+            "workbook model",
+        ),
+        "target_ammonia_mg_l": (
+            "NMPWRC Produced Water Valorization v1.xlsm, NH3 Stripping Design Model worksheet cell C30",
+            "workbook model",
+        ),
+        "henry_cp_25c": (
+            "Sander 2015 Henry's law compilation as cited in the NH3 Stripping Design Model worksheet",
+            "publication",
+        ),
+        "henry_conversion_factor": (
+            "NMPWRC Produced Water Valorization v1.xlsm, NH3 Stripping Design Model worksheet cell E16",
+            "workbook model",
+        ),
+        "stripping_design_factor": (
+            "NMPWRC Produced Water Valorization v1.xlsm, NH3 Stripping Design Model worksheet minimum air:water ratio equation",
+            "workbook model",
+        ),
+        "kla_s": (
+            "NH3 Stripping Design Model worksheet average of KLa values from https://www.ijche.com/article_58591.html and https://iopscience.iop.org/article/10.1088/1755-1315/344/1/012051/pdf",
+            "publication",
+        ),
+        "tower_diameter_in": (
+            "NMPWRC Produced Water Valorization v1.xlsm, NH3 Stripping Design Model worksheet cell C31",
+            "workbook model",
         ),
     },
     "Chemical softening": {
@@ -1070,6 +1123,10 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
             "Deng et al. 2014 Environmental Technology zeolite regeneration economics",
             "publication",
         ),
+        "media_replacement_fraction_per_cycle": (
+            "NMPWRC regenerated-media zeolite TEA assumption",
+            "model input",
+        ),
         "nh4cl_price": (
             "NMPWRC zeolite TEA NH4Cl product-credit assumption; no explicit cost year, treated as 2024",
             "model input",
@@ -1299,6 +1356,20 @@ COST_INPUT_METADATA_BY_UNIT = {
             "model input",
         ),
     },
+    "Ammonia stripping": {
+        "capital_cost_multiplier": (
+            "NMPWRC Produced Water Valorization v1.xlsm, Air Strip Cost Model worksheet full unit-process CIP CAPEX curve",
+            "workbook model",
+        ),
+        "opex_cost_multiplier": (
+            "NMPWRC Produced Water Valorization v1.xlsm, Air Strip Cost Model worksheet full unit-process CIP O&M curve",
+            "workbook model",
+        ),
+        "variable_opex_per_m3": (
+            "Optional project-specific add-on; leave zero to use only the workbook O&M curve",
+            "user input",
+        ),
+    },
     "OARO": {
         "capex_per_flow": (
             "OARO brine dewatering TEA literature and WaterTAP OARO flowsheet context",
@@ -1425,6 +1496,12 @@ TECHNICAL_INPUT_ORDER = [
     "electrode_gap_m",
     "feed_tds_g_l",
     "feed_temperature",
+    "target_ammonia_mg_l",
+    "henry_cp_25c",
+    "henry_conversion_factor",
+    "stripping_design_factor",
+    "kla_s",
+    "tower_diameter_in",
     "array_stages",
     "elements_per_vessel",
     "design_flux_lmh",
@@ -1513,6 +1590,8 @@ COST_INPUT_ORDER = [
     "om_contingency_factor",
     "fixed_opex_fraction",
     "variable_opex_per_m3",
+    "capital_cost_multiplier",
+    "opex_cost_multiplier",
     "chemical_price",
     "lime_price",
     "soda_ash_price",
@@ -1526,6 +1605,7 @@ COST_INPUT_ORDER = [
     "regeneration_fraction",
     "replacement_fraction",
     "zeolite_price",
+    "media_replacement_fraction_per_cycle",
     "nh4cl_price",
     "media_replacement_price",
     "media_replacement_fraction",

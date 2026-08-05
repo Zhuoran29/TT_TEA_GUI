@@ -59,6 +59,10 @@ Ultrafiltration,Pumping,pump_tdh_ft,50,ft,UF pump total dynamic head,KBH/NMPWRC 
 Ultrafiltration,Pumping,pump_efficiency,0.75,fraction,Pump efficiency,KBH/NMPWRC UF workbook pump efficiency basis,Model input
 Ultrafiltration,Pumping,motor_efficiency,0.95,fraction,Motor efficiency,KBH/NMPWRC UF workbook motor efficiency basis,Model input
 Ultrafiltration,Pumping,vfd_factor,0.98,factor,VFD or constant motor factor,KBH/NMPWRC UF workbook VFD factor basis,Model input
+pH adjustment,Hydraulics,recovery,1,fraction,Fraction of inlet flow recovered after pH adjustment,WaterTAP zero-order chemical dosing convention and site-specific engineering defaults,Open source documentation
+pH adjustment,Conditioning,target_pH,7.5,-,Target outlet pH set by the pH adjustment unit,Water Technologies Handbook precipitation softening and pH adjustment practice,Industrial reference
+pH adjustment,Chemicals,chemical_dose,0.004,kg/m3,Chemical dose per cubic meter treated for pH adjustment,Water Technologies Handbook and site-specific dose testing guidance,Industrial reference
+pH adjustment,Energy,energy_intensity,0.003,kWh/m3,Mixing and dosing electricity demand for pH adjustment,WaterTAP zero-order chemical dosing convention and planning-level auxiliary load,Open source documentation
 GAC,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through GAC contactors,NMPWRC GAC model input,Model input
 GAC,Media,empty_bed_contact_time,10,min,GAC empty bed contact time,WaterTAP GAC design output used by NMPWRC GAC model,Model source
 GAC,Media,media_bulk_density,450,kg/m3,GAC bulk density,NMPWRC GAC model and WaterTAP GAC design output,Model source

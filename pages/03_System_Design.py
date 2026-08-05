@@ -2,6 +2,7 @@ from pathlib import Path
 import copy
 import csv
 from html import escape
+from importlib import import_module
 import io
 import json
 import re
@@ -98,10 +99,29 @@ DEFAULT_INVESTMENT_FACTOR = 2.5
 REMOVAL_EFFICIENCY_EXCLUDED_PARAMETERS = {"pH"}
 INPUT_METADATA_COLUMNS = ["source", "data_type"]
 HIDDEN_COST_OUTPUTS = {
+    "bare_equipment_capital_cost",
+    "bare_flow_capital_cost",
     "flow_capacity_equipment_capital_cost",
     "power_capacity_capital_cost",
     "land_capital_cost",
     "liner_capital_cost",
+    "mvc_surrogate_capital_cost",
+    "evaporator_capital_cost",
+    "compressor_capital_cost",
+}
+HIDDEN_TECHNICAL_COST_OUTPUTS = {
+    "evaporator_capex",
+    "compressor_capex",
+    "electricity_cost",
+    "capex_opex_ratio",
+    "surrogate_lcow_feed",
+    "surrogate_lcow_permeate",
+}
+HIDDEN_UNIT_MODEL_TECHNICAL_OUTPUTS = {
+    "chemical_dose",
+    "regenerant_dose",
+    "chemical_consumption",
+    "constituent_removal_efficiency",
 }
 COST_INPUT_FALLBACKS = {
     "MVC": [
@@ -645,10 +665,41 @@ def unit_energy_summary(technical_result, intensity_name, train_feed_bbl_day):
     }
 
 
+def uses_default_technical_model(unit_process):
+    """Return True when the registry would fall back to the default model."""
+    module_name = f"tea_models.technical_models.{unit_model_key(unit_process)}"
+    try:
+        import_module(module_name)
+        return False
+    except ModuleNotFoundError as exc:
+        if exc.name != module_name:
+            return False
+
+    try:
+        generic_model = import_module("tea_models.technical_models.generic_unit_library")
+    except ModuleNotFoundError:
+        generic_model = None
+    return not (generic_model is not None and generic_model.supports(unit_process))
+
+
+def should_hide_model_result(unit_process, model_type, result_name):
+    if model_type == "cost":
+        return result_name in HIDDEN_COST_OUTPUTS
+    if model_type != "technical":
+        return False
+    if result_name in HIDDEN_TECHNICAL_COST_OUTPUTS:
+        return True
+    if result_name in HIDDEN_UNIT_MODEL_TECHNICAL_OUTPUTS:
+        return not uses_default_technical_model(unit_process)
+    return False
+
+
 def flatten_model_results(sequence, section, unit_process, model_type, model_results):
     """Convert nested model outputs into rows for the results CSV."""
     rows = []
     for result_name, result in model_results.items():
+        if should_hide_model_result(unit_process, model_type, result_name):
+            continue
         if not isinstance(result, dict) or "value" not in result:
             continue
         rows.append({
@@ -895,7 +946,11 @@ def build_results_download_csv(results):
         detailed_columns = ["sequence", "section", "unit_process", "model_type", "result_name", "value", "unit"]
         writer.writerow(detailed_columns)
         for row in detailed_rows:
-            if row.get("model_type") == "cost" and row.get("result_name") in HIDDEN_COST_OUTPUTS:
+            if should_hide_model_result(
+                row.get("unit_process", ""),
+                row.get("model_type", ""),
+                row.get("result_name", ""),
+            ):
                 continue
             writer.writerow([row.get(column, "") for column in detailed_columns])
     else:

@@ -88,6 +88,7 @@ GAC,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to u
 Zeolite,Capital,equipment_capex_per_gpm,150,$(2024)/gpm,Zeolite vessel equipment CAPEX,US EPA Drinking Water Treatment Technology Unit Cost Models ion-exchange vessel CAPEX framework,Technical report
 Zeolite,Capital,capex_scaling_exponent,1,exponent,CAPEX capacity-scaling exponent,NMPWRC zeolite TEA scaling assumption,Model input
 Zeolite,Media,zeolite_price,4.41,$(2014)/kg,Zeolite media purchase price,Deng et al. 2014 Environmental Technology zeolite regeneration economics,Publication
+Zeolite,Media,media_replacement_fraction_per_cycle,0,fraction/cycle,Fraction of zeolite media replaced per regeneration cycle,NMPWRC regenerated-media zeolite TEA assumption,Model input
 Zeolite,Product credit,nh4cl_price,57.5,$(2024)/metric tonne,NH4Cl product value,"NMPWRC zeolite TEA NH4Cl product-credit assumption; no explicit cost year, treated as 2024",Model input
 Zeolite,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to unit operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
 Evaporation pond,Capital,capex_per_flow,8,$(2024)/(m3/day),Equipment pond inlet/distribution capital per unit daily capacity,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,Industrial report

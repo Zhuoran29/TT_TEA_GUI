@@ -15,9 +15,11 @@ exchange capacity.
 
 ## Cost model
 
-Equipment CAPEX is based on an ion-exchange vessel cost of $150/gpm. OPEX
-includes zeolite media replacement, electricity, O&M contingency, and a negative
-cost credit for recovered NH4Cl.
+Equipment CAPEX is based on an ion-exchange vessel cost of $150/gpm. The Good
+folder model assumes regenerated zeolite media, so full media replacement per
+cycle is zero by default. OPEX includes electricity, optional media replacement
+if a replacement fraction is entered, O&M contingency, and a negative cost
+credit for recovered NH4Cl.
 
 Maintenance as a fraction of CAPEX is intentionally not included.
 

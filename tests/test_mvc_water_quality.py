@@ -31,13 +31,16 @@ class MVCWaterQualityTests(unittest.TestCase):
             800.0,
             delta=1.0,
         )
+        self.assertNotIn("chemical_dose", technical)
+        self.assertNotIn("evaporator_capex", technical)
+        self.assertNotIn("compressor_capex", technical)
+        self.assertNotIn("electricity_cost", technical)
+        self.assertNotIn("capex_opex_ratio", technical)
 
     def test_mvc_column_multiplier_scales_capital_and_fixed_om(self):
         technical = {
             "inlet_flow": {"value": 1000.0, "unit": "m3/day"},
             "energy_intensity": {"value": 1.0, "unit": "kWh/m3 feed"},
-            "evaporator_capex": {"value": 100.0, "unit": "USD"},
-            "compressor_capex": {"value": 200.0, "unit": "USD"},
         }
         context = {
             "operating_days_per_year": 365.0,
@@ -79,6 +82,13 @@ class MVCWaterQualityTests(unittest.TestCase):
             standby_cost["energy_operating_cost"]["value"],
             base_cost["energy_operating_cost"]["value"],
         )
+        for hidden_output in [
+            "bare_equipment_capital_cost",
+            "mvc_surrogate_capital_cost",
+            "evaporator_capital_cost",
+            "compressor_capital_cost",
+        ]:
+            self.assertNotIn(hidden_output, base_cost)
 
 
 if __name__ == "__main__":

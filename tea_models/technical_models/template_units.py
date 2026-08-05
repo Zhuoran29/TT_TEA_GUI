@@ -102,9 +102,6 @@ def run_template(unit_process, technical_inputs, stream, defaults):
         "water_recovery": _result(recovery, "fraction"),
         "energy_intensity": _result(energy_intensity, "kWh/m3"),
         "thermal_energy_intensity": _result(thermal_energy_intensity, "kWh/m3"),
-        "chemical_dose": _result(chemical_dose, "kg/m3"),
-        "regenerant_dose": _result(regenerant_dose, "kg/m3"),
-        "chemical_consumption": _result(total_chemical_dose * inlet_flow, "kg/day"),
         "oil_removed": _result(
             _oil_removed_kg_day(water_quality_in, water_quality_out, inlet_flow),
             "kg/day",
@@ -118,6 +115,20 @@ def run_template(unit_process, technical_inputs, stream, defaults):
         "water_quality_out": water_quality_out,
         "outlet_stream": outlet_stream,
     }
+    has_chemical_dose = (
+        "chemical_dose" in technical_inputs
+        or float(defaults.get("chemical_dose", 0.0) or 0.0) != 0.0
+    )
+    has_regenerant_dose = (
+        "regenerant_dose" in technical_inputs
+        or float(defaults.get("regenerant_dose", 0.0) or 0.0) != 0.0
+    )
+    if has_chemical_dose:
+        outputs["chemical_dose"] = _result(chemical_dose, "kg/m3")
+    if has_regenerant_dose:
+        outputs["regenerant_dose"] = _result(regenerant_dose, "kg/m3")
+    if has_chemical_dose or has_regenerant_dose:
+        outputs["chemical_consumption"] = _result(total_chemical_dose * inlet_flow, "kg/day")
 
     unit_kind = defaults.get("unit_kind")
     if unit_kind == "separator":

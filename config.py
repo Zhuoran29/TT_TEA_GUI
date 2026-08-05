@@ -1,4 +1,4 @@
 """Application version configuration."""
 
-APP_VERSION = "0.1.0-alpha"
-DATA_VERSION = "2026-07-14"
+APP_VERSION = "0.2"
+DATA_VERSION = "2026-08-04"

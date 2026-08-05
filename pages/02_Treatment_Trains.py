@@ -1,7 +1,7 @@
 import csv
 import json
 from pathlib import Path
-from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_config, UNIT_REMOVAL_RATES, ALL_WATER_QUALITY_PARAMS, SIDEBAR_DEFAULTS, BRINE_MANAGEMENT_OPTIONS, normalize_treatment_train_config, normalize_unit_name
+from treatment_config import WATER_QUALITY_REQUIREMENTS, get_treatment_train_config, UNIT_REMOVAL_RATES, ALL_WATER_QUALITY_PARAMS, SIDEBAR_DEFAULTS, BRINE_MANAGEMENT_OPTIONS, normalize_treatment_train_config
 from tea_models.lsrro_core import predict_permeate
 from tea_models.water_quality import collect_feedwater_quality, parse_removal_rate as parse_config_removal_rate
 import streamlit as st
@@ -11,69 +11,51 @@ from ui_helpers import render_card_title
 
 st.set_page_config(page_title="02_Treatment_Train", layout="wide")
 
+LEGACY_UNIT_NAME_MAP = {
+    "Softening / pH adjustment": "Chemical softening",
+    "Softening / silica control": "Chemical softening",
+    "MD": "Vacuum membrane distillation (VMD)",
+    "VMD": "Vacuum membrane distillation (VMD)",
+    "Air stripping": "Ammonia stripping",
+}
+
+
+def normalize_unit_name(unit_name):
+    return LEGACY_UNIT_NAME_MAP.get(unit_name, unit_name)
+
+
+def display_unit_name(unit_name):
+    if unit_name == "Vacuum membrane distillation (VMD)":
+        return "VMD"
+    return unit_name
+
 PRETREATMENT_UNIT_OPTIONS = [
-    "Well pumping",
-    "Raw water storage",
-    "Equalization tank",
     "3-phase separator",
     "DAF",
-    "Floc n Drop",
     "Chemical softening",
     "Electrocoagulation",
     "Walnut shell filtration",
-    "Media filtration",
     "Cartridge filter",
     "Bag filter",
     "Ultrafiltration",
     "Ultra-fine filtration",
     "Antiscalant / pH adjustment",
-    "Antiscalant dosing",
-    "Air stripping",
-    "Dechlorination / activated carbon",
+    "Ammonia stripping",
 ]
 
 DESALINATION_UNIT_OPTIONS = [
     "MVC",
     "Vacuum membrane distillation (VMD)",
     "LSRRO",
-    "OARO",
     "BWRO",
-    "NF",
 ]
 
 POSTTREATMENT_UNIT_OPTIONS = [
     "Ammonia stripping",
     "GAC",
     "Zeolite",
-    "Ion exchange / EDI",
     "Ion exchange",
-    "Boron-selective IX",
-    "ZIX-Zak IX",
-    "KNeW ion exchange",
-    "Selective ED",
-    "Bipolar membrane ED",
-    "Lithium adsorption",
-    "Mineral precipitation / recovery",
-    "Chemical precipitation",
-    "Acid/base recovery",
-    "Fertilizer recovery",
-    "Chlorination",
-    "Polishing filter",
-    "Fine filter",
-    "Polishing",
-    "Final filter",
     "pH adjustment",
-    "pH adjustment for ammonia stripping",
-    "pH adjustment for product water",
-    "Scale inhibitor dosing",
-    "Biocide dosing",
-    "Blending / remineralization",
-    "Blending / salinity adjustment",
-    "Adjust TDS",
-    "Additives blending",
-    "Add additives",
-    "Hardness adjustment",
-    "Scale control",
 ]
 
 
@@ -119,9 +101,17 @@ if "ffp_scenarios" not in st.session_state:
 if "desal_type" not in st.session_state:
     st.session_state.desal_type = "Mechanical Vapor Compression (MVC)"
 if "conc_level" not in st.session_state:
-    st.session_state.conc_level = "High"
+    st.session_state.conc_level = "Medium"
 if "project_name" not in st.session_state:
     st.session_state.project_name = "TEA project"
+
+
+def normalize_concentration_level(value):
+    value = str(value or "").strip()
+    for option in ("High", "Medium", "Low"):
+        if value == option or value.startswith(option):
+            return option
+    return "Medium"
 
 st.caption(f"Project: {st.session_state.project_name}")
 
@@ -307,13 +297,13 @@ def generate_treatment_flowchart(influent_name, scenario_name, pretreat_list, de
             tooltip_text = unit_tooltip_text(unit, removal_info, tracked_constituent)
             
             # Calculate outlet concentration if tracking a constituent
-            outlet_label = unit
+            outlet_label = display_unit_name(unit)
             use_html_label = False
             if tracked_constituent and first_node_conc is not None and i == 0:
                 session_key = f"wq_target_{tracked_constituent}".replace(" ", "_")
                 target_value = st.session_state.get(session_key, ALL_WATER_QUALITY_PARAMS.get(tracked_constituent, {}).get("limit", first_node_conc))
                 color = "red" if first_node_conc > target_value else "green"
-                outlet_label = f"{unit}<BR/><FONT COLOR='{color}'>Brine {tracked_constituent}: {first_node_conc:.2f} {constituent_unit}</FONT>"
+                outlet_label = f"{display_unit_name(unit)}<BR/><FONT COLOR='{color}'>Brine {tracked_constituent}: {first_node_conc:.2f} {constituent_unit}</FONT>"
                 use_html_label = True
             if tracked_constituent and current_conc is not None:
                 inlet_conc = current_conc
@@ -508,7 +498,7 @@ def feed_concentration_for_param(parameter):
     if additional_input_key in st.session_state:
         return float(st.session_state[additional_input_key] or 0.0)
 
-    conc_level = st.session_state.get("conc_level", "High")
+    conc_level = normalize_concentration_level(st.session_state.get("conc_level", "Medium"))
     influent_type = st.session_state.get("influent_type", "Produced water")
     sidebar_defaults_for_water = SIDEBAR_DEFAULTS.get(influent_type, SIDEBAR_DEFAULTS)
     sidebar_defaults_for_level = sidebar_defaults_for_water.get(conc_level, {})
@@ -653,7 +643,7 @@ if requirements:
     
     # Reset editable train state when the selected scenario or default config changes.
     # This prevents stale units from older defaults from lingering in the UI.
-    TRAIN_CONFIG_VERSION = 5
+    TRAIN_CONFIG_VERSION = 10
 
     def _as_unit_list(value):
         if isinstance(value, list):
@@ -717,6 +707,11 @@ if requirements:
             normalize_unit_name(unit)
             for unit in st.session_state.get(stage_key, [])
         ]
+    st.session_state.treatment_posttreatment = [
+        unit
+        for unit in st.session_state.treatment_posttreatment
+        if unit in POSTTREATMENT_UNIT_OPTIONS
+    ]
 
     if st.session_state.treatment_brine_category != brine_category:
         st.session_state.treatment_brine_category = brine_category
@@ -820,6 +815,7 @@ if requirements:
                         desalination_units,
                         index=desalination_units.index(unit) if unit in desalination_units else 0,
                         key=f"desal_{i}_{st.session_state.reset_counter}",
+                        format_func=display_unit_name,
                         label_visibility="collapsed"
                     )
                     if new_unit != unit:
@@ -1127,7 +1123,8 @@ col1, col2 = st.sidebar.columns([1.5, 1], gap="small")
 #     )
 
 # Then create inputs for each parameter - create new columns for each row
-conc_lvl = st.session_state.conc_level
+conc_lvl = normalize_concentration_level(st.session_state.conc_level)
+st.session_state.conc_level = conc_lvl
 sidebar_defaults_for_water = SIDEBAR_DEFAULTS.get(st.session_state.influent_type, SIDEBAR_DEFAULTS)
 sidebar_defaults_for_level = sidebar_defaults_for_water.get(conc_lvl, {})
 add_param = []

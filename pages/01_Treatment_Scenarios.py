@@ -52,6 +52,21 @@ def option_index(options, value, default=0):
         return default
 
 
+CONCENTRATION_OPTION_LABELS = {
+    "High": "High (180g/L TDS)",
+    "Medium": "Medium (130g/L TDS)",
+    "Low": "Low (100g/L TDS)",
+}
+
+
+def normalize_concentration_level(value):
+    value = str(value or "").strip()
+    for option, label in CONCENTRATION_OPTION_LABELS.items():
+        if value == option or value == label or value.startswith(option):
+            return option
+    return "Medium"
+
+
 def clear_downstream_state():
     for key in [
         "current_scenario_signature",
@@ -92,11 +107,16 @@ influent = st.selectbox(
 )
 
 st.markdown("##### Concentration level")
-concentration_options = ["High", "Medium", "Low"]
+concentration_options = list(CONCENTRATION_OPTION_LABELS.keys())
 concentration = st.selectbox(
     "Concentration level", 
     concentration_options,
-    index=option_index(concentration_options, st.session_state.get("conc_level", "High")),
+    index=option_index(
+        concentration_options,
+        normalize_concentration_level(st.session_state.get("conc_level", "Medium")),
+        default=option_index(concentration_options, "Medium"),
+    ),
+    format_func=CONCENTRATION_OPTION_LABELS.get,
     label_visibility="collapsed"
 )
 

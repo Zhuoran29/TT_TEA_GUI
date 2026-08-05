@@ -36,6 +36,9 @@ class GACIntegrationTests(unittest.TestCase):
         self.assertAlmostEqual(technical["breakthrough_bed_volumes"]["value"], expected_bv)
         self.assertAlmostEqual(technical["estimated_changeout_interval"]["value"], expected_changeout_days)
         self.assertAlmostEqual(technical["annual_gac_usage"]["value"], expected_usage)
+        self.assertNotIn("chemical_dose", technical)
+        self.assertNotIn("regenerant_dose", technical)
+        self.assertNotIn("chemical_consumption", technical)
 
         cost = run_cost_model(
             "GAC",
@@ -127,6 +130,9 @@ class ZeoliteIntegrationTests(unittest.TestCase):
         self.assertAlmostEqual(technical["bench_breakthrough_bv"]["value"], bench_bv)
         self.assertAlmostEqual(technical["breakthrough_bed_volumes"]["value"], adjusted_bv)
         self.assertAlmostEqual(technical["cycle_duration"]["value"], adjusted_bv * 20.0 / 1440.0)
+        self.assertNotIn("chemical_dose", technical)
+        self.assertNotIn("regenerant_dose", technical)
+        self.assertNotIn("chemical_consumption", technical)
 
         cost = run_cost_model(
             "Zeolite",
@@ -134,12 +140,14 @@ class ZeoliteIntegrationTests(unittest.TestCase):
             {
                 "equipment_capex_per_gpm": 150.0,
                 "zeolite_price": 4.41,
+                "media_replacement_fraction_per_cycle": 0.0,
                 "nh4cl_price": 57.5,
                 "om_contingency_factor": 0.20,
             },
             CONTEXT,
         )
         self.assertLess(cost["nh4cl_revenue_credit"]["value"], 0.0)
+        self.assertAlmostEqual(cost["zeolite_media_replacement_cost"]["value"], 0.0)
         positive_opex = (
             cost["energy_operating_cost"]["value"]
             + cost["zeolite_media_replacement_cost"]["value"]

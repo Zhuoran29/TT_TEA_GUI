@@ -214,7 +214,5 @@ def run(unit_process, technical_inputs, stream):
         "stec_permeate": _result(stec_permeate, "kWh/m3 permeate"),
         "thermal_efficiency": _result(_surrogate("thermal_efficiency", z), "%"),
         "heat_exchanger_effectiveness": _result(_surrogate("effectiveness", z), "%"),
-        "surrogate_lcow_feed": _result(_surrogate("lcow_feed", z), "USD/m3 feed"),
-        "surrogate_lcow_permeate": _result(_surrogate("lcow_permeate", z), "USD/m3 permeate"),
         "model_warnings": _result(warnings, ""),
     }

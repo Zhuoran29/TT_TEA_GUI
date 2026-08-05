@@ -210,55 +210,6 @@ def run(unit_process, technical_inputs, stream):
         -0.0133496391921447,
     ))) * feed_h2o_mass_flow
 
-    l35 = math.exp(_surface(x, y, z, (
-        12.1221263623055,
-        0.0360242668321297,
-        0.209110558714533,
-        -0.00701324845670036,
-        0.0133449654721739,
-        0.00529099286982857,
-        0.000285723270712021,
-        0.00877296545377042,
-        0.010892764933723,
-        -0.000073744664654135,
-    ))) * feed_h2o_mass_flow**1.002936235
-    l36 = math.exp(_surface(x, y, z, (
-        10.7950239103402,
-        0.0895263236305439,
-        0.320939475471495,
-        -0.00470753228168846,
-        0.00866371421837752,
-        0.023809558581282,
-        0.0000558158679927265,
-        -0.0230270187989793,
-        0.00201693574954204,
-        0.000183154913912125,
-    ))) * feed_h2o_mass_flow**0.9998361497
-    l37 = math.exp(_surface(x, y, z, (
-        10.4895910029321,
-        0.141256353502776,
-        0.356103759830611,
-        -0.00604019368871803,
-        0.0104637424686718,
-        0.0426158948784617,
-        0.00134150661167394,
-        -0.0160235984809652,
-        0.000942812958435616,
-        -0.0000588417604917824,
-    ))) * feed_h2o_mass_flow**0.998836418
-    l38 = _surface(x, y, z, (
-        0.654455270453957,
-        -0.0536218906232339,
-        -0.0528596260648409,
-        -0.00292539113741298,
-        -0.00220152010521286,
-        -0.0209395494487105,
-        -0.000768432725263067,
-        -0.0065455310308751,
-        0.00170779200144479,
-        4.51680477907546e-06,
-    ))
-
     density_at_condenser = water_dens_mass(l32)
     if feed_flow_m3_s > 0.0:
         l16 = (
@@ -295,7 +246,6 @@ def run(unit_process, technical_inputs, stream):
         "water_quality_in": water_quality_in,
         "water_quality_out": water_quality_out,
         "outlet_stream": outlet_stream,
-        "chemical_dose": _result(0.0, "kg/m3"),
         "feed_h2o_mass_flow": _result(feed_h2o_mass_flow, "kg/s"),
         "feed_tds_mass_fraction": _result(feed_tds, "fraction"),
         "feed_temperature": _result(feed_temperature, "deg C"),
@@ -310,8 +260,4 @@ def run(unit_process, technical_inputs, stream):
         "condenser_vapor_temperature": _result(l32, "deg C"),
         "brine_hx_area": _result(l33, "m2"),
         "distillate_hx_area": _result(l34, "m2"),
-        "evaporator_capex": _result(l35, "USD"),
-        "compressor_capex": _result(l36, "USD"),
-        "electricity_cost": _result(l37, "USD/year"),
-        "capex_opex_ratio": _result(l38, ""),
     }

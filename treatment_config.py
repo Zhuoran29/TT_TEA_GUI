@@ -138,11 +138,6 @@ BRINE_MANAGEMENT_OPTIONS = {
     "Brine disposal": [
         "Evaporation pond",
         "Saltwater disposal well",
-        "Brine hauling",
-        "On-site O&G hydraulic fracturing recirculation",
-        "Reuse-compatible brine recycle / disposal",
-        "Brine concentration for ZLD",
-        "Crystallization",
     ],
     "Brine valorization": [
         "Bipolar membrane ED",
@@ -165,6 +160,10 @@ BRINE_CATEGORY_DEFAULT_UNIT = {
 LEGACY_UNIT_NAME_MAP = {
     "Softening / pH adjustment": "Chemical softening",
     "Softening / silica control": "Chemical softening",
+    "Membrane desalination (MD)": "Vacuum membrane distillation (VMD)",
+    "MD": "Vacuum membrane distillation (VMD)",
+    "VMD": "Vacuum membrane distillation (VMD)",
+    "Air stripping": "Ammonia stripping",
 }
 
 
@@ -219,8 +218,6 @@ def normalize_treatment_train_config(config):
         (
             "BWRO"
             if unit == "RO"
-            else "Vacuum membrane distillation (VMD)"
-            if unit in {"MD", "VMD"}
             else normalize_unit_name(unit)
         )
         for unit in config.get("desalination", [])
@@ -254,9 +251,9 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             "MD",
             "VMD",
         }:
-            primary_desal = ["NF", "Vacuum membrane distillation (VMD)"]
+            primary_desal = ["BWRO", "VMD"]
         elif desal_type == "Mechanical Vapor Compression (MVC)":
-            primary_desal = ["NF", "MVC"]
+            primary_desal = ["BWRO", "MVC"]
         elif desal_type in {
             "BWRO",
             "Brackish-water reverse osmosis (BWRO)",
@@ -267,11 +264,11 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             "LSRRO",
             "Low-salt rejection reverse osmosis (LSRRO)",
         }:
-            primary_desal = ["NF", "LSRRO"]
+            primary_desal = ["BWRO", "LSRRO"]
         else:
-            primary_desal = ["NF", "BWRO"]
+            primary_desal = ["BWRO"]
 
-        is_vmd_desal = primary_desal[-1] == "Vacuum membrane distillation (VMD)"
+        is_vmd_desal = primary_desal[-1] == "VMD"
 
         configs = {
             "Drinking water quality oriented(e.g. groundwater recharge)": {
@@ -307,8 +304,8 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             },
             "Feedwater to UPW production": {
                 "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration"],
-                "desalination": ["Vacuum membrane distillation (VMD)"] if is_vmd_desal else ["BWRO", "BWRO"],
-                "posttreatment": ["GAC", "Zeolite", "Ion exchange"] if is_vmd_desal else ["GAC", "Ion exchange / EDI"],
+                "desalination": ["VMD"] if is_vmd_desal else ["BWRO", "BWRO"],
+                "posttreatment": ["GAC", "Zeolite", "Ion exchange"] if is_vmd_desal else ["GAC", "Ion exchange"],
                 "brine": "Brine valorization"
             },
             "On-site O&G hydraulic fracturing recirculation": {
@@ -360,15 +357,15 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Brine disposal"
             },
             "Powerplant cooling water": {
-                "pretreatment": ["DAF", "Cartridge filter"],
+                "pretreatment": ["DAF", "Chemical softening", "Ultrafiltration", "Antiscalant / pH adjustment"],
                 "desalination": ["MVC"],
-                "posttreatment": ["Scale inhibitor dosing", "Polishing filter"],
+                "posttreatment": ["GAC", "pH adjustment"],
                 "brine": "Brine disposal"
             },
             "Data center cooling water": {
-                "pretreatment": ["DAF", "Ultra-fine filtration"],
+                "pretreatment": ["DAF", "Chemical softening", "Ultrafiltration", "Antiscalant / pH adjustment"],
                 "desalination": ["MVC"],
-                "posttreatment": ["Biocide dosing", "Fine filter", "Polishing"],
+                "posttreatment": ["GAC", "GAC", "pH adjustment"],
                 "brine": "Brine disposal"
             },
             "Feedwater to UPW production": {
@@ -378,9 +375,9 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Brine disposal"
             },
             "On-site O&G hydraulic fracturing recirculation": {
-                "pretreatment": ["DAF", "Bag filter"],
+                "pretreatment": ["3-phase separator", "DAF", "Chemical softening", "Bag filter", "Antiscalant / pH adjustment"],
                 "desalination": ["MVC"],
-                "posttreatment": ["Adjust TDS", "Add additives"],
+                "posttreatment": ["pH adjustment"],
                 "brine": "On-site O&G hydraulic fracturing recirculation"
             },
             "Brine valorization(In progress)": {
@@ -400,49 +397,49 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
         configs = {
             "Drinking water quality oriented(e.g. groundwater recharge)": {
                 "pretreatment": ["DAF", "Ultrafiltration", "Chemical softening", "Antiscalant / pH adjustment"],
-                "desalination": ["Vacuum membrane distillation (VMD)"],
+                "desalination": ["VMD"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment", "Chlorination"],
                 "brine": "Brine disposal"
             },
             "Surface water discharge": {
                 "pretreatment": ["3-phase separator","DAF", "Ultrafiltration", "Antiscalant / pH adjustment"],
-                "desalination": ["Vacuum membrane distillation (VMD)"],
+                "desalination": ["VMD"],
                 "posttreatment": ["GAC", "Zeolite"],
                 "brine": "Brine disposal"
             },
             "Agricultural use": {
                 "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Chemical softening", "Antiscalant / pH adjustment"],
-                "desalination": ["Vacuum membrane distillation (VMD)"],
+                "desalination": ["VMD"],
                 "posttreatment": ["Blending / remineralization", "pH adjustment"],
                 "brine": "Brine valorization"
             },
             "Powerplant cooling water": {
-                "pretreatment": ["DAF", "Cartridge filter"],
-                "desalination": ["Vacuum membrane distillation (VMD)"],
-                "posttreatment": ["Scale inhibitor dosing", "Polishing filter"],
+                "pretreatment": ["DAF", "Chemical softening", "Ultrafiltration", "Antiscalant / pH adjustment"],
+                "desalination": ["VMD"],
+                "posttreatment": ["GAC", "pH adjustment"],
                 "brine": "Brine disposal"
             },
             "Data center cooling water": {
-                "pretreatment": ["DAF", "Ultra-fine filtration"],
-                "desalination": ["Vacuum membrane distillation (VMD)"],
-                "posttreatment": ["Biocide dosing", "Fine filter", "Polishing"],
+                "pretreatment": ["DAF", "Chemical softening", "Ultrafiltration", "Antiscalant / pH adjustment"],
+                "desalination": ["VMD"],
+                "posttreatment": ["Ion exchange", "GAC", "pH adjustment"],
                 "brine": "Brine disposal"
             },
             "Feedwater to UPW production": {
                 "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration"],
-                "desalination": ["Vacuum membrane distillation (VMD)"],
+                "desalination": ["VMD"],
                 "posttreatment": ["GAC", "Zeolite", "Ion exchange"],
                 "brine": "Brine disposal"
             },
             "On-site O&G hydraulic fracturing recirculation": {
-                "pretreatment": ["DAF", "Bag filter"],
-                "desalination": ["Vacuum membrane distillation (VMD)"],
-                "posttreatment": ["Adjust TDS", "Add additives"],
+                "pretreatment": ["3-phase separator", "DAF", "Chemical softening", "Ultrafiltration", "Antiscalant / pH adjustment"],
+                "desalination": ["VMD"],
+                "posttreatment": ["pH adjustment"],
                 "brine": "On-site O&G hydraulic fracturing recirculation"
             },
             "Brine valorization(In progress)": {
                 "pretreatment": ["DAF", "Media filtration"],
-                "desalination": ["Vacuum membrane distillation (VMD)"],
+                "desalination": ["VMD"],
                 "posttreatment": ["Hardness adjustment", "Scale control"],
                 "brine": "Brine concentration for ZLD"
             }
@@ -487,7 +484,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Brine disposal"
             },
             "Feedwater to UPW production": {
-                "pretreatment": ["DAF", "Air stripping", "Ultrafiltration"],
+                "pretreatment": ["DAF", "Ammonia stripping", "Ultrafiltration"],
                 "desalination": ["BWRO"],
                 "posttreatment": ["GAC", "Ion exchange"],
                 "brine": "Brine valorization"
@@ -527,27 +524,27 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Brine valorization"
             },
             "Powerplant cooling water": {
-                "pretreatment": ["DAF", "Cartridge filter"],
+                "pretreatment": ["DAF", "Chemical softening", "Ultrafiltration", "Antiscalant / pH adjustment"],
                 "desalination": ["LSRRO"],
-                "posttreatment": ["Scale inhibitor dosing", "Polishing filter"],
+                "posttreatment": ["GAC", "pH adjustment"],
                 "brine": "Brine disposal"
             },
             "Data center cooling water": {
-                "pretreatment": ["DAF", "Ultra-fine filtration"],
+                "pretreatment": ["DAF", "Chemical softening", "Ultrafiltration", "Antiscalant / pH adjustment"],
                 "desalination": ["LSRRO"],
-                "posttreatment": ["Biocide dosing", "Fine filter", "Polishing"],
+                "posttreatment": ["GAC", "pH adjustment"],
                 "brine": "Brine disposal"
             },
             "Feedwater to UPW production": {
-                "pretreatment": ["DAF", "Air stripping", "Ultrafiltration"],
+                "pretreatment": ["DAF", "Ammonia stripping", "Ultrafiltration"],
                 "desalination": ["LSRRO"],
                 "posttreatment": ["GAC", "Ion exchange"],
                 "brine": "Brine valorization"
             },
             "On-site O&G hydraulic fracturing recirculation": {
-                "pretreatment": ["DAF", "Bag filter"],
+                "pretreatment": ["3-phase separator", "DAF", "Chemical softening", "Ultrafiltration", "Antiscalant / pH adjustment"],
                 "desalination": ["LSRRO"],
-                "posttreatment": ["Adjust TDS", "Add additives"],
+                "posttreatment": ["pH adjustment"],
                 "brine": "On-site O&G hydraulic fracturing recirculation"
             },
             "Brine valorization(In progress)": {
@@ -872,6 +869,8 @@ UNIT_REMOVAL_RATES = {
         "TDS": "90-99%",
         "Hardness": "90-99%",
         "Alkalinity": "60-90%",
+        "TOC": "20-60%",
+        "Ammonia nitrogen": "90%",
         "Boron": "20-70%",
         "Sodium": "90-99%",
         "Chloride": "90-99%",

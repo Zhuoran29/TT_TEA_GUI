@@ -42,12 +42,8 @@ def run(unit_process, technical_result, cost_inputs, context):
         "variable_opex_per_m3",
         context,
     )
-    evaporator_capex = _value(technical_result, "evaporator_capex")
-    compressor_capex = _value(technical_result, "compressor_capex")
-    surrogate_capex = evaporator_capex + compressor_capex
-
     electricity_price = float(context.get("electricity_price", 0.0))
-    electricity_cost = annual_volume * _value(technical_result, "energy_intensity") * electricity_price
+    energy_opex = annual_volume * _value(technical_result, "energy_intensity") * electricity_price
 
     bare_equipment_capex = scaled_capex_from_unit_cost(
         capex_per_flow,
@@ -59,19 +55,15 @@ def run(unit_process, technical_result, cost_inputs, context):
     capex = equipment_capex * investment_factor_value
     fixed_opex = capex * fixed_opex_fraction
     variable_opex = annual_volume * variable_opex_per_m3
-    annual_opex = fixed_opex + variable_opex + electricity_cost
+    annual_opex = fixed_opex + variable_opex + energy_opex
 
     return {
         "installed_capital_cost": _result(capex, "USD"),
         "equipment_capital_cost": _result(equipment_capex, "USD"),
-        "bare_equipment_capital_cost": _result(bare_equipment_capex, "USD"),
         "column_capex_multiplier": _result(column_capex_multiplier, "-"),
         "investment_factor": _result(investment_factor_value, "-"),
-        "mvc_surrogate_capital_cost": _result(surrogate_capex, "USD"),
-        "evaporator_capital_cost": _result(evaporator_capex, "USD"),
-        "compressor_capital_cost": _result(compressor_capex, "USD"),
         "fixed_operating_cost": _result(fixed_opex, "USD/year"),
         "variable_operating_cost": _result(variable_opex, "USD/year"),
-        "energy_operating_cost": _result(electricity_cost, "USD/year"),
+        "energy_operating_cost": _result(energy_opex, "USD/year"),
         "total_annual_operating_cost": _result(annual_opex, "USD/year"),
     }
