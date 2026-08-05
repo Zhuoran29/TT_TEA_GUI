@@ -98,7 +98,7 @@ project_name = st.text_input(
 )
 
 st.markdown("##### Influent type")
-influent_options = ["Produced water", "Brackish groundwater"]
+influent_options = ["Produced water", "Brackish groundwater (in progress)"]
 influent = st.selectbox(
     "Influent type", 
     influent_options,
