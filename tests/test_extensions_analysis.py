@@ -5,6 +5,8 @@ from tea_models.analyses.scenario_comparison import (
     BBL_PER_M3,
     comparison_rows,
     create_scenario_snapshot,
+    water_quality_comparison_rows,
+    water_quality_for_snapshot,
 )
 from tea_models.analyses.sensitivity import apply_system_parameter, tornado_rows
 from tea_models.tea_engine import calculate_crf, ordered_units_from_train
@@ -33,6 +35,16 @@ def sample_state():
             "electricity_intensity_kwh_per_bbl_feed": 0.5,
             "thermal_energy_intensity_kwh_per_bbl_feed": 0.2,
             "unit_results": [],
+            "water_quality_trace": [
+                {
+                    "sequence": 0,
+                    "water_quality": {"TDS": {"value": 100.0, "unit": "mg/L"}},
+                },
+                {
+                    "sequence": 1,
+                    "water_quality": {"TDS": {"value": 10.0, "unit": "mg/L"}},
+                },
+            ],
         },
     }
 
@@ -54,6 +66,62 @@ class ScenarioComparisonTests(unittest.TestCase):
         self.assertAlmostEqual(row["Feed LCOW ($/bbl feed)"], 1.0)
         self.assertAlmostEqual(row["Product LCOW ($/bbl product)"], 1.0)
         self.assertAlmostEqual(row["Product flow (m3/day)"], 1.0)
+
+    def test_water_quality_uses_union_and_leaves_missing_values_blank(self):
+        first = create_scenario_snapshot("First", sample_state())
+        second_state = sample_state()
+        second_state["feedwater_quality"]["water_quality"] = {
+            "Boron": {"value": 2.0, "unit": "mg/L"}
+        }
+        second = create_scenario_snapshot("Second", second_state)
+
+        rows = water_quality_comparison_rows([first, second], "influent")
+        tds = next(row for row in rows if row["Parameter"] == "TDS")
+        boron = next(row for row in rows if row["Parameter"] == "Boron")
+
+        self.assertEqual(tds["First"], 100.0)
+        self.assertEqual(tds["Second"], "")
+        self.assertEqual(boron["First"], "")
+        self.assertEqual(boron["Second"], 2.0)
+
+    def test_conflicting_water_quality_units_are_kept_on_separate_rows(self):
+        first = create_scenario_snapshot("First", sample_state())
+        second_state = sample_state()
+        second_state["feedwater_quality"]["water_quality"]["TDS"] = {
+            "value": 0.1,
+            "unit": "g/L",
+        }
+        second = create_scenario_snapshot("Second", second_state)
+
+        rows = water_quality_comparison_rows([first, second], "influent")
+        tds_rows = [row for row in rows if row["Parameter"] == "TDS"]
+
+        self.assertEqual([row["Unit"] for row in tds_rows], ["mg/L", "g/L"])
+        self.assertEqual(tds_rows[0]["Second"], "")
+        self.assertEqual(tds_rows[1]["First"], "")
+
+    def test_effluent_uses_final_non_brine_unit_for_older_snapshots(self):
+        snapshot = create_scenario_snapshot("Legacy", sample_state())
+        snapshot["results"].pop("water_quality_trace")
+        snapshot["results"]["unit_results"] = [
+            {
+                "sequence": 1,
+                "section": "Post-treatment",
+                "technical_results": {
+                    "water_quality_out": {"TDS": {"value": 5.0, "unit": "mg/L"}}
+                },
+            },
+            {
+                "sequence": 2,
+                "section": "Brine management - Disposal",
+                "technical_results": {
+                    "water_quality_out": {"TDS": {"value": 500.0, "unit": "mg/L"}}
+                },
+            },
+        ]
+
+        quality = water_quality_for_snapshot(snapshot, "effluent")
+        self.assertEqual(quality["TDS"]["value"], 5.0)
 
 
 class SensitivityHelpersTests(unittest.TestCase):

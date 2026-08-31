@@ -4,6 +4,8 @@ from feedback import render_report_button
 from ui_helpers import render_card_title
 
 from pages.extensions.interactive_map_ui import render_interactive_map
+from pages.extensions.scenario_comparison_ui import render_scenario_comparison
+from pages.extensions.sensitivity_analysis_ui import render_sensitivity_analysis
 from pages.extensions.socioeconomic_ui import render_socioeconomic_analysis
 
 
@@ -132,6 +134,20 @@ if st.session_state.get("extension_view") == "interactive_map":
     render_interactive_map()
     st.stop()
 
+if st.session_state.get("extension_view") == "scenario_comparison":
+    if st.button("Back to Extensions", type="primary"):
+        st.session_state.extension_view = None
+        st.rerun()
+    render_scenario_comparison()
+    st.stop()
+
+if st.session_state.get("extension_view") == "sensitivity_analysis":
+    if st.button("Back to Extensions", type="primary"):
+        st.session_state.extension_view = None
+        st.rerun()
+    render_sensitivity_analysis()
+    st.stop()
+
 left_col, right_col = st.columns(2)
 
 with left_col:
@@ -153,7 +169,7 @@ with left_col:
     )
 
     render_extension_card(
-        title="Scenario comparison (In progress)",
+        title="Scenario comparison",
         subtitle="Side-by-side comparison of TEA results for alternative treatment scenarios.",
    
         inputs=[
@@ -166,6 +182,7 @@ with left_col:
             # "Objective value, active constraints, convergence status, and model diagnostics.",
             # "Comparison between current TEA assumptions and optimized process assumptions.",
         ],
+        target_view="scenario_comparison",
     )
 
 with right_col:
@@ -187,7 +204,7 @@ with right_col:
     )
 
     render_extension_card(
-        title="Sensitivity Analysis (In progress)",
+        title="Sensitivity Analysis",
         subtitle="Range-based exploration of uncertain assumptions and key result drivers.",
 
         inputs=[
@@ -200,4 +217,5 @@ with right_col:
             # "One-way or multi-way plots for cost, recovery, energy, and water quality outcomes.",
             # "Exportable scenario matrix for documentation and later uncertainty analysis.",
         ],
+        target_view="sensitivity_analysis",
     )

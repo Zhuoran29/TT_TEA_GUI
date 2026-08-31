@@ -9,6 +9,7 @@ from tea_models.analyses.scenario_comparison import (
     comparison_rows,
     create_scenario_snapshot,
     unit_cost_breakdown_rows,
+    water_quality_comparison_rows,
 )
 
 
@@ -43,11 +44,23 @@ def _render_comparison(selected):
     }
     st.dataframe(display.style.format(numeric_formats), hide_index=True, use_container_width=True)
 
-    lcow_chart = summary.set_index("Scenario")[[
-        "Feed LCOW ($/bbl feed)", "Product LCOW ($/bbl product)"
-    ]]
-    st.subheader("LCOW comparison")
-    st.bar_chart(lcow_chart, use_container_width=True)
+    st.subheader("Water quality comparison")
+    st.caption(
+        "Tables include the union of parameters reported by the selected scenarios. "
+        "Blank cells mean that a scenario did not report that parameter; values are not unit-converted."
+    )
+    influent_tab, effluent_tab = st.tabs(["Influent", "Effluent"])
+    for tab, stage in [(influent_tab, "influent"), (effluent_tab, "effluent")]:
+        with tab:
+            quality_rows = water_quality_comparison_rows(selected, stage)
+            if quality_rows:
+                st.dataframe(
+                    pd.DataFrame(quality_rows),
+                    hide_index=True,
+                    use_container_width=True,
+                )
+            else:
+                st.info(f"No {stage} water-quality data are available in the selected scenarios.")
 
     cost_col, energy_col = st.columns(2)
     with cost_col:
@@ -68,7 +81,7 @@ def _render_comparison(selected):
 
     breakdown = pd.DataFrame(unit_cost_breakdown_rows(selected))
     if not breakdown.empty:
-        st.subheader("Unit-process LCOW contribution")
+        st.markdown("### LCOW ($/bbl feed)  \nbreakdown")
         totals = breakdown.groupby(["Scenario", "Unit process"], as_index=False)[
             "LCOW contribution ($/bbl feed)"
         ].sum()

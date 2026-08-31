@@ -120,10 +120,127 @@ def unit_cost_breakdown_rows(snapshots):
     return rows
 
 
+def _quality_entry(entry):
+    """Return a display-safe water-quality value and its reported unit."""
+    if isinstance(entry, dict):
+        value = entry.get("value")
+        unit = str(entry.get("unit", "") or "").strip()
+    else:
+        value = entry
+        unit = ""
+    try:
+        missing = value is None or bool(pd.isna(value))
+    except (TypeError, ValueError):
+        missing = value is None
+    return ("" if missing else value), unit
+
+
+def water_quality_for_snapshot(snapshot, stage):
+    """Return influent or final product-water quality from a scenario snapshot."""
+    results = snapshot.get("results", {})
+    trace = results.get("water_quality_trace", []) or []
+
+    if stage == "influent":
+        feedwater = snapshot.get("feedwater_quality", {}) or {}
+        if isinstance(feedwater, dict):
+            quality = feedwater.get("water_quality")
+            if isinstance(quality, dict) and quality:
+                return quality
+        if trace:
+            quality = trace[0].get("water_quality", {}) or {}
+            if isinstance(quality, dict):
+                return quality
+        return {}
+
+    if stage != "effluent":
+        raise ValueError("Water-quality stage must be 'influent' or 'effluent'.")
+
+    # The TEA engine's trace contains feed and non-brine treatment outlets only,
+    # so its final entry represents the final product-water node.
+    if len(trace) > 1:
+        quality = trace[-1].get("water_quality", {}) or {}
+        if isinstance(quality, dict):
+            return quality
+
+    # Compatibility fallback for older saved results that predate the trace.
+    units = sorted(
+        results.get("unit_results", []) or [],
+        key=lambda row: row.get("sequence", 0),
+        reverse=True,
+    )
+    for unit in units:
+        section = str(unit.get("section", ""))
+        if section.startswith("Brine management") or section == "Extension":
+            continue
+        technical = unit.get("technical_results", {}) or {}
+        quality = technical.get("water_quality_out")
+        if isinstance(quality, dict):
+            return quality
+    return {}
+
+
+def water_quality_comparison_rows(snapshots, stage):
+    """Build a union-based wide table, leaving unreported scenario values blank."""
+    scenario_qualities = [
+        (snapshot["name"], water_quality_for_snapshot(snapshot, stage))
+        for snapshot in snapshots
+    ]
+    parameters = []
+    for _, quality in scenario_qualities:
+        for parameter in quality:
+            if parameter not in parameters:
+                parameters.append(parameter)
+
+    rows = []
+    for parameter in parameters:
+        entries = {}
+        reported_units = []
+        has_unspecified_unit = False
+        for scenario_name, quality in scenario_qualities:
+            if parameter not in quality:
+                continue
+            value, unit = _quality_entry(quality[parameter])
+            entries[scenario_name] = (value, unit)
+            if unit:
+                if unit not in reported_units:
+                    reported_units.append(unit)
+            else:
+                has_unspecified_unit = True
+
+        # A missing unit can safely share the only reported unit. If scenarios
+        # report conflicting units, keep separate rows instead of comparing raw
+        # values with incompatible bases.
+        if len(reported_units) <= 1:
+            row_units = reported_units or [""]
+        else:
+            row_units = reported_units + (["Unspecified"] if has_unspecified_unit else [])
+
+        for row_unit in row_units:
+            row = {"Parameter": parameter, "Unit": row_unit}
+            for scenario_name, _ in scenario_qualities:
+                value_and_unit = entries.get(scenario_name)
+                if value_and_unit is None:
+                    row[scenario_name] = ""
+                    continue
+                value, actual_unit = value_and_unit
+                if len(reported_units) <= 1:
+                    row[scenario_name] = value
+                elif actual_unit == row_unit or (not actual_unit and row_unit == "Unspecified"):
+                    row[scenario_name] = value
+                else:
+                    row[scenario_name] = ""
+            rows.append(row)
+    return rows
+
+
 def comparison_csv(snapshots):
-    """Build a two-section CSV for project metrics and unit breakdowns."""
+    """Build a sectioned CSV for project, cost, and water-quality comparisons."""
     summary = pd.DataFrame(comparison_rows(snapshots))
     breakdown = pd.DataFrame(unit_cost_breakdown_rows(snapshots))
+    influent_quality = pd.DataFrame(water_quality_comparison_rows(snapshots, "influent"))
+    effluent_quality = pd.DataFrame(water_quality_comparison_rows(snapshots, "effluent"))
     output = "Scenario summary\n" + summary.to_csv(index=False)
     output += "\nUnit LCOW breakdown\n" + breakdown.to_csv(index=False)
+    output += "\nInfluent water quality\n" + influent_quality.to_csv(index=False)
+    output += "\nEffluent water quality\n" + effluent_quality.to_csv(index=False)
     return output.encode("utf-8")
