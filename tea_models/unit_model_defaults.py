@@ -199,20 +199,26 @@ TECHNICAL_MODEL_DEFAULTS = {
     "GAC": {
         "unit_kind": "gac",
         "recovery": 0.995,
-        "energy_intensity": 0.0,
         "empty_bed_contact_time": 10.0,
-        "media_bulk_density": 450.0,
-        "adsorber_bed_volume_m3": 78.783,
-        "fresh_gac_mass_kg": 31513.0,
+        "max_bed_volume_per_vessel": 40.0,
+        "redundant_vessels": 1.0,
+        "media_bulk_density": 400.0,
+        "bv_coefficient_a": 1.5e5,
+        "bv_exponent_b": -1.85,
+        "pump_head": 10.0,
+        "pump_efficiency": 0.70,
     },
     "Zeolite": {
         "unit_kind": "zeolite",
         "recovery": 0.995,
-        "energy_intensity": 0.02,
         "empty_bed_contact_time": 20.0,
-        "media_bulk_density": 824.0,
-        "ammonia_removal": 0.95,
+        "regenerant_bed_volumes": 90.0,
+        "brine_reuse_cycles": 5.0,
+        "nacl_mass_fraction": 0.10,
+        "naoh_to_nitrogen_molar_ratio": 1.0,
         "aec_mg_n_g": 4.0,
+        "pump_head": 10.0,
+        "pump_efficiency": 0.70,
     },
     "Ion exchange / EDI": {
         "unit_kind": "ion_exchange",
@@ -448,23 +454,23 @@ COST_MODEL_DEFAULTS = {
     "NF": {"capex_per_flow": 220.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.05, "media_replacement_price": 35.0, "media_replacement_fraction": 0.12},
     "Ammonia stripping": {"capital_cost_multiplier": 1.0, "opex_cost_multiplier": 1.0, "variable_opex_per_m3": 0.0},
     "GAC": {
-        "reference_gac_capex": 1345660.0,
-        "reference_capacity": 3760.0,
-        "capex_scaling_exponent": 0.87,
-        "gac_replacement_cost": 4.58,
-        "gac_regeneration_cost": 4.28,
-        "gac_replacement_regeneration_energy": 23.0,
+        "installation_factor": 1.15,
+        "gac_replacement_cost": 4.58223,
+        "gac_regeneration_cost": 4.28352,
         "regeneration_fraction": 0.80,
-        "replacement_fraction": 0.20,
+        "maintenance_fraction": 0.03,
         "om_contingency_factor": 0.20,
     },
     "Zeolite": {
-        "equipment_capex_per_gpm": 150.0,
-        "capex_scaling_exponent": 1.0,
+        "capex_coefficient": 3305.1,
+        "capex_exponent": 0.6961,
+        "installation_factor": 1.15,
+        "maintenance_fraction": 0.02,
+        "om_contingency_factor": 0.20,
+        "nacl_price": 40.0,
+        "naoh_price": 300.0,
         "zeolite_price": 4.41,
         "media_replacement_fraction_per_cycle": 0.0,
-        "nh4cl_price": 57.5,
-        "om_contingency_factor": 0.20,
     },
     "Ion exchange / EDI": {"capex_per_flow": 440.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.35, "chemical_price": 0.5, "media_replacement_price": 5.0, "media_replacement_fraction": 0.25},
     "Ion exchange": {"capex_per_flow": 340.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.25, "chemical_price": 0.5, "media_replacement_price": 4.0, "media_replacement_fraction": 0.20},
@@ -525,10 +531,16 @@ TECHNICAL_INPUT_SPECS = {
     "tower_loading_rate": ("Air stripping", "m/h", "Hydraulic loading rate through stripping tower"),
     "operating_pressure": ("Membrane", "bar", "Representative operating pressure"),
     "empty_bed_contact_time": ("Media", "min", "Empty bed contact time"),
-    "adsorber_bed_volume_m3": ("Media", "m3", "GAC adsorber bed volume used in BV changeout calculation"),
-    "fresh_gac_mass_kg": ("Media", "kg", "Fresh GAC mass in the adsorber"),
+    "max_bed_volume_per_vessel": ("Design", "m3", "Maximum bed volume per pressure vessel; larger beds are split into parallel vessels"),
+    "redundant_vessels": ("Design", "count", "Off-line redundant vessels (costed as contactors, not filled with carbon)"),
+    "regenerant_bed_volumes": ("Regeneration", "bed volumes", "Brine volume applied per regeneration, in bed volumes"),
+    "brine_reuse_cycles": ("Regeneration", "count", "Number of regenerations each brine batch is reused before disposal"),
+    "aec_mg_n_g": ("Media", "mg N/g zeolite", "Ammonium exchange capacity used to size the zeolite mass loaded per cycle"),
+    "nacl_mass_fraction": ("Regeneration", "fraction", "NaCl mass fraction of the regeneration brine"),
+    "naoh_to_nitrogen_molar_ratio": ("Regeneration", "mol/mol", "NaOH added per mole of NH4-N eluted, to hold the brine at pH 11"),
+    "bv_coefficient_a": ("Bed-life model", "bed volumes", "Coefficient A in the NMSU bed-life law BV = A x TOC^b (TOC in mg/L)"),
+    "bv_exponent_b": ("Bed-life model", "-", "Exponent b in the NMSU bed-life law BV = A x TOC^b"),
     "ammonia_removal": ("Performance", "fraction", "Target NH3-N removal used for zeolite breakthrough sizing"),
-    "aec_mg_n_g": ("Media", "mg N/g zeolite", "Ammonium exchange capacity used for zeolite media mass"),
     "regenerant_dose": ("Chemicals", "kg/m3", "Regenerant dose normalized to treated flow"),
     "power_capacity": ("Energy", "kW", "Installed PV power capacity"),
     "capacity_factor": ("Energy", "fraction", "Annual average PV capacity factor"),
@@ -560,7 +572,7 @@ COST_INPUT_SPECS = {
     "reference_direct_membrane_capex": ("Capital", "$(2024)", "Reference direct membrane CAPEX at the LSRRO reference flow"),
     "reference_direct_cs_capex": ("Capital", "$(2024)", "Reference direct chemical-softening CAPEX"),
     "reference_ec_capex": ("Capital", "$(2025)", "Reference EC equipment CAPEX"),
-    "reference_gac_capex": ("Capital", "$(2025)", "Reference GAC direct CAPEX"),
+    "installation_factor": ("Capital", "-", "Unit-level installation factor (TIC) applied to all direct capital items"),
     "reference_flow_bbl_day": ("Capital", "bbl/day", "Reference flow basis for bbl/day CAPEX scaling"),
     "reference_capex_cost_per_bbl": ("Capital", "$(2022)/bbl", "Reference annualized WSF CAPEX cost"),
     "reference_opex_cost_per_bbl": ("Variable O&M", "$(2022)/bbl", "Reference WSF operating cost"),
@@ -568,7 +580,9 @@ COST_INPUT_SPECS = {
     "uf_equipment_unit_cost": ("Capital", "$(2024)/gpd", "UF equipment unit CAPEX"),
     "uf_building_unit_cost": ("Capital", "$(2024)/ft2", "UF building unit CAPEX"),
     "reference_building_area_ft2": ("Capital", "ft2", "Reference UF building area"),
-    "equipment_capex_per_gpm": ("Capital", "$(2024)/gpm", "Zeolite vessel equipment CAPEX"),
+    "equipment_capex_per_gpm": ("Capital", "$(2024)/gpm", "Zeolite system equipment cost per gpm of inlet flow"),
+    "capex_coefficient": ("Capital", "$(2021)", "Coefficient a in equipment cost = a x Q^b (Q = inlet flow, m3/day)"),
+    "capex_exponent": ("Capital", "exponent", "Exponent b in equipment cost = a x Q^b"),
     "capex_per_flow": ("Capital", "$(2024)/(m3/day)", "Equipment capital cost per unit daily capacity"),
     "column_capex_multiplier": ("Capital", "factor", "Lead/lag, parallel, and standby column CAPEX multiplier"),
     "capex_per_kw": ("Capital", "$(2024)/kW", "Equipment capital cost per kW capacity"),
@@ -583,14 +597,14 @@ COST_INPUT_SPECS = {
     "aluminum_price": ("Chemicals", "$(2022)/kg", "Aluminum electrode purchase price"),
     "solid_disposal_cost": ("Disposal", "$(2024)/kg", "Solid waste disposal cost"),
     "sodium_bisulfite_price": ("Chemicals", "$(2024)/lb", "Sodium bisulfite purchase price"),
-    "gac_replacement_cost": ("Media", "$(2025)/kg", "Fresh GAC replacement cost"),
-    "gac_regeneration_cost": ("Media", "$(2025)/kg", "Spent GAC regeneration cost"),
-    "gac_replacement_regeneration_energy": ("Media", "kWh/kg", "Energy for GAC replacement/regeneration"),
-    "regeneration_fraction": ("Media", "fraction", "Fraction of spent GAC sent to regeneration"),
-    "replacement_fraction": ("Media", "fraction", "Fraction of spent GAC replaced with fresh GAC"),
-    "zeolite_price": ("Media", "$(2014)/kg", "Zeolite media purchase price"),
-    "media_replacement_fraction_per_cycle": ("Media", "fraction/cycle", "Fraction of zeolite media replaced per regeneration cycle"),
-    "nh4cl_price": ("Product credit", "$(2024)/metric tonne", "NH4Cl product value"),
+    "gac_replacement_cost": ("Spent GAC management", "$(2020)/kg", "Makeup GAC unit cost"),
+    "gac_regeneration_cost": ("Spent GAC management", "$(2020)/kg", "Off-site regeneration unit cost, including regeneration energy"),
+    "regeneration_fraction": ("Spent GAC management", "fraction", "Fraction of spent GAC regenerated; the rest is disposed and replaced with makeup GAC"),
+    "zeolite_price": ("Media", "$(2014)/kg", "Zeolite media price"),
+    "media_replacement_fraction_per_cycle": ("Media", "fraction/cycle", "Fraction of the AEC-based zeolite mass replaced per regeneration cycle"),
+    "nacl_price": ("Chemicals", "$(2014)/metric tonne", "NaCl (regeneration salt) price"),
+    "naoh_price": ("Chemicals", "$(2014)/metric tonne", "NaOH price"),
+    "maintenance_fraction": ("Fixed O&M", "fraction/yr", "Maintenance-labor-chemical cost as a fraction of direct (TIC) CAPEX"),
     "media_replacement_price": ("Replacement", "$(2024)/unit", "Replacement media, membrane, cartridge, or bag price"),
     "media_replacement_fraction": ("Replacement", "fraction/yr", "Annual replacement fraction"),
     "total_installed_cost": ("Capital", "$(2024)", "Optional installed BWRO CAPEX; 0 uses unit/correlation CAPEX"),
@@ -890,41 +904,69 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
     },
     "GAC": {
         "empty_bed_contact_time": (
-            "WaterTAP GAC design output used by NMPWRC GAC model",
-            "model source",
+            "WaterTAP GAC reference design (EBCT 600 s); EPA WBS typical 5-25 min for organics",
+            "open source documentation",
+        ),
+        "max_bed_volume_per_vessel": (
+            "US EPA 2021 WBS GAC model: vertical vessels up to 14 ft diameter x 14 ft, 50% bed expansion",
+            "technical report",
+        ),
+        "redundant_vessels": (
+            "WaterTAP 1.4 GAC costing default (1 operating + 1 redundant)",
+            "open source documentation",
         ),
         "media_bulk_density": (
-            "NMPWRC GAC model and WaterTAP GAC design output",
+            "WaterTAP GAC reference design and NMSU assumptions (400 kg/m3)",
             "model source",
         ),
-        "adsorber_bed_volume_m3": (
-            "WaterTAP GAC design output used by NMPWRC GAC model",
-            "model source",
+        "bv_coefficient_a": (
+            "NMSU assumptions: empirical bed-life model (pilot BV vs feed TOC)",
+            "pilot data",
         ),
-        "fresh_gac_mass_kg": (
-            "WaterTAP GAC design output used by NMPWRC GAC model",
-            "model source",
+        "bv_exponent_b": (
+            "NMSU assumptions: empirical bed-life model (pilot BV vs feed TOC)",
+            "pilot data",
+        ),
+        "pump_head": (
+            "Engineering estimate of pressure-vessel bed, underdrain and piping head loss; EPA WBS GAC model computes pump energy from flow, head and efficiency",
+            "engineering estimate",
+        ),
+        "pump_efficiency": (
+            "Planning-level pump wire-to-water efficiency (EPA WBS pump energy method)",
+            "engineering estimate",
         ),
     },
     "Zeolite": {
         "empty_bed_contact_time": (
-            "NMPWRC bench zeolite test and Turan and Turan 2021 fixed-bed equations",
+            "NMSU assumptions: bench zeolite column test (KMI zeolite 14x30); Turan and Turan 2021",
             "pilot data",
         ),
-        "media_bulk_density": (
-            "NMPWRC bench zeolite bed mass and volume",
+        "regenerant_bed_volumes": (
+            "NMSU assumptions: bench regeneration, 0.9 L brine per 10 mL bed",
             "pilot data",
         ),
-        "ammonia_removal": (
-            "NMPWRC zeolite TEA design target",
-            "model input",
+        "brine_reuse_cycles": (
+            "NMSU assumptions: brine reused for 5 successful bench regenerations",
+            "pilot data",
+        ),
+        "nacl_mass_fraction": (
+            "NMSU assumptions: 10% NaCl regenerant (bench test)",
+            "pilot data",
+        ),
+        "naoh_to_nitrogen_molar_ratio": (
+            "Engineering estimate: stoichiometric OH- to convert eluted NH4+ to NH3 at pH 11; set 0 for pH 7 regeneration",
+            "engineering estimate",
         ),
         "aec_mg_n_g": (
-            "Deng et al. 2014 ammonium exchange capacity range",
+            "Deng et al. 2014 ammonium exchange capacity range 2.5-21.5 mg N/g; NMSU assumptions use 4.0",
             "publication",
         ),
-        "energy_intensity": (
-            "NMPWRC zeolite pumping-energy assumption",
+        "pump_head": (
+            "Engineering estimate of pressure-vessel bed, underdrain and piping head loss (same basis as GAC)",
+            "engineering estimate",
+        ),
+        "pump_efficiency": (
+            "Planning-level pump wire-to-water efficiency (EPA WBS pump energy method)",
             "engineering estimate",
         ),
     },
@@ -1066,70 +1108,6 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
         "labor_cost_per_fte_year": (
             "Wang et al. 2024 DWPR report TEA labor cost assumption",
             "technical report",
-        ),
-        "om_contingency_factor": (
-            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
-            "technical report",
-        ),
-    },
-    "GAC": {
-        "reference_gac_capex": (
-            "Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC/WaterTAP CAPEX basis",
-            "publication",
-        ),
-        "reference_capacity": (
-            "NMPWRC GAC model flow basis after LSRRO recovery",
-            "model input",
-        ),
-        "capex_scaling_exponent": (
-            "NMPWRC GAC TEA scaling assumption",
-            "model input",
-        ),
-        "gac_replacement_cost": (
-            "Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC OPEX basis",
-            "publication",
-        ),
-        "gac_regeneration_cost": (
-            "Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC OPEX basis",
-            "publication",
-        ),
-        "gac_replacement_regeneration_energy": (
-            "Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC OPEX basis",
-            "publication",
-        ),
-        "regeneration_fraction": (
-            "NMPWRC GAC model spent-media management split",
-            "model input",
-        ),
-        "replacement_fraction": (
-            "NMPWRC GAC model spent-media management split",
-            "model input",
-        ),
-        "om_contingency_factor": (
-            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
-            "technical report",
-        ),
-    },
-    "Zeolite": {
-        "equipment_capex_per_gpm": (
-            "US EPA Drinking Water Treatment Technology Unit Cost Models ion-exchange vessel CAPEX framework",
-            "technical report",
-        ),
-        "capex_scaling_exponent": (
-            "NMPWRC zeolite TEA scaling assumption",
-            "model input",
-        ),
-        "zeolite_price": (
-            "Deng et al. 2014 Environmental Technology zeolite regeneration economics",
-            "publication",
-        ),
-        "media_replacement_fraction_per_cycle": (
-            "NMPWRC regenerated-media zeolite TEA assumption",
-            "model input",
-        ),
-        "nh4cl_price": (
-            "NMPWRC zeolite TEA NH4Cl product-credit assumption; no explicit cost year, treated as 2024",
-            "model input",
         ),
         "om_contingency_factor": (
             "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
@@ -1296,6 +1274,70 @@ COST_INPUT_METADATA = {
 
 
 COST_INPUT_METADATA_BY_UNIT = {
+    "Zeolite": {
+        "capex_coefficient": (
+            "US EPA WBS Cation Exchange model (2023 release, 2021 $) run at 0.124-22.6 MGD with EBCT 20 min; media charge excluded; fit within 16%",
+            "technical report",
+        ),
+        "capex_exponent": (
+            "US EPA WBS Cation Exchange model (2023 release, 2021 $) run at 0.124-22.6 MGD with EBCT 20 min; media charge excluded",
+            "technical report",
+        ),
+        "installation_factor": (
+            "EPA WBS unit costs already include transportation and installation; TIC covers remaining direct items (same basis as GAC)",
+            "engineering estimate",
+        ),
+        "maintenance_fraction": (
+            "NMSU assumptions: 2% of CAPEX per year",
+            "model input",
+        ),
+        "zeolite_price": (
+            "NMSU assumptions: bench test vendor price (10 $ per 5 lb); Deng et al. 2014",
+            "model input",
+        ),
+        "media_replacement_fraction_per_cycle": (
+            "NMSU assumptions: media regenerated in place, no replacement",
+            "model input",
+        ),
+        "nacl_price": (
+            "Deng et al. 2014 Environmental Technology (NaCl 40 $/ton)",
+            "publication",
+        ),
+        "naoh_price": (
+            "Deng et al. 2014 Environmental Technology (NaOH 300 $/ton)",
+            "publication",
+        ),
+        "om_contingency_factor": (
+            "NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
+        ),
+    },
+    "GAC": {
+        "gac_replacement_cost": (
+            "WaterTAP 1.4 GAC model and costing method (watertap.costing.unit_models.gac)",
+            "open source documentation",
+        ),
+        "gac_regeneration_cost": (
+            "WaterTAP 1.4 GAC model and costing method (watertap.costing.unit_models.gac)",
+            "open source documentation",
+        ),
+        "maintenance_fraction": (
+            "WaterTAP 1.4 GAC model and costing method (watertap.costing.unit_models.gac)",
+            "open source documentation",
+        ),
+        "installation_factor": (
+            "EPA WBS unit costs already include transportation and installation; TIC covers remaining direct items",
+            "engineering estimate",
+        ),
+        "regeneration_fraction": (
+            "NMSU assumptions: spent-media split (WaterTAP default 0.70)",
+            "model input",
+        ),
+        "om_contingency_factor": (
+            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
+        ),
+    },
     "Vacuum membrane distillation (VMD)": {
         "capex_per_flow": (
             "Membrane distillation energy and cost literature with waste-heat integration cases",
@@ -1537,10 +1579,16 @@ TECHNICAL_INPUT_ORDER = [
     "tower_loading_rate",
     "operating_pressure",
     "empty_bed_contact_time",
-    "adsorber_bed_volume_m3",
-    "fresh_gac_mass_kg",
-    "ammonia_removal",
+    "max_bed_volume_per_vessel",
+    "redundant_vessels",
+    "regenerant_bed_volumes",
+    "brine_reuse_cycles",
+    "nacl_mass_fraction",
     "aec_mg_n_g",
+    "naoh_to_nitrogen_molar_ratio",
+    "bv_coefficient_a",
+    "bv_exponent_b",
+    "ammonia_removal",
     "regenerant_dose",
     "power_capacity",
     "capacity_factor",
@@ -1554,7 +1602,7 @@ COST_INPUT_ORDER = [
     "reference_direct_membrane_capex",
     "reference_direct_cs_capex",
     "reference_ec_capex",
-    "reference_gac_capex",
+    "installation_factor",
     "reference_flow_bbl_day",
     "reference_capex_cost_per_bbl",
     "reference_opex_cost_per_bbl",
@@ -1563,6 +1611,8 @@ COST_INPUT_ORDER = [
     "uf_building_unit_cost",
     "reference_building_area_ft2",
     "equipment_capex_per_gpm",
+    "capex_coefficient",
+    "capex_exponent",
     "capex_per_flow",
     "reference_capacity",
     "capex_scaling_exponent",
@@ -1599,14 +1649,14 @@ COST_INPUT_ORDER = [
     "aluminum_price",
     "solid_disposal_cost",
     "sodium_bisulfite_price",
-    "gac_replacement_cost",
     "gac_regeneration_cost",
-    "gac_replacement_regeneration_energy",
+    "gac_replacement_cost",
     "regeneration_fraction",
-    "replacement_fraction",
+    "maintenance_fraction",
     "zeolite_price",
     "media_replacement_fraction_per_cycle",
-    "nh4cl_price",
+    "nacl_price",
+    "naoh_price",
     "media_replacement_price",
     "media_replacement_fraction",
 ]

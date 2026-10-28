@@ -76,21 +76,21 @@ Ultrafiltration,Chemicals,sodium_bisulfite_price,0.25,$(2024)/lb,Sodium bisulfit
 Ultrafiltration,Labor,labor_fte,1,FTE,Labor requirement assigned to UF,Wang et al. 2024 DWPR report TEA labor assumption,Technical report
 Ultrafiltration,Labor,labor_cost_per_fte_year,80000,$(2024)/FTE-year,Annual labor cost per full-time equivalent,Wang et al. 2024 DWPR report TEA labor cost assumption,Technical report
 Ultrafiltration,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to unit operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
-GAC,Capital,reference_gac_capex,1345660,$(2025),Reference GAC direct CAPEX,Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC/WaterTAP CAPEX basis,Publication
-GAC,Capital,reference_capacity,3760,m3/day,Reference GAC flow basis,NMPWRC GAC model flow basis after LSRRO recovery,Model input
-GAC,Capital,capex_scaling_exponent,0.87,exponent,CAPEX capacity-scaling exponent,NMPWRC GAC TEA scaling assumption,Model input
-GAC,Media,gac_replacement_cost,4.58,$(2025)/kg,Fresh GAC replacement cost,Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC OPEX basis,Publication
-GAC,Media,gac_regeneration_cost,4.28,$(2025)/kg,Spent GAC regeneration cost,Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC OPEX basis,Publication
-GAC,Media,gac_replacement_regeneration_energy,23,kWh/kg,Energy for GAC replacement/regeneration,Lugo et al. 2025 Journal of Environmental Chemical Engineering GAC OPEX basis,Publication
-GAC,Media,regeneration_fraction,0.8,fraction,Fraction of spent GAC sent to regeneration,NMPWRC GAC model spent-media management split,Model input
-GAC,Media,replacement_fraction,0.2,fraction,Fraction of spent GAC replaced with fresh GAC,NMPWRC GAC model spent-media management split,Model input
-GAC,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to unit operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
-Zeolite,Capital,equipment_capex_per_gpm,150,$(2024)/gpm,Zeolite vessel equipment CAPEX,US EPA Drinking Water Treatment Technology Unit Cost Models ion-exchange vessel CAPEX framework,Technical report
-Zeolite,Capital,capex_scaling_exponent,1,exponent,CAPEX capacity-scaling exponent,NMPWRC zeolite TEA scaling assumption,Model input
-Zeolite,Media,zeolite_price,4.41,$(2014)/kg,Zeolite media purchase price,Deng et al. 2014 Environmental Technology zeolite regeneration economics,Publication
-Zeolite,Media,media_replacement_fraction_per_cycle,0,fraction/cycle,Fraction of zeolite media replaced per regeneration cycle,NMPWRC regenerated-media zeolite TEA assumption,Model input
-Zeolite,Product credit,nh4cl_price,57.5,$(2024)/metric tonne,NH4Cl product value,"NMPWRC zeolite TEA NH4Cl product-credit assumption; no explicit cost year, treated as 2024",Model input
-Zeolite,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to unit operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+GAC,Capital,installation_factor,1.15,-,Unit-level installation factor (TIC) applied to all direct capital items,EPA WBS unit costs already include transportation and installation; TIC covers remaining direct items,Engineering estimate
+GAC,Spent GAC management,regeneration_fraction,0.8,fraction,Fraction of spent GAC regenerated off site; the rest leaves as solid waste and is replaced with makeup GAC,NMSU assumptions: spent-media split (WaterTAP default 0.70),Model input
+GAC,Spent GAC management,gac_regeneration_cost,4.28352,$(2020)/kg,"Off-site regeneration unit cost, including regeneration energy",WaterTAP 1.4 GAC model and costing method (watertap.costing.unit_models.gac),Open source documentation
+GAC,Spent GAC management,gac_replacement_cost,4.58223,$(2020)/kg,Makeup GAC unit cost,WaterTAP 1.4 GAC model and costing method (watertap.costing.unit_models.gac),Open source documentation
+GAC,Fixed O&M,maintenance_fraction,0.03,fraction/yr,Maintenance-labor-chemical cost as a fraction of direct (TIC) CAPEX,WaterTAP 1.4 GAC model and costing method (watertap.costing.unit_models.gac),Open source documentation
+GAC,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to all GAC operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+Zeolite,Capital,capex_coefficient,3305.1,$(2021),"Coefficient a in equipment cost = a x Q^b (Q = inlet flow, m3/day)","US EPA WBS Cation Exchange model (2023 release, 2021 $) run at 0.124-22.6 MGD with EBCT 20 min; media charge excluded; fit within 16%",Technical report
+Zeolite,Capital,capex_exponent,0.6961,exponent,Exponent b in equipment cost = a x Q^b,"US EPA WBS Cation Exchange model (2023 release, 2021 $) run at 0.124-22.6 MGD with EBCT 20 min; media charge excluded; fit within 16%",Technical report
+Zeolite,Capital,installation_factor,1.15,-,Unit-level installation factor (TIC) applied to equipment cost,EPA WBS unit costs already include transportation and installation; TIC covers remaining direct items (same basis as GAC),Engineering estimate
+Zeolite,Chemicals,nacl_price,40,$(2014)/metric tonne,NaCl (regeneration salt) price,Deng et al. 2014 Environmental Technology,Publication
+Zeolite,Chemicals,naoh_price,300,$(2014)/metric tonne,NaOH price,Deng et al. 2014 Environmental Technology,Publication
+Zeolite,Media,zeolite_price,4.41,$(2014)/kg,Zeolite media price,NMSU assumptions: bench test vendor price (10 $ per 5 lb); Deng et al. 2014,Model input
+Zeolite,Media,media_replacement_fraction_per_cycle,0,fraction/cycle,Fraction of the AEC-based zeolite mass replaced per regeneration cycle,"NMSU assumptions: media regenerated in place, no replacement",Model input
+Zeolite,Fixed O&M,maintenance_fraction,0.02,fraction/yr,Maintenance cost as a fraction of direct (TIC) CAPEX,NMSU assumptions,Model input
+Zeolite,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to all zeolite operating costs,NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
 Evaporation pond,Capital,capex_per_flow,8,$(2024)/(m3/day),Equipment pond inlet/distribution capital per unit daily capacity,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,Industrial report
 Evaporation pond,Capital,reference_capacity,1000,m3/day,Reference capacity for pond inlet/distribution CAPEX scaling,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,Industrial report
 Evaporation pond,Capital,capex_scaling_exponent,1,exponent,CAPEX capacity-scaling exponent,Screening default pending source calibration,Engineering estimate

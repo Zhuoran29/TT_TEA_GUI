@@ -64,16 +64,23 @@ pH adjustment,Conditioning,target_pH,7.5,-,Target outlet pH set by the pH adjust
 pH adjustment,Chemicals,chemical_dose,0.004,kg/m3,Chemical dose per cubic meter treated for pH adjustment,Water Technologies Handbook and site-specific dose testing guidance,Industrial reference
 pH adjustment,Energy,energy_intensity,0.003,kWh/m3,Mixing and dosing electricity demand for pH adjustment,WaterTAP zero-order chemical dosing convention and planning-level auxiliary load,Open source documentation
 GAC,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through GAC contactors,NMPWRC GAC model input,Model input
-GAC,Media,empty_bed_contact_time,10,min,GAC empty bed contact time,WaterTAP GAC design output used by NMPWRC GAC model,Model source
-GAC,Media,media_bulk_density,450,kg/m3,GAC bulk density,NMPWRC GAC model and WaterTAP GAC design output,Model source
-GAC,Media,adsorber_bed_volume_m3,78.783,m3,GAC adsorber bed volume used in BV changeout calculation,WaterTAP GAC design output used by NMPWRC GAC model,Model source
-GAC,Media,fresh_gac_mass_kg,31513,kg,Fresh GAC mass in the adsorber,WaterTAP GAC design output used by NMPWRC GAC model,Model source
-Zeolite,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through zeolite beds,NMPWRC zeolite model input,Model input
-Zeolite,Media,empty_bed_contact_time,20,min,Zeolite empty bed contact time,NMPWRC bench zeolite test and Turan and Turan 2021 fixed-bed equations,Pilot data
-Zeolite,Media,media_bulk_density,824,kg/m3,Zeolite bulk density calculated from bench bed mass and volume,NMPWRC bench zeolite bed mass and volume,Pilot data
-Zeolite,Energy,energy_intensity,0.02,kWh/m3 feed,Zeolite bed pumping electricity demand,NMPWRC zeolite pumping-energy assumption,Engineering estimate
-Zeolite,Performance,ammonia_removal,0.95,fraction,Target NH3-N removal used for zeolite breakthrough sizing,NMPWRC zeolite TEA design target,Model input
-Zeolite,Media,aec_mg_n_g,4,mg N/g zeolite,Ammonium exchange capacity used for zeolite media mass,Deng et al. 2014 ammonium exchange capacity range,Publication
+GAC,Design,empty_bed_contact_time,10,min,Empty bed contact time (600 s default); sets bed volume = flow x EBCT,WaterTAP GAC reference design (EBCT 600 s); EPA WBS typical 5-25 min for organics,Open source documentation
+GAC,Design,max_bed_volume_per_vessel,40,m3,Maximum bed volume per pressure vessel; larger beds are split into parallel vessels,"US EPA 2021 WBS GAC model: vertical vessels up to 14 ft diameter x 14 ft, 50% bed expansion",Technical report
+GAC,Design,redundant_vessels,1,count,"Off-line redundant vessels (costed as contactors, not filled with carbon)",WaterTAP 1.4 GAC costing default (1 operating + 1 redundant),Open source documentation
+GAC,Media,media_bulk_density,400,kg/m3,GAC bulk density,WaterTAP GAC reference design and NMSU assumptions (400 kg/m3),Model source
+GAC,Bed-life model,bv_coefficient_a,150000,bed volumes,Coefficient A in the NMSU bed-life law BV = A x TOC^b (TOC in mg/L),NMSU assumptions: empirical bed-life model (pilot BV vs feed TOC),Pilot data
+GAC,Bed-life model,bv_exponent_b,-1.85,-,Exponent b in the NMSU bed-life law BV = A x TOC^b,NMSU assumptions: empirical bed-life model (pilot BV vs feed TOC),Pilot data
+GAC,Pumping,pump_head,10,m,Total dynamic head across GAC contactors and piping,"Engineering estimate of pressure-vessel bed, underdrain and piping head loss; EPA WBS GAC model computes pump energy from flow, head and efficiency",Engineering estimate
+GAC,Pumping,pump_efficiency,0.7,fraction,Pump wire-to-water efficiency,Planning-level pump wire-to-water efficiency (EPA WBS pump energy method),Engineering estimate
+Zeolite,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered through zeolite beds (regeneration and rinse losses),NMSU assumptions,Model input
+Zeolite,Design,empty_bed_contact_time,20,min,Empty bed contact time; sets bed volume = flow x EBCT and service time = BV x EBCT,NMSU assumptions: bench zeolite column test (KMI zeolite 14x30); Turan and Turan 2021,Pilot data
+Zeolite,Regeneration,regenerant_bed_volumes,90,bed volumes,"Brine volume applied per regeneration, in bed volumes","NMSU assumptions: bench regeneration, 0.9 L brine per 10 mL bed",Pilot data
+Zeolite,Regeneration,brine_reuse_cycles,5,count,Number of regenerations each brine batch is reused before disposal,NMSU assumptions: brine reused for 5 successful bench regenerations,Pilot data
+Zeolite,Regeneration,nacl_mass_fraction,0.1,fraction,NaCl mass fraction of the regeneration brine,NMSU assumptions: 10% NaCl regenerant (bench test),Pilot data
+Zeolite,Regeneration,naoh_to_nitrogen_molar_ratio,1,mol/mol,"NaOH added per mole of NH4-N eluted, to hold the brine at pH 11",Engineering estimate: stoichiometric OH- to convert eluted NH4+ to NH3 at pH 11; set 0 for pH 7 regeneration,Engineering estimate
+Zeolite,Media,aec_mg_n_g,4,mg N/g zeolite,Ammonium exchange capacity; sizes the zeolite mass loaded per cycle for media replacement,Deng et al. 2014 ammonium exchange capacity range 2.5-21.5 mg N/g; NMSU assumptions use 4.0,Publication
+Zeolite,Pumping,pump_head,10,m,Total dynamic head across zeolite contactors and piping,"Engineering estimate of pressure-vessel bed, underdrain and piping head loss (same basis as GAC)",Engineering estimate
+Zeolite,Pumping,pump_efficiency,0.7,fraction,Pump wire-to-water efficiency,Planning-level pump wire-to-water efficiency (EPA WBS pump energy method),Engineering estimate
 Evaporation pond,Hydraulics,recovery,1,fraction,Pass-through factor for current sequential brine-management placeholder,WaterTAP Evaporation Pond ZO documentation and produced-water pond practice,Open source documentation
 Evaporation pond,Pond sizing,net_evaporation_rate,1,m/year,Net evaporation rate after rainfall credit,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,industrial report
 Evaporation pond,Pond sizing,operating_depth,1.5,m,Operating liquid depth,SCS Engineers HDPE-lined produced-water evaporation ponds 2015,industrial report
