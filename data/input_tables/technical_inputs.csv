@@ -30,27 +30,27 @@ LSRRO,Water quality,clip_negative_permeate,1,0/1,Clip negative regression-predic
 3-phase separator,Hydraulics,hydraulic_retention_time,30,min,Separator hydraulic retention time,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
 3-phase separator,Hydraulics,design_factor,1.2,fraction,Oversizing factor applied to separator volume,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
 3-phase separator,Energy,energy_intensity,0.03,kWh/m3,Pumping and controls electricity demand,Pump/control auxiliary load Engineering estimate; use site-specific pressure drop where available,Engineering estimate
-DAF,Hydraulics,recovery,0.98,fraction,Fraction of inlet flow recovered after flotation,Water Corporation DS211 Dissolved Air Flotation Unit Design Guideline 2022,Technical report
-DAF,Hydraulics,surface_loading_rate,8,m/h,DAF surface overflow loading rate,Water Corporation DS211 Dissolved Air Flotation Unit Design Guideline 2022,Technical report
-DAF,Hydraulics,recycle_ratio,0.15,fraction,Pressurized recycle flow as fraction of inlet flow,Water Corporation DS211 Dissolved Air Flotation Unit Design Guideline 2022,Technical report
-DAF,Energy,energy_intensity,0.08,kWh/m3,DAF pumps and air saturation electricity demand,WaterTAP Dissolved Air Flotation ZO documentation and Water Corporation DS211,Open source documentation
-DAF,Chemicals,chemical_dose,0.03,kg/m3,Coagulant or polymer dose,Water Corporation DS211 and DAF pilot coagulant dose literature,Technical report
+DAF,Hydraulics,recycle_ratio,0.12,fraction,Pressurised recycle flow as a fraction of inlet flow,NMSU assumptions: 12% recycle (Abada et al. 2022 optimized DAF conditions),Publication
+DAF,Energy,pump_head,51,m,Recycle pump head (saturator pressure),Engineering estimate: saturator pressure about 5 bar,Engineering estimate
+DAF,Energy,pump_efficiency,0.7,fraction,Recycle pump wire-to-water efficiency,Planning-level pump wire-to-water efficiency (EPA WBS pump energy method),Engineering estimate
+DAF,Energy,auxiliary_energy_intensity,0.02,kWh/m3,"Air compressor, flocculator and float skimmer electricity",Engineering estimate: total DAF energy close to WaterTAP zero-order DAF (0.05 kWh/m3),Engineering estimate
+DAF,Chemicals,h2o2_to_iron_ratio,1.75,mg H2O2/mg Fe,H2O2 dose per mg of feed iron; sets the COD/TOC removal,"NMSU assumptions: pilot study, 1.75 mg H2O2 per mg Fe",Pilot data
+DAF,Chemicals,ach_aluminum_content,0.124,fraction,Aluminum mass fraction of the ACH product (converts mg Al/L to product mass),"Typical ACH product, 23-24% Al2O3 (12.4% Al)",Vendor data
+DAF,Water quality,cod_to_toc_ratio,4,mg COD/mg TOC,COD to TOC ratio (used only to report COD),NMSU assumptions,Model input
+DAF,Residuals,float_solids_content,0.03,fraction,Dry solids mass fraction of the skimmed float; sets float volume and water recovery,Engineering estimate: mechanically skimmed DAF float typically 2-5% dry solids,Engineering estimate
 Chemical softening,Hydraulics,recovery,0.97,fraction,Fraction of inlet flow recovered after softening clarification,NMPWRC chemical-softening model input,Model input
 Chemical softening,Chemicals,lime_dose_mg_l,10,mg/L,Lime dose as Ca(OH)2 product,KBH/NMPWRC chemical-softening TEA workbook basis,Model input
 Chemical softening,Chemicals,soda_ash_dose_mg_l,4301,mg/L,Soda ash dose as Na2CO3 product,KBH/NMPWRC chemical-softening TEA workbook basis,Model input
 Chemical softening,Conditioning,target_neutral_pH,8,-,Target pH after acid neutralization,NMPWRC Reaktoro chemical-softening simulator target neutralization pH,Model input
 Chemical softening,Chemicals,acid_dose_override_mg_l,0,mg/L,Optional H2SO4 dose override; 0 auto-calculates to target pH,NMPWRC Reaktoro chemical-softening simulator optional user override,Model input
 Chemical softening,Energy,energy_intensity,0.223,kWh/m3 feed,Chemical-softening electricity demand,KBH/NMPWRC chemical-softening workbook electricity basis,Model input
-Electrocoagulation,Hydraulics,recovery,0.98,fraction,Fraction of inlet flow recovered after EC clarification,NMPWRC EC-Al model input,Model input
-Electrocoagulation,Hydraulics,hydraulic_retention_time,30,min,EC hydraulic retention time,Naje et al. 2019 electrocoagulation treatment study,Publication
-Electrocoagulation,Electrodes,current_density_mA_cm2,20,mA/cm2,EC aluminum-electrode current density,Naje et al. 2019 electrocoagulation treatment study,Publication
-Electrocoagulation,Electrodes,electrode_gap_m,0.02,m,Electrode gap used in solution-resistance estimate,WaterTAP electrocoagulation model assumption,Open source documentation
+Electrocoagulation,Hydraulics,hydraulic_retention_time,30,min,EC treatment time (sets electrode area and Al dose),"NMSU assumptions: 30 min EC treatment time, Al-Ajmi et al. 2025, Water 17, 23",Publication
+Electrocoagulation,Electrodes,current_density_mA_cm2,20,mA/cm2,EC aluminum-electrode current density,"NMSU assumptions: 20 mA/cm2 (2.0 A/dm2), Al-Ajmi et al. 2025, Water 17, 23",Publication
+Electrocoagulation,Electrodes,electrode_gap_m,0.02,m,Electrode gap used in solution-resistance estimate,NMSU assumptions; Lugo et al. 2025 (WaterTAP EC model input),Publication
 Electrocoagulation,Energy,energy_intensity,0,kWh/m3 feed,Calculated from conductivity current density and electrode area,NMPWRC EC-Al engineering calculation,Engineering calculation
-Walnut shell filtration,Hydraulics,recovery,0.99,fraction,Fraction of inlet flow recovered through WSF,NMPWRC WSF model input,Model input
-Walnut shell filtration,Filtration,filtration_rate,10,m/h,Design filtration loading rate,Hach Granular Media Filtration for Water Treatment Applications 2012,Industrial report
-Walnut shell filtration,Filtration,bed_depth,1,m,Media bed depth,Hach Granular Media Filtration for Water Treatment Applications 2012,Industrial report
-Walnut shell filtration,Media,media_bulk_density,650,kg/m3,Walnut shell media bulk density,NMPWRC WSF engineering estimate,Engineering estimate
-Walnut shell filtration,Energy,energy_intensity,0.17,kWh/m3 feed,WSF electricity demand,Drover 2022 DOE produced-water pretreatment report,Technical report
+Electrocoagulation,Residuals,sludge_solids_content,0.025,fraction,Dry solids mass fraction of the sludge; sets sludge volume and water recovery,"Al-Ajmi et al. 2025, Water 17, 23: EC sludge 2.41-2.62% dry solids",Publication
+Walnut shell filtration,Hydraulics,recovery,0.99,fraction,Fraction of inlet flow recovered; the rest leaves as backwash,NMSU assumptions,Model input
+Walnut shell filtration,Energy,energy_intensity,0.17,kWh/m3 feed,"Electricity for feed, backwash and media scrubbing","NMSU assumptions; US DOE final report DE-FE0031851 (Drover 2022), WSF vendor electricity",Technical report
 Ultrafiltration,Hydraulics,recovery,0.96,fraction,Net UF filtrate recovery after backwash,WaterTAP Ultra Filtration ZO documentation and membrane treatment literature,Open source documentation
 Ultrafiltration,Membrane,membrane_flux,45,L/m2-h,Average UF operating flux,Wang et al. 2024 DWPR report and KBH/NMPWRC UF workbook basis,Technical report
 Ultrafiltration,Membrane,backwash_fraction,0.04,fraction,Backwash and cleaning waste fraction,WaterTAP Ultra Filtration ZO documentation and membrane treatment literature,Open source documentation

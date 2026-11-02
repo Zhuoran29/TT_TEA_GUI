@@ -95,7 +95,7 @@ MODEL_DOCS_PATH = APP_ROOT / "tea_models" / "model_docs"
 RESULTS_OUTPUT_PATH = APP_ROOT / "data" / "results" / "tea_results.csv"
 BBL_TO_M3 = 0.158987294928
 M3_TO_BBL = 1 / BBL_TO_M3
-DEFAULT_INVESTMENT_FACTOR = 2.5
+DEFAULT_INVESTMENT_FACTOR = 2.0
 REMOVAL_EFFICIENCY_EXCLUDED_PARAMETERS = {"pH"}
 INPUT_METADATA_COLUMNS = ["source", "data_type"]
 HIDDEN_COST_OUTPUTS = {
@@ -608,7 +608,13 @@ def show_removal_efficiency_dialog(unit, feedwater_quality_or_quality):
         str(row["parameter"]): max(0.0, min(float(row["removal_efficiency"] or 0.0), 1.0))
         for _, row in edited.iterrows()
     }
-    override_store[sequence_key] = edited_values
+    # Keep only values that differ from the model defaults, so defaults that depend on the
+    # inlet stream (for example the calculated DAF TOC removal) keep following it.
+    override_store[sequence_key] = {
+        parameter: value
+        for parameter, value in edited_values.items()
+        if defaults.get(parameter) is None or abs(value - float(defaults[parameter])) > 1e-9
+    }
 
 
 def result_value(result, name, default=0.0):

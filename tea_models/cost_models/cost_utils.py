@@ -33,9 +33,9 @@ def result(value_, unit):
 
 def investment_factor(context):
     try:
-        return max(float(context.get("investment_factor", 2.5)), 0.0)
+        return max(float(context.get("investment_factor", 2.0)), 0.0)
     except (TypeError, ValueError):
-        return 2.5
+        return 2.0
 
 
 def cost_year(cost_inputs, parameter, default=DEFAULT_COST_YEAR):

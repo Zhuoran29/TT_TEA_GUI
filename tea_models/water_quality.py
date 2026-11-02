@@ -148,6 +148,14 @@ def get_default_removal_efficiencies(unit_process, quality):
             defaults[parameter] = ph_target if ph_target is not None else None
         else:
             defaults[parameter] = parse_removal_rate(unit_rates.get(parameter, 0.0))
+    if unit_process == "DAF":
+        # TOC and H2S removals are calculated from the H2O2 dose (feed iron); the table shows those values.
+        from tea_models.technical_models.daf import calculated_h2s_removal, calculated_toc_removal
+
+        if "TOC" in defaults:
+            defaults["TOC"] = calculated_toc_removal(quality)
+        if "H2S" in defaults:
+            defaults["H2S"] = calculated_h2s_removal(quality)
     return defaults
 
 
@@ -178,8 +186,9 @@ def apply_unit_water_quality(stream, recovery, removal_efficiencies, target_valu
         if parameter in target_values and target_values[parameter] not in (None, ""):
             outlet_value = float(target_values[parameter])
         elif parameter == "pH" and parameter in removal_efficiencies:
+            # A pH entry in the removal table is a target pH; 0 or blank means "no change"
             ph_target = parse_ph_target(removal_efficiencies.get(parameter))
-            outlet_value = ph_target if ph_target is not None else value
+            outlet_value = ph_target if ph_target is not None and ph_target > 0.0 else value
         else:
             removal = max(0.0, min(float(removal_efficiencies.get(parameter, 0.0) or 0.0), 1.0))
             outlet_value = value * (1.0 - removal)

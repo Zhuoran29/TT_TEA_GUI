@@ -2,29 +2,42 @@
 
 ## Scope
 
-Fixed-bed zeolite (clinoptilolite) ion exchange for NH3-N polishing after
-desalination. NH4+ is exchanged onto the zeolite and the bed is regenerated
-in place with brine. Because the unit treats desalinated water, competing
-cations (Na+, K+, Ca2+) are low and no competition correction is applied.
-Bed life comes from a bench column breakthrough curve (NMSU assumptions);
-capital and maintenance use the same unit-level TIC and system-level
-investment-factor structure as the other units.
+Fixed-bed zeolite (clinoptilolite) ion exchange for ammonia (NH3-N) polishing
+after desalination. NH4+ is exchanged onto the zeolite, and the bed is
+regenerated in place with brine. Because the unit treats desalinated water,
+competing cations (Na+, K+, Ca2+) are low and no correction for them is
+applied. Bed life comes from an NMSU bench column test (NMSU assumptions).
 
-## Technical Model
+## Using the Model
 
-### Water quality
+### Removal efficiencies
 
-NH3-N removal is read from the unit's removal-efficiency table (default 95%)
-and also sets the breakthrough point on the bench curve. Other constituents
-use the same table.
+Open **Removal efficiencies** for the zeolite unit:
 
-### Bench breakthrough curve
+| Constituent | Default | Set by |
+|---|---|---|
+| Ammonia nitrogen | 95% | User. Also sets the breakthrough point that determines bed life. |
+| Other constituents | 0% | User |
 
-Bench test: KMI zeolite 14x30, single upflow column, EBCT 20 min, 8.24 g in a
-10 mL bed (bulk density 824 kg/m3), feed about 25 mg/L NH3-N, regenerated with
-10% NaCl. Cycle 1 of the test is used:
+A higher NH3-N removal shortens the time between regenerations, because the
+bed must be regenerated before the effluent rises above the target.
 
-| BV | Removal |
+### What the model calculates
+
+- **Bed life** (bed volumes and days between regenerations) from the NH3-N
+  removal and the inlet NH3-N.
+- **Bed volume and zeolite inventory** from the flow and EBCT.
+- **Regeneration chemicals** (NaCl and NaOH) and the **spent brine** volume.
+- **Media replacement** and spent zeolite, when a replacement fraction is set.
+- **Electricity** for pumping through the beds.
+
+### How bed life is determined
+
+The bed life comes from the first service cycle of the NMSU bench column
+(KMI zeolite 14x30, EBCT 20 min, feed about 25 mg/L NH3-N, 10% NaCl
+regeneration):
+
+| Bed volumes treated | NH3-N removal |
 |---|---|
 | 0-391 | 100% |
 | 482 | 99.8% |
@@ -32,150 +45,122 @@ Bench test: KMI zeolite 14x30, single upflow column, EBCT 20 min, 8.24 g in a
 | 724 | 37.2% |
 | 1,244 | 0% |
 
-```text
-BV_bench   = BV on cycle 1 where removal falls to the target (linear interpolation)
-           = 517.6 BV at 95% removal
-```
-
-A 100% target returns the last BV still at 100% removal (390.7 BV).
-
-### Scaling to the inlet water
+The model reads the bed volumes at which removal falls to the target (518 BV
+at 95%; 391 BV at 100%) and scales them to the inlet NH3-N, keeping the NH3-N
+loaded per bed volume the same as in the bench test:
 
 ```text
-BV         = BV_bench x C_bench / C_in        C_bench = 24.38 mg/L (cycle-1 mean)
-t_service  = BV x EBCT / 1440                 service time between regenerations (days)
-n_cycles   = 365 / t_service                  regenerations per year (continuous operation)
-V_bed      = Q x EBCT / 1440                  bed volume (m3)
-M_bed      = 824 x V_bed                      zeolite inventory (kg, reported)
-N_removed  = Q x (C_in - C_out) / 1000        kg N/day
+BV         = BV_bench x 24.38 / C_in        24.38 mg/L = bench feed, C_in = inlet NH3-N
+t_service  = BV x EBCT / 1440               days between regenerations
+V_bed      = Q x EBCT / 1440                bed volume (m3)
+inventory  = 824 x V_bed                    kg zeolite (bench bulk density)
 ```
 
-The scaling holds the NH3-N mass loaded per bed volume constant, so a more
-dilute feed gives proportionally more bed volumes. A warning appears when
-feed NH3-N is above 30 mg/L (outside the bench range).
+At the default 95% removal and EBCT 20 min:
+
+| Inlet NH3-N (mg/L) | Bed volumes | Days between regenerations |
+|---|---|---|
+| 1 | 12,619 | 175 |
+| 5 | 2,524 | 35 |
+| 10 | 1,262 | 18 |
+| 25 | 505 | 7 |
+
+A warning appears when inlet NH3-N is above 30 mg/L (above the bench range).
 
 ### Regeneration
 
-The bed is regenerated in place with the bench procedure: a 10% NaCl brine
-at pH 11, 0.9 L per 10 mL bed (90 bed volumes), reused for 5 regenerations.
-Na+ displaces NH4+ from the zeolite; NaOH holds the brine at pH 11 so the
-eluted NH4+ converts to NH3, which keeps the exchange driving force high and
-lets the brine be reused.
+The bed is regenerated with the bench procedure: a 10% NaCl brine at pH 11,
+90 bed volumes per regeneration, reused for 5 regenerations. NaOH keeps the
+brine at pH 11 so that the eluted ammonium converts to ammonia.
 
 ```text
-V_brine    = BV_regen x V_bed / n_reuse        fresh brine per regeneration (m3)
-rho_brine  = 997 + 735 x w_NaCl                brine density (kg/m3)
-NaCl       = V_brine x rho_brine x w_NaCl x n_cycles                 kg/year
-NaOH       = N_removed x 365 / 14.007 x r_OH x 39.997                kg/year
-brine      = V_brine x n_cycles                spent brine (m3/year, reported)
+fresh brine per regeneration = 90 x V_bed / 5                          m3
+NaCl  = fresh brine x brine density x 0.10 x regenerations per year     kg/year
+NaOH  = N removed (kmol/year) x NaOH ratio x 40                         kg/year
+spent brine = fresh brine x regenerations per year                      m3/year (reported)
 ```
 
-r_OH is the NaOH added per mole of NH4-N eluted. The default of 1 is an
-engineering estimate: each NH4+ eluted at pH 11 is converted to NH3 and
-consumes one OH-. Set it to 0 for neutral (pH 7) regeneration.
+The NaOH ratio (default 1 mol per mol NH4-N) is an engineering estimate; set
+it to 0 for neutral (pH 7) regeneration.
 
-### Media replacement and solid waste
+### Media replacement
 
-```text
-M_AEC      = N_removed x t_service x 1000 / AEC    zeolite mass loaded per cycle (kg)
-replaced   = M_AEC x f_replace x n_cycles          kg/year, reported as spent zeolite
-```
-
-AEC is the ammonium exchange capacity in mg N per g zeolite (default 4.0,
-Deng et al. 2014 range 2.5-21.5). The default replacement fraction is 0
-because the media is regenerated in place.
+The media is regenerated in place, so the default replacement fraction is 0.
+When it is set, the replaced mass per cycle is that fraction of the zeolite
+loaded in one cycle at the ammonium exchange capacity (AEC, default 4 mg N/g);
+the replaced mass is reported as spent zeolite.
 
 ### Energy
 
 ```text
-energy_intensity = rho x g x H / eta / 3.6e6   kWh per m3 feed
-pump_power       = energy_intensity x Q / 24   kW
+energy = rho x g x H / pump efficiency / 3.6e6       kWh per m3 feed
 ```
 
-H is the total dynamic head through the contactors and piping and eta the
-pump efficiency, as for GAC.
+H is the head through the beds and piping (default 10 m), as for GAC.
 
 ## Cost Model
 
 ### Capital
 
 ```text
-C_bare    = 3305.1 x Q^0.6961 x CEPCI_base / CEPCI_2021     Q = inlet flow (m3/day)
-C_direct  = TIC x C_bare                                    unit-level installation factor
-CAPEX     = IF x C_direct                                   system-level investment factor
+C_bare    = 3305.1 x Q^0.6961              2021 dollars, Q = inlet flow (m3/day), escalated with CEPCI
+C_direct  = TIC x C_bare                   TIC = 1.15
+CAPEX     = IF x C_direct                  system-level investment factor
 ```
 
-The cost curve was fitted to the US EPA WBS Cation Exchange model (March 2023
-release, 2021 dollars) run with zeolite settings at the EPA standard design
-flows 0.124, 0.305, 0.740, 2.152, 7.365 and 22.614 MGD (470-85,600 m3/day):
-
-- EBCT 20 min; bed volumes between regenerations about 2,000.
-- Minimum surface loading lowered from 5 to 1 gpm/ft2 so that 20-min beds
-  can be autosized; all other EPA defaults kept (pressure vessels, piping,
-  valves, instrumentation, brine and backwash tanks, building).
-- Vessels autosized by the model at each flow.
-- The resin line is removed, so the initial zeolite charge is not costed.
-
-| Design flow (MGD) | Direct cost excl. media (2021 $) | Fit error |
-|---|---|---|
-| 0.124 | 224,019 | +7% |
-| 0.305 | 480,668 | -7% |
-| 0.740 | 747,692 | +11% |
-| 2.152 | 2,068,757 | -16% |
-| 7.365 | 4,072,659 | +1% |
-| 22.614 | 8,416,825 | +7% |
-
-EPA direct costs already include transportation and installation, so the
-default TIC is 1.15 (same basis as GAC). In these runs EPA's own total
-capital was 1.46-1.57 times its direct cost.
+The cost curve comes from the US EPA cation exchange cost model run with
+zeolite settings (EBCT 20 min) at flows from 0.12 to 22.6 MGD. It covers
+pressure vessels, piping, valves, instrumentation, brine and backwash tanks
+and building, but not the initial zeolite charge. The EPA costs already
+include transportation and installation, so TIC is 1.15 (same basis as GAC).
 
 ### Operating
 
 ```text
-C_elec    = energy_intensity x Q x days x electricity price
-C_chem    = (NaCl x c_NaCl + NaOH x c_NaOH) x days / 365
-C_media   = replaced x days / 365 x c_zeolite
-C_maint   = f_maint x C_direct
-OPEX      = (1 + f_cont) x (C_elec + C_chem + C_media + C_maint)
+electricity = energy x Q x days x electricity price
+chemicals   = (NaCl x NaCl price + NaOH x NaOH price) x days / 365
+media       = replaced zeolite x days / 365 x zeolite price
+maintenance = maintenance fraction x C_direct
+OPEX        = (1 + O&M contingency) x (electricity + chemicals + media + maintenance)
 ```
-Spent-brine disposal is left to the system level; the model reports the
-brine volume.
+
+Spent-brine disposal is not costed in this unit; the brine volume is reported
+for the system level.
 
 ## Default Inputs
 
 | Input | Default | Basis |
 |---|---|---|
+| NH3-N removal | 95% | NMSU assumptions (removal table) |
 | Recovery | 0.995 | NMSU assumptions |
 | EBCT | 20 min | NMSU assumptions (bench test); Turan and Turan 2021 |
 | Brine per regeneration | 90 bed volumes | NMSU assumptions (bench: 0.9 L per 10 mL bed) |
 | Brine reuse | 5 regenerations | NMSU assumptions (bench) |
 | NaCl in brine | 10% by mass | NMSU assumptions (bench) |
-| NaOH to NH4-N | 1 mol/mol | Engineering estimate: stoichiometric OH- to keep pH 11 as NH4+ is eluted |
+| NaOH to NH4-N | 1 mol/mol | Engineering estimate |
 | AEC | 4.0 mg N/g | NMSU assumptions; Deng et al. 2014 (2.5-21.5) |
 | Pump head, efficiency | 10 m, 0.70 | Engineering estimate (same as GAC) |
 | Zeolite price | 4.41 $/kg (2014 $) | NMSU assumptions (bench vendor price); Deng et al. 2014 |
 | Media replacement | 0 per cycle | NMSU assumptions (regenerated in place) |
 | NaCl price | 40 $/t (2014 $) | Deng et al. 2014 |
 | NaOH price | 300 $/t (2014 $) | Deng et al. 2014 |
-| Equipment cost curve | 3305.1 x Q^0.6961 (2021 $) | US EPA WBS Cation Exchange model, zeolite settings |
+| Equipment cost curve | 3305.1 x Q^0.6961 (2021 $) | US EPA cation exchange cost model, zeolite settings |
 | TIC | 1.15 | Engineering estimate on an installed-cost basis |
 | Maintenance fraction | 0.02 /yr of C_direct | NMSU assumptions |
-| O&M contingency | 0.20 | NMSU assumptions; Wang et al. 2024 DWPR report |
+| O&M contingency | 0.20 of OPEX | NMSU assumptions; Wang et al. 2024 DWPR report |
 
 ## Assumptions and Limits
 
-- Bed life comes from one bench column, cycle 1 only; cycle 2 after
-  regeneration ran longer, so cycle 1 is conservative.
-- BV scales inversely with feed NH3-N (constant mass loading); isotherm
-  effects at low concentration are not captured.
-- Intended for post-treatment of desalinated water with low competing cations.
-- The bench brine volume (90 bed volumes) is high for full scale; EPA's
-  cation-exchange design basis (15 lb NaCl per ft3 of media) uses roughly
-  eight times less salt.
-- Spent-brine disposal and NH4Cl recovery are not included.
+- Bed life comes from one bench column, first cycle only; the second cycle
+  after regeneration ran longer, so the first cycle is conservative.
+- Bed volumes scale inversely with inlet NH3-N; behaviour at very low
+  concentrations is not captured.
+- Intended for desalinated water with low competing cations.
+- The bench brine volume (90 bed volumes) is high for full scale; the EPA
+  design basis (15 lb NaCl per ft3 of media) uses about eight times less salt.
+- Spent-brine disposal and ammonium chloride recovery are not included.
 - The cost curve is for EBCT 20 min; changing EBCT changes bed life but not
-  capital cost. It was fitted to design flow; the app applies it to the
-  unit inlet flow.
+  capital cost.
 
 ## Sources
 
@@ -183,14 +168,11 @@ brine volume.
   10% NaCl regeneration) and TEA cost assumptions.
 - Koon, J.H., Kaufman, W.J. Optimization of Ammonia Removal by Ion Exchange
   Using Clinoptilolite. US EPA Water Pollution Control Research Series,
-  Report 17080 (1972); UC Berkeley Sanitary Engineering Research Laboratory
-  (1971).
+  Report 17080 (1972).
 - Turan and Turan 2021, Water Science & Technology, DOI 10.2166/wst.2021.468.
 - Deng, Q., Dhar, B.R., Elbeshbishy, E., Lee, H.-S. 2014. Ammonium nitrogen
   removal from the permeates of anaerobic membrane bioreactors: economic
   regeneration of exhausted zeolite. Environmental Technology 35, 2008-2017.
-  DOI 10.1080/09593330.2014.889759.
-- US EPA 2023. Work Breakdown Structure (WBS) Model for Cation Exchange System
-  Treatment (Excel model, release March 2023, 2021 dollars) and model
-  documentation. Drinking Water Treatment Technology Unit Cost Models.
+- US EPA 2023. Work Breakdown Structure (WBS) Model for Cation Exchange
+  Treatment (2021 dollars). Drinking Water Treatment Technology Unit Cost Models.
 - Wang et al. 2024 DWPR report (O&M contingency).

@@ -3,144 +3,153 @@
 ## Scope
 
 Granular activated carbon (GAC) adsorption in downflow steel pressure
-contactors. The unit treats the inlet stream passed from upstream units.
-Bed life comes from the NMSU empirical bed-volume model; bed sizing, capital
-cost, carbon replacement and maintenance follow the WaterTAP 1.4 GAC costing
-method, whose capital correlations were regressed from the US EPA Work
-Breakdown Structure (WBS) GAC cost model.
+contactors, used to remove organics. Bed life comes from the NMSU bed-life
+relationship (NMSU assumptions); bed sizing and costs follow the WaterTAP 1.4
+GAC costing method, whose cost equations were derived from the US EPA GAC cost
+model.
 
-## Technical Model
+## Using the Model
 
-### Water quality
+### Removal efficiencies
 
-Constituent removal comes from the removal-efficiency table. The default for
-TOC, oil, BTEX and PAHs is the removal from one WaterTAP CPHSDM run (NMSU
-assumption):
+Open **Removal efficiencies** for the GAC unit:
 
-```text
-R = 1 - 0.28773 / 1.15 = 0.7498
-```
+| Constituent | Default | Set by |
+|---|---|---|
+| TOC | 75% | User |
+| Oil and grease | 75% | User |
+| BTEX | 75% | User |
+| PAHs | 75% | User |
+| Other constituents | 0% | User |
+
+The 75% default is the TOC removal from one NMSU process simulation, applied
+to all organics (NMSU assumptions). Removal does not change the bed life; bed
+life depends on the inlet TOC (below).
+
+### What the model calculates
+
+- **Bed volume and vessels** from the flow and EBCT.
+- **Bed life** (bed volumes and days between carbon changeouts) from the
+  inlet TOC.
+- **Carbon use**, spent carbon and the share that leaves as solid waste.
+- **Electricity** for pumping through the contactors.
 
 ### Bed sizing
 
 ```text
-V_bed      = Q x EBCT                      bed volume of operating vessels (m3)
-N_op       = ceil(V_bed / V_max)           operating vessels in parallel
-v          = V_bed / N_op                  bed volume per vessel (m3)
-N_total    = N_op + N_redundant
-V_total    = N_total x v                   total contactor volume (m3)
-M          = rho_b x V_bed                 fresh GAC mass in operating beds (kg)
+V_bed    = Q x EBCT / 1440                bed volume in operation (m3), EBCT in min
+N_op     = V_bed / 40, rounded up          vessels in parallel (max 40 m3 of bed each)
+N_total  = N_op + 1                        one redundant vessel
+M        = 400 x V_bed                     fresh carbon in the operating beds (kg)
 ```
 
-Q is the GAC inlet flow (m3/day, with EBCT in days). Redundant vessels are
-costed as contactors but are not charged with carbon (WaterTAP convention).
+The redundant vessel is costed but not filled with carbon.
 
-### Bed life (NMSU empirical model)
+### How bed life is determined
 
 ```text
-BV         = A x TOC_in^b                  bed volumes to changeout, 1 <= BV <= 150,000
-t_change   = BV x EBCT                     changeout interval (days)
-usage      = M x 365 / t_change            spent GAC (kg/year, continuous operation)
-CUR        = rho_b / BV                    carbon usage rate (kg per m3 treated)
+BV        = 1.5e5 x TOC_in^-1.85           bed volumes to changeout (TOC in mg/L), limited to 1-150,000
+t_change  = BV x EBCT / 1440               days between changeouts
+carbon    = M x 365 / t_change             spent carbon (kg/year)
 ```
 
-Defaults are A = 1.5e5 and b = -1.85 (TOC in mg/L). Carbon use per m3 treated
-depends only on BV and bulk density, not on bed size. A warning appears when
-feed TOC is outside 0.4-250 mg/L.
+At the default EBCT of 10 min:
 
-### Pump energy
+| Inlet TOC (mg/L) | Bed volumes | Days between changeouts |
+|---|---|---|
+| 1 | 150,000 (upper limit) | 1,042 |
+| 5 | 7,638 | 53 |
+| 10 | 2,119 | 15 |
+| 30 | 278 | 2 |
+
+A warning appears when inlet TOC is outside 0.4-250 mg/L. High inlet TOC makes
+the carbon change very often; pretreatment that lowers TOC ahead of GAC
+lengthens bed life sharply.
+
+### Spent carbon
+
+Spent carbon is regenerated off site. The regenerated share (default 80%)
+returns to service; the rest leaves as solid waste and is replaced with
+makeup carbon. Disposal cost is not included in this unit; the solid-waste
+amount is reported for the system level.
+
+### Energy
 
 ```text
-energy_intensity = rho x g x H / eta / 3.6e6     kWh per m3 feed
-pump_power       = energy_intensity x Q / 24     kW
+energy = rho x g x H / pump efficiency / 3.6e6      kWh per m3 feed
 ```
 
-H is the total dynamic head through the contactors and piping and eta the
-pump wire-to-water efficiency. This is the same flow-head-efficiency method
-the EPA WBS models use for booster pumps.
-
-### Solid waste
-
-```text
-spent GAC generated     = usage                         (technical output)
-spent GAC to solid waste = (1 - f_regen) x usage x days/365   (cost output)
-```
-
-Disposal cost is not included in this unit; it is left to the system level.
+H is the head through the contactors and piping (default 10 m).
 
 ## Cost Model
 
 ### Capital
 
-All correlations are in USD_2020 and are escalated to the project base year
-with CEPCI.
+All cost equations are in 2020 dollars and escalated with CEPCI. v is the bed
+volume per vessel (m3) and V_total the total contactor volume.
 
 ```text
-C_contactor = N_total x (10010.9 + 2204.95 v - 15.9378 v^2 + 0.110592 v^3)
-c_GAC       = 4.58342 x exp(-1.25311e-5 x min(M, 18,143.7))      USD/kg
-C_GAC       = c_GAC x M                                         initial carbon charge
-C_other     = 16660.7 x V_total^0.552207                        piping, valves, instrumentation, controls
-C_bare      = C_contactor + C_GAC + C_other
-C_direct    = TIC x C_bare                                      unit-level installation factor
-CAPEX       = IF x C_direct                                     system-level investment factor
+contactors   = N_total x (10010.9 + 2204.95 v - 15.9378 v^2 + 0.110592 v^3)
+carbon       = 4.58342 x exp(-1.25311e-5 x min(M, 18,143.7)) x M          initial carbon charge
+other        = 16660.7 x V_total^0.552207                                  piping, valves, instrumentation, controls
+C_bare       = contactors + carbon + other
+C_direct     = TIC x C_bare                                                TIC = 1.15
+CAPEX        = IF x C_direct                                               system-level investment factor
 ```
 
-The EPA WBS equipment costs already include transportation and installation,
-so the default TIC is 1.15; it covers direct items such as site work, yard
-piping and electrical that the EPA model treats separately. IF is the
-system-level investment factor shared by all units.
+The EPA equipment costs already include transportation and installation, so
+TIC is 1.15; it covers remaining direct items such as site work, yard piping
+and electrical.
 
 ### Operating
 
 Carbon quantities scale with operating days; maintenance does not.
 
 ```text
-usage_op     = usage x days / 365
-C_regen      = f_regen x usage_op x c_regen
-C_makeup     = (1 - f_regen) x usage_op x c_makeup
-C_elec       = energy_intensity x Q x days x electricity price
-C_maint      = f_maint x C_direct
-OPEX         = (1 + f_cont) x (C_regen + C_makeup + C_elec + C_maint)
+regeneration = regenerated share x carbon x days/365 x regeneration price
+makeup       = (1 - regenerated share) x carbon x days/365 x makeup carbon price
+electricity  = energy x Q x days x electricity price
+maintenance  = maintenance fraction x C_direct                 includes labor
+OPEX         = (1 + O&M contingency) x (regeneration + makeup + electricity + maintenance)
 ```
 
-Regeneration is off site; its unit cost includes the regeneration energy, so
-no separate regeneration electricity is charged.
+The off-site regeneration price includes the regeneration energy.
 
 ## Default Inputs
 
 | Input | Default | Basis |
 |---|---|---|
-| EBCT | 10 min (600 s) | WaterTAP reference design; EPA WBS typical 5-25 min for organics |
-| Maximum bed volume per vessel | 40 m3 | EPA WBS vertical vessels up to 14 ft diameter x 14 ft, 50% bed expansion |
-| Redundant vessels | 1 | WaterTAP GAC costing default |
-| Bulk density | 400 kg/m3 | WaterTAP reference design and NMSU assumptions |
-| BV coefficients A, b | 1.5e5, -1.85 | NMSU assumptions (fit to pilot data) |
+| Organics removal | 75% | NMSU assumptions (removal table) |
+| EBCT | 10 min | WaterTAP reference design; EPA typical 5-25 min for organics |
+| Maximum bed volume per vessel | 40 m3 | EPA vessel limits (14 ft diameter x 14 ft, 50% bed expansion) |
+| Redundant vessels | 1 | WaterTAP default |
+| Bulk density | 400 kg/m3 | NMSU assumptions |
+| Bed-life coefficients | 1.5e5, -1.85 | NMSU assumptions (pilot data) |
 | Pump head, efficiency | 10 m, 0.70 | Engineering estimate |
 | TIC | 1.15 | Engineering estimate on an installed-cost basis |
-| Regeneration fraction | 0.80 | NMSU assumptions (WaterTAP default 0.70; EPA off-site makeup 30%/yr) |
-| Regeneration cost | 4.28352 USD_2020/kg | WaterTAP 1.4 GAC costing |
-| Makeup GAC cost | 4.58223 USD_2020/kg | WaterTAP 1.4 GAC costing |
-| Maintenance fraction | 0.03 /yr of C_direct | WaterTAP maintenance-labor-chemical factor |
-| O&M contingency | 0.20 | NMSU assumptions; Wang et al. 2024 DWPR report |
+| Regenerated share | 0.80 | NMSU assumptions |
+| Regeneration price | 4.28352 $/kg (2020 $) | WaterTAP 1.4 GAC costing |
+| Makeup carbon price | 4.58223 $/kg (2020 $) | WaterTAP 1.4 GAC costing |
+| Maintenance fraction | 0.03 /yr of C_direct, including labor | WaterTAP maintenance-labor-chemical factor |
+| O&M contingency | 0.20 of OPEX | NMSU assumptions; Wang et al. 2024 DWPR report |
 
 ## Assumptions and Limits
 
 - Single-stage parallel operation; lead-lag (series) operation is not modeled.
-- The BV law was fitted to two pilot points; bed life outside the fitted TOC
-  range, and its dependence on EBCT, are not captured.
+- The bed-life relationship was fitted to limited pilot data; bed life outside
+  the fitted TOC range, and its dependence on EBCT, are not captured.
 - Removal is a fixed fraction per constituent and is not linked to bed life.
 - Steel pressure contactors only; gravity basins are not included.
-- Spent GAC is assumed regenerable. GAC from produced water may carry NORM or
-  metals, which can rule out regeneration (EPA WBS lists radioactive and
-  hazardous disposal options).
+- Spent carbon is assumed regenerable. Carbon from produced water may carry
+  NORM or metals that rule out regeneration.
 
 ## Sources
 
+- NMSU assumptions: bed-life relationship fitted to pilot data, default
+  removal and regenerated share.
 - WaterTAP 1.4 GAC unit model and costing method,
   https://watertap.readthedocs.io/en/1.4.0/technical_reference/costing/gac.html
-- US EPA 2021, Work Breakdown Structure-Based Cost Model for Granular Activated
+- US EPA 2021. Work Breakdown Structure-Based Cost Model for Granular Activated
   Carbon Drinking Water Treatment.
-- NMSU assumptions: empirical bed-life model fitted to pilot BV data, default
-  removal fraction and spent-GAC regeneration split.
 - Lugo et al. 2025, Journal of Environmental Chemical Engineering 13, 117026.
 - Wang et al. 2024 DWPR report (O&M contingency).

@@ -596,6 +596,7 @@ ALL_WATER_QUALITY_PARAMS = {
     "Gross Beta": {"unit": "pCi/L", "limit": 50.0},
     "Radium-226": {"unit": "pCi/L", "limit": 50.0},
     "Radium-228": {"unit": "pCi/L", "limit": 50.0},
+    "H2S": {"unit": "mg/L", "limit": 0.002},
 }
 
 
@@ -613,11 +614,13 @@ UNIT_REMOVAL_RATES = {
     "Equalization tank": {},
 
     "DAF": {
-        "Oil": "90-99%",
-        "TSS": "80-95%",
-        "Turbidity": "80-95%",
-        "TOC": "10-30%",
-        "Iron": "10-30%"
+        # NMSU assumptions: TSS and Fe targets set the ACH/polymer doses; oil and grease removal
+        # equals TSS removal. TOC and H2S removals are calculated by the DAF model from the H2O2
+        # dose and shown in the removal table, where they can be overridden.
+        "Oil": "87%",
+        "TSS": "87%",
+        "Turbidity": "87%",
+        "Iron": "87%"
     },
 
     "Floc n Drop": {
@@ -630,9 +633,13 @@ UNIT_REMOVAL_RATES = {
     },
 
     "Walnut shell filtration": {
-        "Oil": "60-90%",
-        "TSS": "85-95%",
-        "Turbidity": "90-98%"
+        # NMSU assumptions: lower limits of reported WSF removals
+        "Oil": "80%",
+        "TSS": "80%",
+        "Turbidity": "80%",
+        "TOC": "60%",
+        "Iron": "50%",
+        "H2S": "75%"
     },
 
     "Media filtration": {
@@ -673,27 +680,19 @@ UNIT_REMOVAL_RATES = {
         "Sulfate": "42%"
     },
 
+    # NMSU EC removal table, only the values traceable to Al-Ajmi et al. 2025 (Water 17, 23),
+    # Table 2 after 30 min of EC (TSS from the text). Untraceable V1 values are left out.
     "Electrocoagulation": {
-        "Conductivity": "10%",
-        "TDS": "10%",
-        "TSS": "58%",
-        "Alkalinity": "60%",
-        "Hardness": "42%",
-        "TOC": "53%",
-        "Ammonia nitrogen": "56%",
-        "Barium": "44%",
-        "Boron": "6%",
-        "Calcium": "42%",
-        "Magnesium": "42%",
-        "Silica": "34%",
-        "Sodium": "4%",
-        "Strontium": "4%",
-        "Iron": "31%",
-        "Chloride": "16%",
-        "Sulfate": "42%",
-        "Oil": "77%",
         "BTEX": "98%",
-        "PAHs": "98%"
+        "Oil": "77%",
+        "TSS": "58%",
+        "TOC": "53%",
+        "Barium": "44%",
+        "Silica": "34%",
+        "Chloride": "16%",
+        "Boron": "6%",
+        "Sodium": "4%",
+        "Strontium": "4%"
     },
 
     "Antiscalant / pH adjustment": {},
@@ -1084,6 +1083,7 @@ SIDEBAR_DEFAULTS = {
     "Hardness": 27800.0,
     "Ammonia nitrogen": 750.0,
     "Barium": 12.0,
+    "Iron": 49.8,
     "Boron": 76.5,
     "Calcium": 8200.0,
     "Magnesium": 1800.0,
@@ -1109,6 +1109,7 @@ SIDEBAR_DEFAULTS = {
     "Hardness": 12500.0,
     "Ammonia nitrogen": 500.0,
     "Barium": 5.6,
+    "Iron": 25.7,
     "Boron": 42.3,
     "Calcium": 3800.0,
     "Magnesium": 745.0,
@@ -1134,6 +1135,7 @@ SIDEBAR_DEFAULTS = {
     "Hardness": 4200.0,
     "Ammonia nitrogen": 350.0,
     "Barium": 2.2,
+    "Iron": 19.5,
     "Boron": 17.2,
     "Calcium": 1200.0,
     "Magnesium": 295.0,

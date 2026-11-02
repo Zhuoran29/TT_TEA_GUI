@@ -31,11 +31,15 @@ class GoodPretreatmentModelTests(unittest.TestCase):
                 },
             },
         )
-        self.assertAlmostEqual(technical["brine_flow"]["value"], 160.0)
+        # recovery follows from the sludge: water leaving with the wet sludge enters the brine stream
+        self.assertAlmostEqual(technical["brine_flow"]["value"], technical["sludge_volume"]["value"])
+        self.assertAlmostEqual(technical["water_recovery"]["value"], 0.9812, places=3)
         self.assertGreater(technical["aluminum_consumption"]["value"], 0.0)
         cost = run_cost_model("Electrocoagulation", technical, {}, CONTEXT)
         self.assertNotIn("brine_disposal_operating_cost", cost)
-        self.assertGreater(cost["solid_disposal_operating_cost"]["value"], 0.0)
+        self.assertNotIn("solid_disposal_operating_cost", cost)  # sludge goes to the system waste line
+        self.assertGreater(cost["solid_waste"]["value"], 0.0)
+        self.assertGreater(cost["maintenance_operating_cost"]["value"], 0.0)
 
     def test_uf_pump_energy_and_bisulfite_cost_are_active(self):
         technical = run_technical_model(
@@ -56,7 +60,7 @@ class GoodPretreatmentModelTests(unittest.TestCase):
         )
         cost = run_cost_model("Walnut shell filtration", technical, {}, CONTEXT)
         self.assertGreater(cost["installed_capital_cost"]["value"], 0.0)
-        self.assertGreater(cost["baseline_variable_operating_cost"]["value"], 0.0)
+        self.assertGreater(cost["media_cleaning_cost"]["value"], 0.0)
 
     def test_chemical_softening_falls_back_if_reaktoro_unavailable(self):
         technical = run_technical_model(

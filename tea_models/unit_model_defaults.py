@@ -26,20 +26,17 @@ TECHNICAL_MODEL_DEFAULTS = {
         "energy_intensity": 0.223,
     },
     "Electrocoagulation": {
-        "unit_kind": "chemical_clarification",
-        "recovery": 0.98,
+        "unit_kind": "electrocoagulation",
         "current_density_mA_cm2": 20.0,
         "electrode_gap_m": 0.02,
         "hydraulic_retention_time": 30.0,
         "energy_intensity": 0.0,
+        "sludge_solids_content": 0.025,
     },
     "Walnut shell filtration": {
-        "unit_kind": "media_filter",
+        "unit_kind": "wsf",
         "recovery": 0.99,
         "energy_intensity": 0.17,
-        "filtration_rate": 10.0,
-        "bed_depth": 1.0,
-        "media_bulk_density": 650.0,
     },
     "Media filtration": {
         "unit_kind": "media_filter",
@@ -220,6 +217,17 @@ TECHNICAL_MODEL_DEFAULTS = {
         "pump_head": 10.0,
         "pump_efficiency": 0.70,
     },
+    "DAF": {
+        "unit_kind": "daf",
+        "recycle_ratio": 0.12,
+        "pump_head": 51.0,
+        "pump_efficiency": 0.70,
+        "auxiliary_energy_intensity": 0.02,
+        "h2o2_to_iron_ratio": 1.75,
+        "ach_aluminum_content": 0.124,
+        "cod_to_toc_ratio": 4.0,
+        "float_solids_content": 0.03,
+    },
     "Ion exchange / EDI": {
         "unit_kind": "ion_exchange",
         "recovery": 0.98,
@@ -367,19 +375,17 @@ COST_MODEL_DEFAULTS = {
         "reference_ec_capex": 1595666.0,
         "reference_capacity": 11356.0,
         "capex_scaling_exponent": 0.87,
+        "installation_factor": 1.0,
         "aluminum_price": 2.23,
-        "solid_disposal_cost": 0.11,
-        "labor_fte": 1.0,
-        "labor_cost_per_fte_year": 80000.0,
+        "maintenance_fraction": 0.03,
         "om_contingency_factor": 0.20,
     },
     "Walnut shell filtration": {
-        "reference_capex_cost_per_bbl": 0.02,
-        "reference_opex_cost_per_bbl": 0.03,
-        "reference_flow_bbl_day": 20000.0,
+        "reference_capex_cost_per_bbl": 0.008993,
         "capex_scaling_exponent": 0.87,
-        "labor_fte": 1.0,
-        "labor_cost_per_fte_year": 80000.0,
+        "installation_factor": 1.0,
+        "media_cleaning_cost_per_m3": 0.0546,
+        "maintenance_fraction": 0.03,
         "om_contingency_factor": 0.20,
     },
     "Media filtration": {"capex_per_flow": 96.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.04, "media_replacement_price": 0.15, "media_replacement_fraction": 0.10},
@@ -472,6 +478,15 @@ COST_MODEL_DEFAULTS = {
         "zeolite_price": 4.41,
         "media_replacement_fraction_per_cycle": 0.0,
     },
+    "DAF": {
+        "capex_scaling_exponent": 0.87,
+        "installation_factor": 1.0,
+        "maintenance_fraction": 0.03,
+        "om_contingency_factor": 0.20,
+        "ach_price": 0.4506,
+        "polymer_price": 1.6344,
+        "h2o2_price": 1.3986,
+    },
     "Ion exchange / EDI": {"capex_per_flow": 440.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.35, "chemical_price": 0.5, "media_replacement_price": 5.0, "media_replacement_fraction": 0.25},
     "Ion exchange": {"capex_per_flow": 340.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.25, "chemical_price": 0.5, "media_replacement_price": 4.0, "media_replacement_fraction": 0.20},
     "Boron-selective IX": {"capex_per_flow": 380.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.30, "chemical_price": 0.6, "media_replacement_price": 8.0, "media_replacement_fraction": 0.20},
@@ -524,6 +539,12 @@ TECHNICAL_INPUT_SPECS = {
     "motor_efficiency": ("Pumping", "fraction", "Motor efficiency"),
     "vfd_factor": ("Pumping", "factor", "VFD or constant motor factor"),
     "pump_head": ("Pumping", "m", "Total dynamic head for pump energy calculation"),
+    "recycle_ratio": ("Hydraulics", "fraction", "Pressurised recycle flow as a fraction of inlet flow"),
+    "h2o2_to_iron_ratio": ("Chemicals", "mg H2O2/mg Fe", "H2O2 dose per mg of feed iron"),
+    "ach_aluminum_content": ("Chemicals", "fraction", "Aluminum mass fraction of the ACH product"),
+    "cod_to_toc_ratio": ("Water quality", "mg COD/mg TOC", "COD to TOC ratio used to report COD"),
+    "float_solids_content": ("Residuals", "fraction", "Dry solids mass fraction of the skimmed float"),
+    "sludge_solids_content": ("Residuals", "fraction", "Dry solids mass fraction of the sludge; sets sludge volume and water recovery"),
     "pressure_drop_psi": ("Pumping", "psi", "WaterTAP-style resin bed and column pressure drop"),
     "pump_efficiency": ("Pumping", "fraction", "Pump wire-to-water efficiency"),
     "target_pH": ("Conditioning", "-", "Target outlet pH when pH is tracked"),
@@ -571,10 +592,10 @@ TECHNICAL_INPUT_SPECS = {
 COST_INPUT_SPECS = {
     "reference_direct_membrane_capex": ("Capital", "$(2024)", "Reference direct membrane CAPEX at the LSRRO reference flow"),
     "reference_direct_cs_capex": ("Capital", "$(2024)", "Reference direct chemical-softening CAPEX"),
-    "reference_ec_capex": ("Capital", "$(2025)", "Reference EC equipment CAPEX"),
+    "reference_ec_capex": ("Capital", "$(2024)", "Reference EC CAPEX at the reference capacity"),
     "installation_factor": ("Capital", "-", "Unit-level installation factor (TIC) applied to all direct capital items"),
     "reference_flow_bbl_day": ("Capital", "bbl/day", "Reference flow basis for bbl/day CAPEX scaling"),
-    "reference_capex_cost_per_bbl": ("Capital", "$(2022)/bbl", "Reference annualized WSF CAPEX cost"),
+    "reference_capex_cost_per_bbl": ("Capital", "$(2020)/bbl", "Annualized WSF CAPEX at the reference flow"),
     "reference_opex_cost_per_bbl": ("Variable O&M", "$(2022)/bbl", "Reference WSF operating cost"),
     "reference_uf_flow_gpd": ("Capital", "gpd", "Reference UF flow basis"),
     "uf_equipment_unit_cost": ("Capital", "$(2024)/gpd", "UF equipment unit CAPEX"),
@@ -632,6 +653,10 @@ COST_INPUT_SPECS = {
     "labor_fte": ("Labor", "FTE", "Labor requirement assigned to the LSRRO unit"),
     "labor_cost_per_fte_year": ("Labor", "$(2024)/FTE-year", "Annual labor cost per full-time equivalent"),
     "om_contingency_factor": ("Variable O&M", "fraction", "O&M contingency applied to LSRRO operating costs"),
+    "ach_price": ("Chemicals", "$(2021)/kg", "ACH (aluminum chlorohydrate) product price"),
+    "media_cleaning_cost_per_m3": ("Variable O&M", "$(2020)/m3", "Media cleaning chemicals and makeup per m3 treated"),
+    "polymer_price": ("Chemicals", "$(2021)/kg", "Polymer price"),
+    "h2o2_price": ("Chemicals", "$(2021)/kg", "H2O2 price on a 100% basis"),
 }
 
 
@@ -850,15 +875,19 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
     },
     "Electrocoagulation": {
         "current_density_mA_cm2": (
-            "Naje et al. 2019 electrocoagulation treatment study",
+            "NMSU assumptions: 20 mA/cm2 (2.0 A/dm2), Al-Ajmi et al. 2025, Water 17, 23",
             "publication",
         ),
         "electrode_gap_m": (
-            "WaterTAP electrocoagulation model assumption",
-            "open source documentation",
+            "NMSU assumptions; Lugo et al. 2025 (WaterTAP EC model input)",
+            "publication",
         ),
         "hydraulic_retention_time": (
-            "Naje et al. 2019 electrocoagulation treatment study",
+            "NMSU assumptions: 30 min EC treatment time, Al-Ajmi et al. 2025, Water 17, 23",
+            "publication",
+        ),
+        "sludge_solids_content": (
+            "Al-Ajmi et al. 2025, Water 17, 23: EC sludge 2.41-2.62% dry solids",
             "publication",
         ),
         "energy_intensity": (
@@ -867,8 +896,12 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
         ),
     },
     "Walnut shell filtration": {
+        "recovery": (
+            "NMSU assumptions",
+            "model input",
+        ),
         "energy_intensity": (
-            "Drover 2022 DOE produced-water membrane pretreatment report",
+            "NMSU assumptions; US DOE final report DE-FE0031851 (Drover 2022), WSF vendor electricity",
             "technical report",
         ),
     },
@@ -936,6 +969,40 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
             "engineering estimate",
         ),
     },
+    "DAF": {
+        "recycle_ratio": (
+            "NMSU assumptions: 12% recycle (Abada et al. 2022 optimized DAF conditions)",
+            "publication",
+        ),
+        "pump_head": (
+            "Engineering estimate: saturator pressure about 5 bar",
+            "engineering estimate",
+        ),
+        "pump_efficiency": (
+            "Planning-level pump wire-to-water efficiency (EPA WBS pump energy method)",
+            "engineering estimate",
+        ),
+        "auxiliary_energy_intensity": (
+            "Engineering estimate: air compressor, flocculators and float skimmer; total DAF energy close to WaterTAP zero-order DAF (0.05 kWh/m3)",
+            "engineering estimate",
+        ),
+        "h2o2_to_iron_ratio": (
+            "NMSU assumptions: pilot study, 1.75 mg H2O2 per mg Fe",
+            "pilot data",
+        ),
+        "ach_aluminum_content": (
+            "Typical ACH product, 23-24% Al2O3 (12.4% Al)",
+            "vendor data",
+        ),
+        "cod_to_toc_ratio": (
+            "NMSU assumptions (used only to report COD)",
+            "model input",
+        ),
+        "float_solids_content": (
+            "Engineering estimate: mechanically skimmed DAF float typically 2-5% dry solids; sets float volume and water recovery",
+            "engineering estimate",
+        ),
+    },
     "Zeolite": {
         "empty_bed_contact_time": (
             "NMSU assumptions: bench zeolite column test (KMI zeolite 14x30); Turan and Turan 2021",
@@ -997,70 +1064,6 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
         ),
         "solid_disposal_cost": (
             "NMPWRC solid-waste disposal assumption; no explicit cost year, treated as 2024",
-            "model input",
-        ),
-        "labor_fte": (
-            "Wang et al. 2024 DWPR report TEA labor assumption",
-            "technical report",
-        ),
-        "labor_cost_per_fte_year": (
-            "Wang et al. 2024 DWPR report TEA labor cost assumption",
-            "technical report",
-        ),
-        "om_contingency_factor": (
-            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
-            "technical report",
-        ),
-    },
-    "Electrocoagulation": {
-        "reference_ec_capex": (
-            "Lugo et al. 2025 Journal of Environmental Chemical Engineering EC-Al CAPEX basis",
-            "publication",
-        ),
-        "reference_capacity": (
-            "Lugo et al. 2025 Journal of Environmental Chemical Engineering EC-Al reference flow",
-            "publication",
-        ),
-        "capex_scaling_exponent": (
-            "NMPWRC EC-Al TEA scaling assumption",
-            "model input",
-        ),
-        "aluminum_price": (
-            "Abada et al. 2022 Journal of Water Process Engineering aluminum electrode price",
-            "publication",
-        ),
-        "solid_disposal_cost": (
-            "NMPWRC solid-waste disposal assumption; no explicit cost year, treated as 2024",
-            "model input",
-        ),
-        "labor_fte": (
-            "Wang et al. 2024 DWPR report TEA labor assumption",
-            "technical report",
-        ),
-        "labor_cost_per_fte_year": (
-            "Wang et al. 2024 DWPR report TEA labor cost assumption",
-            "technical report",
-        ),
-        "om_contingency_factor": (
-            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
-            "technical report",
-        ),
-    },
-    "Walnut shell filtration": {
-        "reference_capex_cost_per_bbl": (
-            "Drover 2022 DOE produced-water pretreatment report DGF+WSF cost basis",
-            "technical report",
-        ),
-        "reference_opex_cost_per_bbl": (
-            "Drover 2022 DOE produced-water pretreatment report DGF+WSF cost basis",
-            "technical report",
-        ),
-        "reference_flow_bbl_day": (
-            "Drover 2022 DOE produced-water pretreatment report DGF+WSF reference flow",
-            "technical report",
-        ),
-        "capex_scaling_exponent": (
-            "NMPWRC WSF TEA scaling assumption",
             "model input",
         ),
         "labor_fte": (
@@ -1274,6 +1277,92 @@ COST_INPUT_METADATA = {
 
 
 COST_INPUT_METADATA_BY_UNIT = {
+    "Electrocoagulation": {
+        "reference_ec_capex": (
+            "NMSU EC model: Lugo et al. 2025 (J. Environ. Chem. Eng. 13, 117026) EC-Al cost at 11,356 m3/day, 2024 dollars",
+            "publication",
+        ),
+        "reference_capacity": (
+            "Lugo et al. 2025 design flow (3 MGD)",
+            "publication",
+        ),
+        "capex_scaling_exponent": (
+            "NMSU assumptions",
+            "model input",
+        ),
+        "installation_factor": (
+            "Reference cost is a plant-level cost; indirect costs are covered by the system-level investment factor",
+            "engineering estimate",
+        ),
+        "aluminum_price": (
+            "Anuf et al. 2022, J. Water Process Eng., doi:10.1016/j.jwpe.2022.103074 (aluminum electrode metal)",
+            "publication",
+        ),
+        "maintenance_fraction": (
+            "NMSU assumptions: maintenance including labor, same basis as GAC, DAF and WSF",
+            "model input",
+        ),
+        "om_contingency_factor": (
+            "NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
+        ),
+    },
+    "Walnut shell filtration": {
+        "reference_capex_cost_per_bbl": (
+            "US DOE final report DE-FE0031851 (Drover 2022) vendor data: WSF only (no DGF), 64,752 $/yr amortization at 7,200,000 bbl/yr; converted with the report's CRF (5%, 10 yr)",
+            "technical report",
+        ),
+        "capex_scaling_exponent": (
+            "NMSU assumptions",
+            "model input",
+        ),
+        "installation_factor": (
+            "Reference cost includes installation; indirect costs are covered by the system-level investment factor",
+            "engineering estimate",
+        ),
+        "media_cleaning_cost_per_m3": (
+            "US DOE final report DE-FE0031851 (Drover 2022): WSF chemicals 62,500 $/yr at 20,000 bbl/day (weekly cleaning)",
+            "technical report",
+        ),
+        "maintenance_fraction": (
+            "NMSU assumptions: maintenance including labor, same basis as GAC and DAF",
+            "model input",
+        ),
+        "om_contingency_factor": (
+            "NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
+        ),
+    },
+    "DAF": {
+        "capex_scaling_exponent": (
+            "NMSU assumptions: exponent from two DAF systems (Lugo et al. 2025; Liu et al. 2023); reference cost 313,992 USD_2018 at 3 MGD",
+            "publication",
+        ),
+        "installation_factor": (
+            "Reference cost is an installed (construction) cost; indirect costs are covered by the system-level investment factor",
+            "engineering estimate",
+        ),
+        "maintenance_fraction": (
+            "NMSU assumptions: maintenance including labor, same basis as GAC",
+            "model input",
+        ),
+        "om_contingency_factor": (
+            "NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
+        ),
+        "ach_price": (
+            "US EPA WBS cost database: polyaluminum chloride, large quantity (2021 $)",
+            "technical report",
+        ),
+        "polymer_price": (
+            "US EPA WBS cost database: polymers (2021 $)",
+            "technical report",
+        ),
+        "h2o2_price": (
+            "US EPA WBS cost database: hydrogen peroxide 50%, large quantity, converted to 100% basis (2021 $)",
+            "technical report",
+        ),
+    },
     "Zeolite": {
         "capex_coefficient": (
             "US EPA WBS Cation Exchange model (2023 release, 2021 $) run at 0.124-22.6 MGD with EBCT 20 min; media charge excluded; fit within 16%",
@@ -1559,6 +1648,12 @@ TECHNICAL_INPUT_ORDER = [
     "energy_intensity",
     "auxiliary_energy_intensity",
     "thermal_energy_intensity",
+    "recycle_ratio",
+    "h2o2_to_iron_ratio",
+    "ach_aluminum_content",
+    "cod_to_toc_ratio",
+    "float_solids_content",
+    "sludge_solids_content",
     "chemical_dose",
     "hydraulic_retention_time",
     "design_factor",
@@ -1657,6 +1752,10 @@ COST_INPUT_ORDER = [
     "media_replacement_fraction_per_cycle",
     "nacl_price",
     "naoh_price",
+    "media_cleaning_cost_per_m3",
+    "ach_price",
+    "polymer_price",
+    "h2o2_price",
     "media_replacement_price",
     "media_replacement_fraction",
 ]
