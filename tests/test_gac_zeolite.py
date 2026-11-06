@@ -160,16 +160,14 @@ class ZeoliteIntegrationTests(unittest.TestCase):
         self.assertAlmostEqual(cost["equipment_capital_cost"]["value"], 1.15 * bare)
         self.assertAlmostEqual(cost["installed_capital_cost"]["value"], 2.5 * 1.15 * bare)
         electricity = FLOW_M3_DAY * 365.0 * technical["energy_intensity"]["value"] * 0.05
-        chem_index = CostIndexFactor(2014, 2024)
-        nacl = technical["annual_nacl_consumption"]["value"] / 1000.0 * 40.0 * chem_index
-        naoh = technical["annual_naoh_consumption"]["value"] / 1000.0 * 300.0 * chem_index
         maintenance = 0.02 * 1.15 * bare
         self.assertAlmostEqual(cost["energy_operating_cost"]["value"], electricity)
-        self.assertAlmostEqual(cost["nacl_operating_cost"]["value"], nacl)
-        self.assertAlmostEqual(cost["naoh_operating_cost"]["value"], naoh)
         self.assertAlmostEqual(cost["maintenance_operating_cost"]["value"], maintenance)
+        # Regeneration chemicals are not costed (NMSU zeolite model); their use is still reported
+        self.assertNotIn("nacl_operating_cost", cost)
+        self.assertGreater(technical["annual_nacl_consumption"]["value"], 0.0)
         self.assertAlmostEqual(
-            cost["total_annual_operating_cost"]["value"], (electricity + nacl + naoh + maintenance) * 1.20
+            cost["total_annual_operating_cost"]["value"], (electricity + maintenance) * 1.20
         )
         self.assertNotIn("nh4cl_revenue_credit", cost)
         self.assertAlmostEqual(cost["zeolite_media_replacement_cost"]["value"], 0.0)

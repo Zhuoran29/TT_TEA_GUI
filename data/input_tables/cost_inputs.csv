@@ -20,17 +20,15 @@ Vacuum membrane distillation (VMD),Chiller,chiller_cop,7,COP,Chiller coefficient
 Vacuum membrane distillation (VMD),Membrane,membrane_cost,56,$(2018)/m2,VMD membrane purchase cost,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Membrane,membrane_replacement_fraction,0.2,fraction/yr,Annual VMD membrane replacement fraction,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Fixed O&M,fixed_opex_fraction,0.03,fraction/yr,Annual maintenance labor and chemical cost as a fraction of installed CAPEX,MD Design Model (Surrogate) worksheet,Workbook model
-LSRRO,Capital,reference_direct_membrane_capex,20500000,$(2024),Reference direct membrane CAPEX at the LSRRO reference flow,"NMPWRC LSRRO TEA cost basis; no explicit cost year, treated as 2024",Model input
-LSRRO,Capital,reference_flow_bbl_day,50000,bbl/day,Reference flow basis for LSRRO CAPEX scaling,NMPWRC LSRRO experimental design basis,Experimental data
-LSRRO,Capital,capex_scaling_exponent,0.81,exponent,CAPEX capacity-scaling exponent,NMPWRC empirical LSRRO scale-up correlation,Empirical
-LSRRO,Replacement,membrane_replacement_factor,0.2,fraction/yr,Annual membrane replacement as a fraction of direct membrane CAPEX,WaterTAP open-source water treatment model library 2024,Open source documentation
-LSRRO,Chemicals,antiscalant_dose_mg_l,3,mg/L,Antiscalant dose normalized to LSRRO feed volume,NMPWRC LSRRO TEA antiscalant dosing assumption,Model input
-LSRRO,Chemicals,antiscalant_unit_price,61.4,$(2026)/gal,Antiscalant product price,Applied Membranes AMI antiscalant product information 2026,Vendor data
-LSRRO,Chemicals,antiscalant_density_kg_l,1.1,kg/L,Antiscalant product density for kg-to-gal conversion,NMPWRC antiscalant density assumption,Engineering estimate
-LSRRO,Cleaning,cip_cost_per_m3_product,0.07,$(2021)/m3 product,Clean-in-place cost normalized to permeate volume,Jafari et al. 2021 reverse-osmosis and nanofiltration fouling cost,Publication
-LSRRO,Labor,labor_fte,1,FTE,Labor requirement assigned to the LSRRO unit,NMPWRC LSRRO TEA labor assumption,Model input
-LSRRO,Labor,labor_cost_per_fte_year,80000,$(2024)/FTE-year,Annual labor cost per full-time equivalent,"NMPWRC LSRRO TEA labor cost assumption; no explicit cost year, treated as 2024",Model input
-LSRRO,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to LSRRO operating costs,NMPWRC LSRRO TEA O&M contingency assumption,Model input
+LSRRO,Capital,reference_flow_m3_day,7949.36,m3/day,"Reference flow for CAPEX scaling (50,000 bbl/day)",NMSU assumptions,Model input
+LSRRO,Capital,capex_scaling_exponent,0.81,exponent,CAPEX capacity-scaling exponent,NMSU assumptions (SI Eq. B5-2),Empirical
+LSRRO,Capital,installation_factor,2,-,Installation factor (TIC) applied to the WaterTAP equipment cost,WaterTAP LSRRO flowsheet costing (TIC = 2); equipment costs from the WaterTAP design table (data/model_tables/lsrro_watertap_table.csv),Open source documentation
+LSRRO,Fixed O&M,maintenance_fraction,0.02,fraction/yr,"Maintenance cost, including labor, as a fraction of direct (TIC) CAPEX",NMSU assumptions (as for UF and chemical softening),Model input
+LSRRO,Chemicals,antiscalant_dose_mg_l,3,mg/L,Antiscalant dose normalized to LSRRO feed volume,NMSU assumptions,Model input
+LSRRO,Chemicals,antiscalant_unit_price,61.4,$(2026)/gal,Antiscalant product price,NMSU assumptions; Applied Membranes AMI antiscalant product information 2026,Vendor data
+LSRRO,Chemicals,antiscalant_density_kg_l,1.1,kg/L,Antiscalant product density for kg-to-gal conversion,NMSU assumptions,Engineering estimate
+LSRRO,Cleaning,cip_cost_per_m3_product,0.07,$(2021)/m3 product,Clean-in-place cost normalized to permeate volume,NMSU assumptions; Jafari et al. 2021 reverse-osmosis and nanofiltration fouling cost,Publication
+LSRRO,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to LSRRO operating costs,NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
 3-phase separator,Capital,capex_per_flow,72,$(2024)/(m3/day),Equipment separator capital cost per unit daily capacity,WaterTAP Primary Separator ZO and US EPA WBS cost-model method,Open source documentation
 3-phase separator,Capital,reference_capacity,1000,m3/day,Reference capacity for separator CAPEX scaling,WaterTAP Primary Separator ZO and US EPA WBS cost-model method,Open source documentation
 3-phase separator,Capital,capex_scaling_exponent,1,exponent,CAPEX capacity-scaling exponent,Screening default pending source calibration,Engineering estimate
@@ -43,16 +41,15 @@ DAF,Chemicals,polymer_price,1.6344,$(2021)/kg,Polymer price,US EPA WBS cost data
 DAF,Chemicals,h2o2_price,1.3986,$(2021)/kg,H2O2 price on a 100% basis,"US EPA WBS cost database: hydrogen peroxide 50%, large quantity, converted to 100% basis",Technical report
 DAF,Fixed O&M,maintenance_fraction,0.03,fraction/yr,"Maintenance cost, including labor, as a fraction of direct (TIC) CAPEX","NMSU assumptions: maintenance including labor, same basis as GAC",Model input
 DAF,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to all DAF operating costs,NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
-Chemical softening,Capital,reference_direct_cs_capex,25829456.94,$(2024),Reference direct chemical-softening CAPEX,"KBH/NMPWRC chemical-softening TEA workbook direct CAPEX basis; no explicit cost year, treated as 2024",Model input
-Chemical softening,Capital,reference_capacity,3785.41,m3/day,Reference capacity for CAPEX scaling,KBH/NMPWRC chemical-softening TEA workbook 1.0 MGD reference flow,Model input
-Chemical softening,Capital,capex_scaling_exponent,0.87,exponent,CAPEX capacity-scaling exponent,NMPWRC chemical-softening TEA scaling assumption,Model input
-Chemical softening,Chemicals,lime_price,0.05,$(2024)/lb,Lime purchase price,"KBH/NMPWRC chemical-softening TEA workbook lime price; no explicit cost year, treated as 2024",Model input
-Chemical softening,Chemicals,soda_ash_price,0.45,$(2024)/lb,Soda ash purchase price,"KBH/NMPWRC chemical-softening TEA workbook soda ash price; no explicit cost year, treated as 2024",Model input
-Chemical softening,Chemicals,h2so4_price,0.043,$(2024)/lb,Sulfuric acid purchase price,"KBH/NMPWRC chemical-softening TEA workbook sulfuric-acid price; no explicit cost year, treated as 2024",Model input
-Chemical softening,Disposal,solid_disposal_cost,0.11,$(2024)/kg,Solid waste disposal cost,"NMPWRC solid-waste disposal assumption; no explicit cost year, treated as 2024",Model input
-Chemical softening,Labor,labor_fte,1,FTE,Labor requirement assigned to chemical softening,Wang et al. 2024 DWPR report TEA labor assumption,Technical report
-Chemical softening,Labor,labor_cost_per_fte_year,80000,$(2024)/FTE-year,Annual labor cost per full-time equivalent,Wang et al. 2024 DWPR report TEA labor cost assumption,Technical report
-Chemical softening,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to unit operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+Chemical softening,Capital,reference_direct_cs_capex,25829456.94,$(2024),"Reference direct chemical-softening CAPEX at 1 MGD (lime softening, dewatering and chemical area)","KBH TEA Appendix (2024-10-24), Capital_Summary at 1 MGD (ENR May 2024, location factor 0.815): lime softening 6.8 $/gpd x 1 MGD = 6.8 M, lime dewatering 11.53 M (scaled by solids load), chemical area 7.5 M (whole-plant lump sum)",Technical report
+Chemical softening,Capital,installation_factor,1.43,-,Unit-level installation factor (TIC) applied to all direct capital items,"KBH TEA Appendix, Capital_Summary: site 10% and E&IC 30% on the direct items (1.1 x 1.3 = 1.43)",Technical report
+Chemical softening,Capital,reference_capacity,3785.41,m3/day,Reference capacity for CAPEX scaling,KBH TEA Appendix: 1.0 MGD reference flow,Technical report
+Chemical softening,Capital,capex_scaling_exponent,0.87,exponent,CAPEX capacity-scaling exponent,NMSU assumptions,Model input
+Chemical softening,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to all chemical-softening operating costs,NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+Chemical softening,Chemicals,lime_price,0.05,$(2024)/lb,Lime purchase price,NMSU assumptions; KBH TEA Appendix (O&M_Summary) lime 0.05 $/lb,Technical report
+Chemical softening,Chemicals,soda_ash_price,0.45,$(2024)/lb,Soda ash purchase price,NMSU assumptions; KBH TEA Appendix (O&M_Summary) soda ash 0.45 $/lb,Technical report
+Chemical softening,Chemicals,h2so4_price,0.043,$(2024)/lb,Sulfuric acid purchase price,"NMSU assumptions (SI Table S1, 93% sulfuric acid 0.04 $/lb)",Model input
+Chemical softening,Fixed O&M,maintenance_fraction,0.02,fraction/yr,"Maintenance cost, including labor, as a fraction of direct (TIC) CAPEX",KBH TEA Appendix (O&M_Summary): other maintenance (replacements) 2% of system direct cost; labor included,Technical report
 Electrocoagulation,Capital,reference_ec_capex,1595666,$(2024),Reference EC CAPEX at the reference capacity,"NMSU EC model: Lugo et al. 2025 (J. Environ. Chem. Eng. 13, 117026) EC-Al cost at 11,356 m3/day, 2024 dollars",Publication
 Electrocoagulation,Capital,reference_capacity,11356,m3/day,Reference capacity for CAPEX scaling,Lugo et al. 2025 design flow (3 MGD),Publication
 Electrocoagulation,Capital,capex_scaling_exponent,0.87,exponent,CAPEX capacity-scaling exponent,NMSU assumptions,Model input
@@ -66,15 +63,15 @@ Walnut shell filtration,Capital,installation_factor,1,-,Unit-level installation 
 Walnut shell filtration,Variable O&M,media_cleaning_cost_per_m3,0.0546,$(2020)/m3,Media cleaning chemicals and makeup per m3 treated,"US DOE final report DE-FE0031851 (Drover 2022): WSF chemicals 62,500 $/yr at 20,000 bbl/day (weekly cleaning)",Technical report
 Walnut shell filtration,Fixed O&M,maintenance_fraction,0.03,fraction/yr,"Maintenance cost, including labor, as a fraction of direct (TIC) CAPEX","NMSU assumptions: maintenance including labor, same basis as GAC and DAF",Model input
 Walnut shell filtration,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to all WSF operating costs,NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
-Ultrafiltration,Capital,reference_uf_flow_gpd,970000,gpd,Reference UF flow basis,"KBH/NMPWRC UF TEA workbook reference flow basis; no explicit cost year, treated as 2024",Model input
-Ultrafiltration,Capital,uf_equipment_unit_cost,2,$(2024)/gpd,UF equipment unit CAPEX,"KBH/NMPWRC UF TEA workbook equipment unit-cost basis; no explicit cost year, treated as 2024",Model input
-Ultrafiltration,Capital,uf_building_unit_cost,300,$(2024)/ft2,UF building unit CAPEX,"KBH/NMPWRC UF TEA workbook building unit-cost basis; no explicit cost year, treated as 2024",Model input
-Ultrafiltration,Capital,reference_building_area_ft2,2000,ft2,Reference UF building area,KBH/NMPWRC UF TEA workbook building area basis,Model input
-Ultrafiltration,Capital,capex_scaling_exponent,0.87,exponent,CAPEX capacity-scaling exponent,NMPWRC UF TEA scaling assumption,Model input
-Ultrafiltration,Chemicals,sodium_bisulfite_price,0.25,$(2024)/lb,Sodium bisulfite purchase price,"KBH/NMPWRC UF TEA workbook sodium bisulfite price; no explicit cost year, treated as 2024",Model input
-Ultrafiltration,Labor,labor_fte,1,FTE,Labor requirement assigned to UF,Wang et al. 2024 DWPR report TEA labor assumption,Technical report
-Ultrafiltration,Labor,labor_cost_per_fte_year,80000,$(2024)/FTE-year,Annual labor cost per full-time equivalent,Wang et al. 2024 DWPR report TEA labor cost assumption,Technical report
-Ultrafiltration,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to unit operating costs,Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+Ultrafiltration,Capital,reference_uf_flow_gpd,970000,gpd,Reference UF feed flow,KBH TEA Appendix (Capital_Summary): UF feed 0.97 MGD,Technical report
+Ultrafiltration,Capital,uf_equipment_unit_cost,2,$(2024)/gpd,UF equipment unit cost,KBH TEA Appendix (Capital_Summary): UF 2 $/gpd,Technical report
+Ultrafiltration,Capital,uf_building_unit_cost,300,$(2024)/ft2,UF building unit cost,KBH TEA Appendix (Capital_Summary): UF building 300 $/ft2,Technical report
+Ultrafiltration,Capital,reference_building_area_ft2,2000,ft2,Reference UF building area,"KBH TEA Appendix (Capital_Summary): UF building 2,000 ft2",Technical report
+Ultrafiltration,Capital,capex_scaling_exponent,0.87,exponent,CAPEX capacity-scaling exponent,NMSU assumptions,Model input
+Ultrafiltration,Capital,installation_factor,1.43,-,Unit-level installation factor (TIC) applied to the direct capital items,"KBH TEA Appendix, Capital_Summary: site 10% and E&IC 30% on the direct items (1.1 x 1.3 = 1.43)",Technical report
+Ultrafiltration,Chemicals,sodium_bisulfite_price,0.25,$(2024)/lb,Sodium bisulfite purchase price,NMSU assumptions; KBH TEA Appendix (O&M_Summary) sodium bisulfite 0.25 $/lb,Technical report
+Ultrafiltration,Fixed O&M,maintenance_fraction,0.02,fraction/yr,"Maintenance cost, including labor and membrane replacement, as a fraction of direct (TIC) CAPEX",KBH TEA Appendix (O&M_Summary): other maintenance (replacements) 2% of system direct cost,Technical report
+Ultrafiltration,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to all UF operating costs,NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
 GAC,Capital,installation_factor,1.15,-,Unit-level installation factor (TIC) applied to all direct capital items,EPA WBS unit costs already include transportation and installation; TIC covers remaining direct items,Engineering estimate
 GAC,Spent GAC management,regeneration_fraction,0.8,fraction,Fraction of spent GAC regenerated off site; the rest leaves as solid waste and is replaced with makeup GAC,NMSU assumptions: spent-media split (WaterTAP default 0.70),Model input
 GAC,Spent GAC management,gac_regeneration_cost,4.28352,$(2020)/kg,"Off-site regeneration unit cost, including regeneration energy",WaterTAP 1.4 GAC model and costing method (watertap.costing.unit_models.gac),Open source documentation
@@ -84,8 +81,6 @@ GAC,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to a
 Zeolite,Capital,capex_coefficient,3305.1,$(2021),"Coefficient a in equipment cost = a x Q^b (Q = inlet flow, m3/day)","US EPA WBS Cation Exchange model (2023 release, 2021 $) run at 0.124-22.6 MGD with EBCT 20 min; media charge excluded; fit within 16%",Technical report
 Zeolite,Capital,capex_exponent,0.6961,exponent,Exponent b in equipment cost = a x Q^b,"US EPA WBS Cation Exchange model (2023 release, 2021 $) run at 0.124-22.6 MGD with EBCT 20 min; media charge excluded; fit within 16%",Technical report
 Zeolite,Capital,installation_factor,1.15,-,Unit-level installation factor (TIC) applied to equipment cost,EPA WBS unit costs already include transportation and installation; TIC covers remaining direct items (same basis as GAC),Engineering estimate
-Zeolite,Chemicals,nacl_price,40,$(2014)/metric tonne,NaCl (regeneration salt) price,Deng et al. 2014 Environmental Technology,Publication
-Zeolite,Chemicals,naoh_price,300,$(2014)/metric tonne,NaOH price,Deng et al. 2014 Environmental Technology,Publication
 Zeolite,Media,zeolite_price,4.41,$(2014)/kg,Zeolite media price,NMSU assumptions: bench test vendor price (10 $ per 5 lb); Deng et al. 2014,Model input
 Zeolite,Media,media_replacement_fraction_per_cycle,0,fraction/cycle,Fraction of the AEC-based zeolite mass replaced per regeneration cycle,"NMSU assumptions: media regenerated in place, no replacement",Model input
 Zeolite,Fixed O&M,maintenance_fraction,0.02,fraction/yr,Maintenance cost as a fraction of direct (TIC) CAPEX,NMSU assumptions,Model input
@@ -103,3 +98,28 @@ Saltwater disposal well,Capital,capex_scaling_exponent,1,exponent,CAPEX capacity
 Saltwater disposal well,Capital,capex_per_well,0,$(2024)/well,Existing-well screening assumption: no new disposal well CAPEX,Planning assumption requested for screening case,Engineering estimate
 Saltwater disposal well,Fixed O&M,fixed_opex_fraction,0,fraction/yr,Existing-well screening assumption: fixed O&M included in disposal fee,Planning assumption requested for screening case,Engineering estimate
 Saltwater disposal well,Variable O&M,variable_opex_per_m3,6.29,$(2024)/m3,Variable disposal cost per cubic meter injected; equivalent to approximately $1/bbl,Planning assumption requested for screening case,Engineering estimate
+Ion exchange,Capital,installation_factor,1.15,-,Unit-level installation factor (TIC) applied to all direct capital items,EPA WBS unit costs already include transportation and installation; TIC covers remaining direct items (same basis as GAC and zeolite),Engineering estimate
+Ion exchange,Capital,cation_capex_coefficient,698.35,$(2021),"Coefficient a in cation-bed equipment cost = a x Q^b (Q = flow through the bed, m3/day)","US EPA WBS cation exchange model (2023 release) standard designs 2-7 (0.124-22.6 MGD, SAC, EBCT 2.5 min, autosized) rerun at NMSU; resin excluded; fit within 30%",Technical report
+Ion exchange,Capital,cation_capex_exponent,0.7478,exponent,Exponent b in cation-bed equipment cost = a x Q^b,"US EPA WBS cation exchange model (2023 release) standard designs 2-7 (0.124-22.6 MGD, SAC, EBCT 2.5 min, autosized) rerun at NMSU; resin excluded; fit within 30%",Technical report
+Ion exchange,Capital,anion_capex_coefficient,673.45,$(2021),"Coefficient a in anion-bed equipment cost = a x Q^b (Q = flow through the bed, m3/day)","US EPA WBS anion exchange model (2023 release) nitrate standard designs 2-7 (0.124-22.6 MGD) with SBA Type I gel resin, EBCT 2.0 min, autosized, rerun at NMSU; resin excluded; fit within 34%",Technical report
+Ion exchange,Capital,anion_capex_exponent,0.7282,exponent,Exponent b in anion-bed equipment cost = a x Q^b,"US EPA WBS anion exchange model (2023 release) nitrate standard designs 2-7 (0.124-22.6 MGD) with SBA Type I gel resin, EBCT 2.0 min, autosized, rerun at NMSU; resin excluded; fit within 34%",Technical report
+Ion exchange,Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to all ion exchange operating costs,NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+Ion exchange,Fixed O&M,maintenance_fraction,0.02,fraction/yr,"Maintenance cost, including labor, as a fraction of direct (TIC) CAPEX","NMSU assumptions: 2% of direct CAPEX per year, including labor (same basis as zeolite)",Model input
+Ion exchange,Chemicals,salt_price,230.3,$(2021)/metric tonne,NaCl regenerant price,"US EPA WBS cost data: sodium chloride, large quantity, 0.104 $/lb (2021 $)",Technical report
+Ion exchange,Resin,cation_resin_price,8175,$(2021)/m3,Cation resin price,US EPA WBS cost data: strong acid polystyrenic macroporous resin 231.49 $/ft3 (2021 $),Technical report
+Ion exchange,Resin,anion_resin_price,8198,$(2021)/m3,Anion resin price,US EPA WBS cost data: strong base polystyrenic gel Type I resin 232.14 $/ft3 (2021 $),Technical report
+Ion exchange,Resin,resin_life,7,years,Resin useful life before complete replacement,US EPA WBS cation and anion exchange models: resin life 7 years,Technical report
+Ion exchange,Resin,annual_resin_loss,0.045,fraction/yr,Resin lost to attrition and made up each year,US EPA WBS cation and anion exchange models: 4.5% annual resin loss,Technical report
+Ion exchange (demineralization),Capital,installation_factor,1.15,-,Unit-level installation factor (TIC) applied to all direct capital items,EPA WBS unit costs already include transportation and installation; TIC covers remaining direct items (same basis as GAC and zeolite),Engineering estimate
+Ion exchange (demineralization),Capital,cation_capex_coefficient,698.35,$(2021),"Coefficient a in cation-bed equipment cost = a x Q^b (Q = flow through the bed, m3/day)","US EPA WBS cation exchange model (2023 release) standard designs 2-7 (0.124-22.6 MGD, SAC, EBCT 2.5 min, autosized) rerun at NMSU; resin excluded; fit within 30%",Technical report
+Ion exchange (demineralization),Capital,cation_capex_exponent,0.7478,exponent,Exponent b in cation-bed equipment cost = a x Q^b,"US EPA WBS cation exchange model (2023 release) standard designs 2-7 (0.124-22.6 MGD, SAC, EBCT 2.5 min, autosized) rerun at NMSU; resin excluded; fit within 30%",Technical report
+Ion exchange (demineralization),Capital,anion_capex_coefficient,673.45,$(2021),"Coefficient a in anion-bed equipment cost = a x Q^b (Q = flow through the bed, m3/day)","US EPA WBS anion exchange model (2023 release) nitrate standard designs 2-7 (0.124-22.6 MGD) with SBA Type I gel resin, EBCT 2.0 min, autosized, rerun at NMSU; resin excluded; fit within 34%",Technical report
+Ion exchange (demineralization),Capital,anion_capex_exponent,0.7282,exponent,Exponent b in anion-bed equipment cost = a x Q^b,"US EPA WBS anion exchange model (2023 release) nitrate standard designs 2-7 (0.124-22.6 MGD) with SBA Type I gel resin, EBCT 2.0 min, autosized, rerun at NMSU; resin excluded; fit within 34%",Technical report
+Ion exchange (demineralization),Variable O&M,om_contingency_factor,0.2,fraction,O&M contingency applied to all ion exchange operating costs,NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption,Technical report
+Ion exchange (demineralization),Fixed O&M,maintenance_fraction,0.02,fraction/yr,"Maintenance cost, including labor, as a fraction of direct (TIC) CAPEX","NMSU assumptions: 2% of direct CAPEX per year, including labor (same basis as zeolite)",Model input
+Ion exchange (demineralization),Chemicals,hcl_price,1085.9,$(2021)/metric tonne,HCl price (100% basis),"US EPA WBS cost data: hydrochloric acid, large quantity, 0.493 $/lb (2021 $)",Technical report
+Ion exchange (demineralization),Chemicals,caustic_price,940.3,$(2021)/metric tonne,NaOH price (100% basis),"US EPA WBS cost data: sodium hydroxide 50%, large quantity, 0.213 $/lb solution, converted to 100% basis (2021 $)",Technical report
+Ion exchange (demineralization),Resin,cation_resin_price,8175,$(2021)/m3,Cation resin price,US EPA WBS cost data: strong acid polystyrenic macroporous resin 231.49 $/ft3 (2021 $),Technical report
+Ion exchange (demineralization),Resin,anion_resin_price,8198,$(2021)/m3,Anion resin price,US EPA WBS cost data: strong base polystyrenic gel Type I resin 232.14 $/ft3 (2021 $),Technical report
+Ion exchange (demineralization),Resin,resin_life,7,years,Resin useful life before complete replacement,US EPA WBS cation and anion exchange models: resin life 7 years,Technical report
+Ion exchange (demineralization),Resin,annual_resin_loss,0.045,fraction/yr,Resin lost to attrition and made up each year,US EPA WBS cation and anion exchange models: 4.5% annual resin loss,Technical report

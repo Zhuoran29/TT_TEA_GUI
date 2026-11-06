@@ -27,7 +27,8 @@ bed must be regenerated before the effluent rises above the target.
 - **Bed life** (bed volumes and days between regenerations) from the NH3-N
   removal and the inlet NH3-N.
 - **Bed volume and zeolite inventory** from the flow and EBCT.
-- **Regeneration chemicals** (NaCl and NaOH) and the **spent brine** volume.
+- **Regeneration chemical use** (NaCl and NaOH) and the **spent brine** volume,
+  reported for information; they are not costed.
 - **Media replacement** and spent zeolite, when a replacement fraction is set.
 - **Electricity** for pumping through the beds.
 
@@ -83,6 +84,11 @@ spent brine = fresh brine x regenerations per year                      m3/year 
 The NaOH ratio (default 1 mol per mol NH4-N) is an engineering estimate; set
 it to 0 for neutral (pH 7) regeneration.
 
+As in the NMSU zeolite model, the regeneration chemicals are not included in
+the operating cost. The NaCl and NaOH use is reported so that it can be
+checked; at the bench procedure it is large (about 1.2 kg NaCl per m3 treated
+at 8 mg/L NH3-N).
+
 ### Media replacement
 
 The media is regenerated in place, so the default replacement fraction is 0.
@@ -118,14 +124,13 @@ include transportation and installation, so TIC is 1.15 (same basis as GAC).
 
 ```text
 electricity = energy x Q x days x electricity price
-chemicals   = (NaCl x NaCl price + NaOH x NaOH price) x days / 365
 media       = replaced zeolite x days / 365 x zeolite price
 maintenance = maintenance fraction x C_direct
-OPEX        = (1 + O&M contingency) x (electricity + chemicals + media + maintenance)
+OPEX        = (1 + O&M contingency) x (electricity + media + maintenance)
 ```
 
-Spent-brine disposal is not costed in this unit; the brine volume is reported
-for the system level.
+Regeneration chemicals and spent-brine disposal are not costed in this unit;
+the chemical use and brine volume are reported.
 
 ## Default Inputs
 
@@ -142,8 +147,6 @@ for the system level.
 | Pump head, efficiency | 10 m, 0.70 | Engineering estimate (same as GAC) |
 | Zeolite price | 4.41 $/kg (2014 $) | NMSU assumptions (bench vendor price); Deng et al. 2014 |
 | Media replacement | 0 per cycle | NMSU assumptions (regenerated in place) |
-| NaCl price | 40 $/t (2014 $) | Deng et al. 2014 |
-| NaOH price | 300 $/t (2014 $) | Deng et al. 2014 |
 | Equipment cost curve | 3305.1 x Q^0.6961 (2021 $) | US EPA cation exchange cost model, zeolite settings |
 | TIC | 1.15 | Engineering estimate on an installed-cost basis |
 | Maintenance fraction | 0.02 /yr of C_direct | NMSU assumptions |
@@ -158,7 +161,8 @@ for the system level.
 - Intended for desalinated water with low competing cations.
 - The bench brine volume (90 bed volumes) is high for full scale; the EPA
   design basis (15 lb NaCl per ft3 of media) uses about eight times less salt.
-- Spent-brine disposal and ammonium chloride recovery are not included.
+- Regeneration chemicals, spent-brine disposal and ammonium chloride recovery
+  are not included in the cost.
 - The cost curve is for EBCT 20 min; changing EBCT changes bed life but not
   capital cost.
 

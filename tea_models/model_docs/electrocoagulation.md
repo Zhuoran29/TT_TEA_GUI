@@ -12,27 +12,28 @@ solids. Sizing and costs follow the NMSU EC model (NMSU assumptions).
 ### Removal efficiencies
 
 Open **Removal efficiencies** for the EC unit. All values are set by the user.
-The defaults are the values of the NMSU removal table that can be traced to
-the EC tests of Al-Ajmi et al. 2025 (produced water, 30 min of EC):
+The defaults are the NMSU removal table for EC:
 
-| Constituent | Default | Measured in the tests |
+| Constituent | Default | Basis |
 |---|---|---|
-| BTEX | 98% | 123,400 to 1,600 ug/L |
-| Oil and grease | 77% | 44.8 to <10 mg/L |
-| TSS | 58% | 124 to 53 mg/L |
-| TOC | 53% | 1,320 to 619 mg/L |
-| Barium | 44% | 0.223 to 0.124 mg/L |
-| Silica | 34% | 4.9 to 3.2 mg/L |
-| Chloride | 16% | 9,360 to 7,836 mg/L |
-| Boron | 6% | 10.6 to 10.0 mg/L |
-| Sodium | 4% | 2,769 to 2,664 mg/L |
-| Strontium | 4% | 29.9 to 28.8 mg/L |
+| BTEX | 98% | Al-Ajmi et al. 2025: 123,400 to 1,600 ug/L |
+| Oil and grease | 77% | Al-Ajmi et al. 2025: 44.8 to <10 mg/L |
+| Alkalinity | 60% | NMSU assumptions |
+| TSS | 58% | Al-Ajmi et al. 2025: 124 to 53 mg/L |
+| TOC | 53% | Al-Ajmi et al. 2025: 1,320 to 619 mg/L |
+| Barium | 44% | Al-Ajmi et al. 2025: 0.223 to 0.124 mg/L |
+| Hardness, calcium, magnesium | 42% | NMSU assumptions; studies cited by Lugo et al. 2025 report 70-86% hardness removal |
+| Silica | 34% | Al-Ajmi et al. 2025: 4.9 to 3.2 mg/L |
+| Chloride | 16% | Al-Ajmi et al. 2025: 9,360 to 7,836 mg/L |
+| Boron | 6% | Al-Ajmi et al. 2025: 10.6 to 10.0 mg/L |
+| Sodium | 4% | Al-Ajmi et al. 2025: 2,769 to 2,664 mg/L |
+| Strontium | 4% | Al-Ajmi et al. 2025: 29.9 to 28.8 mg/L |
 | Other constituents | 0% | |
 
-The tests were run on gas-field produced water with a conductivity of about
-14 mS/cm, roughly a tenth of a Permian feed, and the iron content of the
-treated water rose during the run, which points to iron electrodes. Hardness,
-alkalinity, sulfate and TDS are not reduced by default. Removals do not change
+The Al-Ajmi et al. tests were run on gas-field produced water with a
+conductivity of about 14 mS/cm, roughly a tenth of a Permian feed, and the
+iron content of the treated water rose during the run, which points to iron
+electrodes. Sulfate and TDS are not reduced by default. Removals do not change
 with the current density, treatment time or aluminum dose.
 
 ### What the model calculates
@@ -42,8 +43,9 @@ with the current density, treatment time or aluminum dose.
   electrode gap and the feed conductivity.
 - **Aluminum dose** from the current (Faraday's law, 100% current efficiency).
 - **Effluent pH** from CO2 stripping by the cathode hydrogen.
-- **Sludge**: Al(OH)3 plus removed TSS, reported for the system-level waste
-  stream, and the **water recovery** that follows from it.
+- **Solid waste**: Al(OH)3, removed TSS and precipitated hardness and other
+  minerals, reported for the system-level waste stream, and the **water
+  recovery** that follows from the floc sludge.
 
 ### Sizing
 
@@ -81,9 +83,8 @@ equilibrium with the water in one stage, which is the upper bound of the
 stripping. Mineral precipitation is not included.
 
 At the default dose the pH rises by about 0.1-0.2 units (for example 6.40 to
-6.53 for the Low feed). Hardness is not removed: calcium is limited by the
-carbonate available, and magnesium needs pH 9.5-10 or higher. Without a feed
-pH, alkalinity or Reaktoro, the pH passes through unchanged.
+6.53 for the Low feed). Without a feed pH, alkalinity or Reaktoro, the pH
+passes through unchanged.
 
 Large pH increases reported for EC (for example pH 4.5 to above 9 in Al-Ajmi
 et al. 2025) come from iron electrodes, where dissolved Fe2+ leaves cathode OH-
@@ -93,25 +94,30 @@ aluminum anodes on near-neutral produced water.
 ### Sludge
 
 ```text
-sludge   = 2.89 x Al dose + removed TSS                 mg/L dry solids (kg per m3 / 1000)
+floc sludge   = 2.89 x Al dose + removed TSS                      mg/L dry solids
+precipitates  = 2.50 x Ca + 2.40 x Mg + 1.70 x Ba + 1.68 x Sr + SiO2 (removed, mg/L)
+solid waste   = floc sludge + precipitates
 ```
 
-The sludge is reported for the system-level waste stream; its disposal cost
-is not included in this unit. Removed hardness, alkalinity, silica and other
-dissolved constituents are not added to the sludge mass.
+Removed calcium, magnesium, barium, strontium and silica are counted as
+CaCO3, Mg(OH)2, BaSO4, SrCO3 and SiO2. The solid waste is reported for the
+system-level waste stream; its disposal cost is not included in this unit.
+Removed oil, organics, chloride and sodium are not added to the solid waste.
 
 ### Water recovery
 
-Water leaves with the wet sludge:
+Water leaves with the wet floc sludge (Al(OH)3 and removed TSS):
 
 ```text
-sludge volume = sludge / solids content / 1000          m3 per m3 feed
+sludge volume = floc sludge / solids content / 1000             m3 per m3 feed
 recovery      = 1 - sludge volume
 ```
 
 The sludge solids content (default 2.5%) is an input; Al-Ajmi et al. 2025
-measured 2.41-2.62% dry solids in EC sludge. At the defaults the recovery is
-about 98%.
+measured 2.41-2.62% dry solids in EC sludge. Precipitated minerals settle and
+dewater far better than Al(OH)3 flocs, so they are counted in the waste mass
+but not in the water loss. At the defaults the recovery is about 96-97% for
+the case-study feeds.
 
 ## Cost Model
 
@@ -158,6 +164,9 @@ OPEX        = (1 + O&M contingency) x (aluminum + electricity + maintenance)
 - The aluminum dose follows from the current density and the treatment time,
   not from the removals; changing either changes the dose and its cost but
   not the treated water quality.
+- Sludge mass and water loss depend on the hardness removal assumption and on
+  how the sludge is thickened and dewatered, which the model does not
+  include.
 - The removal table applies fixed fractions measured on a much less saline
   water. Chloride and sodium removals in particular may not carry over: 16%
   of a 59,000 mg/L chloride feed is about 9,400 mg/L.
@@ -173,7 +182,8 @@ OPEX        = (1 + O&M contingency) x (aluminum + electricity + maintenance)
   an efficient method for the treatment of produced water treatment for
   possible recycling and reuse. Water 17, 23.
 - Lugo, A. et al. 2025. Journal of Environmental Chemical Engineering 13,
-  117026.
+  117026 (Table 1 cites EC hardness removals of 70% at 50,650 mg/L TDS,
+  Sardari et al. 2018, and 86% at 1,500 mg/L TDS, Zhao et al. 2014).
 - Anuf et al. 2022. Journal of Water Process Engineering,
   doi:10.1016/j.jwpe.2022.103074 (aluminum price).
 - Wang et al. 2024 DWPR report (O&M contingency).

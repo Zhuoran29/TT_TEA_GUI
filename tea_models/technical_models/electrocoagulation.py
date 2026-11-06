@@ -172,6 +172,17 @@ def effluent_ph(feed_quality, charge_c_per_l, temperature_c=25.0):
         return None
 
 
+# Removed dissolved constituents counted as precipitate mass in the solid waste:
+# (water-quality parameter, mass of precipitate per mass removed)
+PRECIPITATE_FACTORS = (
+    ("Calcium", 100.087 / 40.078),    # as CaCO3
+    ("Magnesium", 58.320 / 24.305),   # as Mg(OH)2
+    ("Barium", 233.39 / 137.327),     # as BaSO4
+    ("Strontium", 147.63 / 87.62),    # as SrCO3
+    ("Silica", 1.0),                  # as SiO2
+)
+
+
 def _fraction(removals, parameter):
     try:
         return min(max(float(removals.get(parameter, 0.0)), 0.0), 1.0)
@@ -221,10 +232,23 @@ def run(unit_process, technical_inputs, stream):
     aloh3_solids_mg_l = al_dose_mg_l * MW_ALOH3_G_MOL / MW_AL_G_MOL
     feed_tss = max(_quality_value(feed_quality, "TSS"), 0.0)
     removed_tss = feed_tss * _fraction(removals, "TSS")
-    solid_waste_kg_m3 = (aloh3_solids_mg_l + removed_tss) / 1000.0
+    floc_solids_kg_m3 = (aloh3_solids_mg_l + removed_tss) / 1000.0
 
-    # Water leaves with the sludge: recovery = 1 - wet sludge volume / feed
-    sludge_m3_per_m3 = solid_waste_kg_m3 / solids_content / 1000.0
+    # Removed hardness and other precipitating constituents (mass balance for the waste line)
+    precipitate_mg_l = 0.0
+    if _quality_value(feed_quality, "Calcium") > 0.0 or _quality_value(feed_quality, "Magnesium") > 0.0:
+        factors = PRECIPITATE_FACTORS
+    else:  # only total hardness given (mg/L as CaCO3)
+        factors = (("Hardness", 1.0),) + PRECIPITATE_FACTORS[2:]
+    for parameter, factor in factors:
+        feed_value = max(_quality_value(feed_quality, parameter), 0.0)
+        precipitate_mg_l += feed_value * _fraction(removals, parameter) * factor
+    precipitate_kg_m3 = precipitate_mg_l / 1000.0
+    solid_waste_kg_m3 = floc_solids_kg_m3 + precipitate_kg_m3
+
+    # Water leaves with the floc sludge (Al(OH)3 + TSS): recovery = 1 - wet sludge volume / feed.
+    # Precipitated minerals are counted in the waste mass but not in the water loss.
+    sludge_m3_per_m3 = floc_solids_kg_m3 / solids_content / 1000.0
     recovery = max(1.0 - sludge_m3_per_m3, 0.0)
 
     # Effluent pH: CO2 stripped by the cathode hydrogen (charge per liter = I / Q)
@@ -256,6 +280,8 @@ def run(unit_process, technical_inputs, stream):
         "aluminum_dose": _result(al_dose_mg_l, "mg/L"),
         "aluminum_consumption": _result(al_dose_mg_l * inlet_flow / 1000.0, "kg/day"),
         "solid_waste_generation": _result(solid_waste_kg_m3, "kg/m3 feed"),
+        "floc_solids_generation": _result(floc_solids_kg_m3, "kg/m3 feed"),
+        "precipitated_solids_generation": _result(precipitate_kg_m3, "kg/m3 feed"),
         "solid_waste": _result(solid_waste_kg_m3 * inlet_flow, "kg/day"),
         "sludge_solids_content": _result(solids_content, "fraction"),
         "sludge_volume": _result(sludge_m3_per_m3 * inlet_flow, "m3/day"),

@@ -73,3 +73,16 @@ def test_ph_passed_through_without_alkalinity():
     out = ec.run("Electrocoagulation", {}, {"flow_m3_day": 7909.6, "water_quality": quality})
     assert out["water_quality_out"]["pH"]["value"] == pytest.approx(6.4)
     assert "effluent_pH" not in out
+
+
+def test_removed_hardness_counted_in_waste_mass_not_in_water_loss():
+    stream = _stream(tss=10.0)
+    stream["water_quality"]["Calcium"] = {"value": 1200.0, "unit": "mg/L"}
+    stream["water_quality"]["Magnesium"] = {"value": 295.0, "unit": "mg/L"}
+    removals = {"TSS": 0.58, "Calcium": 0.42, "Magnesium": 0.42}
+    out = ec.run("Electrocoagulation", {"removal_efficiencies": removals}, stream)
+    base = ec.run("Electrocoagulation", {"removal_efficiencies": {"TSS": 0.58}}, _stream(tss=10.0))
+    precipitate = (1200.0 * 0.42 * 100.087 / 40.078 + 295.0 * 0.42 * 58.320 / 24.305) / 1000.0
+    assert out["precipitated_solids_generation"]["value"] == pytest.approx(precipitate, rel=1e-6)
+    assert out["solid_waste_generation"]["value"] == pytest.approx(base["solid_waste_generation"]["value"] + precipitate, rel=1e-6)
+    assert out["water_recovery"]["value"] == pytest.approx(base["water_recovery"]["value"])

@@ -1,8 +1,11 @@
-"""Shared LSRRO recovery and water-quality equations."""
+"""Shared LSRRO recovery, WaterTAP design-table and water-quality equations."""
 
 from __future__ import annotations
 
+import csv
 from copy import deepcopy
+from functools import lru_cache
+from pathlib import Path
 
 
 BBL_TO_M3 = 0.158987294928
@@ -10,18 +13,21 @@ PSI_TO_BAR = 0.0689475729
 
 REFERENCE_FLOW_BBL_DAY = 50000.0
 REFERENCE_FLOW_M3_DAY = REFERENCE_FLOW_BBL_DAY * BBL_TO_M3
-REFERENCE_GROSS_PUMP_POWER_KW = 3534.0
-DEFAULT_ERD_FRACTION = 0.30
 
-RECOVERY_TABLE = [
-    (20.0, 1, 943.0, 77.0),
-    (35.0, 2, 1150.0, 70.0),
-    (50.0, 2, 1150.0, 64.0),
-    (75.0, 3, 1150.0, 55.0),
-    (100.0, 5, 1150.0, 44.0),
-    (120.0, 4, 1150.0, 35.0),
-    (130.0, 6, 1150.0, 31.0),
-]
+DESIGN_TABLE_PATH = Path(__file__).resolve().parents[1] / "data" / "model_tables" / "lsrro_watertap_table.csv"
+DESIGN_TABLE_YEAR = 2018
+INTERPOLATED_COLUMNS = (
+    "sec_kwh_m3_product",
+    "membrane_area_m2_per_m3d_product",
+    "first_stage_area_m2_per_m3d_product",
+    "membrane_capex_usd_per_m3d_feed",
+    "pump_capex_usd_per_m3d_feed",
+    "erd_capex_usd_per_m3d_feed",
+    "equipment_capex_usd_per_m3d_feed",
+    "membrane_replacement_usd_yr_per_m3d_feed",
+    "watertap_lcow_usd_m3_product",
+    "stages",
+)
 
 REGRESSION_MODELS = {
     "Alkalinity": (48.49, -0.4797, 1.36e-3),
@@ -52,7 +58,7 @@ AVERAGE_REMOVALS = {
     "Radium-228": 0.9982,
     "Oil": 0.7275,
     "TPH": 0.9408,
-    "PAHs": 0.9155,
+    "Naphthalene": 0.9155,
 }
 
 DIRECT_ASSIGNMENT = {"pH", "Temperature"}
@@ -87,9 +93,9 @@ def calculate_recovery_fraction(quality):
     warnings = []
 
     if tds_g_l < 20.0:
-        warnings.append("Feed TDS is below the LSRRO recovery regression range of 20-150 g/L.")
-    if tds_g_l > 150.0:
-        warnings.append("Feed TDS is above the LSRRO recovery regression range of 20-150 g/L.")
+        warnings.append("Feed TDS is below the LSRRO recovery regression range of 20-130 g/L.")
+    if tds_g_l > 130.0:
+        warnings.append("Feed TDS is above the LSRRO recovery regression range of 20-130 g/L.")
 
     recovery_base = -0.0002 * tds_g_l**2 - 0.3816 * tds_g_l + 84.01
     recovery_percent = recovery_base - 0.000369 * hardness - 0.0001 * silica
@@ -99,12 +105,85 @@ def calculate_recovery_fraction(quality):
     return clipped / 100.0, warnings
 
 
-def lookup_stage_pressure(tds_g_l):
-    """Lookup the next-larger TDS design point for stages and pressure."""
-    for threshold, stages, pressure_psi, _recovery in RECOVERY_TABLE:
-        if tds_g_l <= threshold:
-            return stages, pressure_psi
-    return RECOVERY_TABLE[-1][1], RECOVERY_TABLE[-1][2]
+@lru_cache(maxsize=4)
+def load_design_table(path=str(DESIGN_TABLE_PATH)):
+    """Return {feed TDS (g/L): {recovery: {stages: row}}} from the WaterTAP design table."""
+    table = {}
+    with open(path, newline="") as handle:
+        for row in csv.DictReader(handle):
+            values = {key: float(value) for key, value in row.items()}
+            line = table.setdefault(values["feed_tds_g_l"], {})
+            line.setdefault(values["recovery"], {})[int(values["stages"])] = values
+    return {tds: dict(sorted(line.items())) for tds, line in sorted(table.items())}
+
+
+def _weight(x, x0, x1):
+    """Linear weights of x0 and x1 for x between them."""
+    if x1 == x0:
+        return 1.0, 0.0
+    w1 = (x - x0) / (x1 - x0)
+    return 1.0 - w1, w1
+
+
+def _line_corners(line, recovery):
+    """Neighboring table recoveries on one TDS line; the recovery is clamped to the line's feasible range."""
+    recoveries = list(line)
+    clamped = min(max(recovery, recoveries[0]), recoveries[-1])
+    r0 = max(r for r in recoveries if r <= clamped + 1e-12)
+    r1 = min(r for r in recoveries if r >= clamped - 1e-12)
+    w0, w1 = _weight(clamped, r0, r1)
+    return clamped, [(w0, line[r0]), (w1, line[r1])]
+
+
+def lookup_design(feed_tds_g_l, recovery, table=None):
+    """Interpolate the WaterTAP LSRRO design (per unit flow) at a feed TDS and recovery.
+
+    The design is interpolated between neighboring table points that have the same stage count. Of
+    the stage counts feasible at all neighboring points, the one with the lowest interpolated WaterTAP
+    LCOW is used. Outside the table the nearest feasible point is used. Returns (design, warnings).
+    """
+    table = table or load_design_table()
+    warnings = []
+    tds_values = list(table)
+    tds = min(max(feed_tds_g_l, tds_values[0]), tds_values[-1])
+    if tds != feed_tds_g_l:
+        warnings.append(
+            f"Feed TDS {feed_tds_g_l:.0f} g/L is outside the WaterTAP LSRRO table "
+            f"({tds_values[0]:.0f}-{tds_values[-1]:.0f} g/L); the nearest table TDS is used."
+        )
+    lower = max(t for t in tds_values if t <= tds)
+    upper = min(t for t in tds_values if t >= tds)
+    w_low, w_high = _weight(tds, lower, upper)
+
+    corners = []
+    for line_tds, w_tds in ((lower, w_low), (upper, w_high)):
+        line = table[line_tds]
+        used, line_corners = _line_corners(line, recovery)
+        if abs(used - recovery) > 1e-9 and not any("feasible range" in w for w in warnings):
+            recoveries = list(line)
+            warnings.append(
+                f"Recovery {recovery:.0%} is outside the WaterTAP feasible range at {line_tds:.0f} g/L "
+                f"({recoveries[0]:.0%}-{recoveries[-1]:.0%}); the nearest feasible design is used."
+            )
+        corners += [(w_tds * w, designs) for w, designs in line_corners]
+    corners = [(w, designs) for w, designs in corners if w > 1e-12]
+
+    def blend(rows):
+        return {key: sum(w * row[key] for (w, _), row in zip(corners, rows)) for key in INTERPOLATED_COLUMNS}
+
+    common = set.intersection(*(set(designs) for _, designs in corners))
+    if common:
+        lcow = {
+            n: sum(w * designs[n]["watertap_lcow_usd_m3_product"] for w, designs in corners) for n in common
+        }
+        stages = min(lcow, key=lcow.get)
+        return blend([designs[stages] for _, designs in corners]), warnings
+
+    best = [min(designs.values(), key=lambda row: row["watertap_lcow_usd_m3_product"]) for _, designs in corners]
+    design = blend(best)
+    design["stages"] = max(row["stages"] for row in best)
+    warnings.append("No stage count is feasible at all neighboring WaterTAP table points; designs with different stage counts are blended.")
+    return design, warnings
 
 
 def predict_permeate(parameter, feed_value, clip_negative=True):

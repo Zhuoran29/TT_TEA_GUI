@@ -82,7 +82,7 @@ def run(unit_process, technical_inputs, stream):
         "TOC": TOC_REMOVAL_FRACTION,
         "Oil": TOC_REMOVAL_FRACTION,
         "BTEX": TOC_REMOVAL_FRACTION,
-        "PAHs": TOC_REMOVAL_FRACTION,
+        "Naphthalene": TOC_REMOVAL_FRACTION,
     }
     removals = {**model_removals, **(technical_inputs.get("removal_efficiencies") or {})}
     template_inputs = {**technical_inputs, "removal_efficiencies": removals}

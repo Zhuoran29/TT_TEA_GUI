@@ -8,6 +8,7 @@ import streamlit as st
 from config import APP_VERSION, DATA_VERSION
 from feedback import render_report_button
 from ui_helpers import render_card_title
+from train_explorer import open_train_explorer
 
 st.set_page_config(page_title="02_Treatment_Train", layout="wide")
 
@@ -55,6 +56,7 @@ POSTTREATMENT_UNIT_OPTIONS = [
     "GAC",
     "Zeolite",
     "Ion exchange",
+    "Ion exchange (demineralization)",
     "pH adjustment",
 ]
 
@@ -464,7 +466,7 @@ PARAM_TO_SIDEBAR_KEY = {
     "SAR": "wq_sar",
     "Selenium": "wq_selenium",
     "BTEX": "wq_btex",
-    "PAHs": "wq_pahs",
+    "Naphthalene": "wq_naphthalene",
     "Gross Alpha": "wq_gross_alpha",
     "Gross Beta": "wq_gross_beta",
     "Radium-226": "wq_radium_226",
@@ -888,6 +890,13 @@ if requirements:
             
             # Reset button
             st.markdown("---")
+            if st.button(
+                "Open Treatment Train Explorer",
+                key="open_train_explorer_button",
+                use_container_width=True,
+                help="Open an interactive view of where each constituent is removed in this treatment train.",
+            ):
+                st.session_state.open_train_explorer = True
             if st.button("Reset to Default", use_container_width=True):
                 # Get default config from treatment_config
                 default_config = get_treatment_train_config(ffp_primary, desal, influent)
@@ -1208,3 +1217,110 @@ st.session_state.feedwater_quality = collect_feedwater_quality(
 )
 
 st.sidebar.caption(f"v{APP_VERSION} | {DATA_VERSION}")
+
+
+def _train_explorer_context():
+    """Collect the current page state for the Treatment Train Explorer dialog."""
+    quality = (st.session_state.get("feedwater_quality") or {}).get("water_quality", {})
+    feed, feed_ph = {}, None
+    for parameter, entry in quality.items():
+        try:
+            value = float((entry or {}).get("value", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            continue
+        if parameter == "pH":
+            feed_ph = value
+        elif value > 0.0:
+            feed[parameter] = value
+
+    targets = {}
+    for parameter, info in requirements.items():
+        if parameter in {"Notes", "url"} or not isinstance(info, dict):
+            continue
+        internal_param = REQUIREMENT_TO_INTERNAL_PARAM.get(parameter, parameter)
+        _text, value = target_display_value(parameter, info)
+        unit = info.get("unit", "")
+        if isinstance(value, tuple):
+            targets[internal_param] = {"range": list(value), "unit": unit}
+        elif value is not None:
+            targets[internal_param] = {"limit": value, "unit": unit}
+
+    brine_units = st.session_state.get("treatment_brine", [])
+    if isinstance(brine_units, str):
+        brine_units = [brine_units]
+    return {
+        "current_train": {
+            "pretreatment": list(st.session_state.get("treatment_pretreatment", [])),
+            "desalination": list(st.session_state.get("treatment_desalination", [])),
+            "posttreatment": list(st.session_state.get("treatment_posttreatment", [])),
+            "brine": list(brine_units),
+            "brine_category": st.session_state.get("treatment_brine_category", ""),
+        },
+        "stage_options": {
+            "pretreatment": PRETREATMENT_UNIT_OPTIONS,
+            "desalination": DESALINATION_UNIT_OPTIONS,
+            "posttreatment": POSTTREATMENT_UNIT_OPTIONS,
+        },
+        "brine_options": BRINE_MANAGEMENT_OPTIONS,
+        "feed": feed,
+        "feed_ph": feed_ph,
+        "targets": targets,
+        "scenario": {
+            "influent": influent,
+            "conc_level": st.session_state.get("conc_level", ""),
+            "ffp": ffp_primary,
+            "desal": desal,
+        },
+        "param_units": {name: info.get("unit", "") for name, info in ALL_WATER_QUALITY_PARAMS.items()},
+        "removal_overrides": st.session_state.get("unit_removal_overrides", {}),
+    }
+
+
+def _apply_train_explorer(config):
+    """Write a configuration applied in the Treatment Train Explorer back to the app."""
+    def units(stage):
+        return [str(unit) for unit in (config.get(stage) or []) if unit]
+
+    train = normalize_treatment_train_config({
+        "pretreatment": units("pretreatment"),
+        "desalination": units("desalination"),
+        "posttreatment": units("posttreatment"),
+        "brine_category": st.session_state.get("treatment_brine_category", brine_category),
+        "brine": units("brine"),
+    })
+    st.session_state.treatment_pretreatment = list(train["pretreatment"])
+    st.session_state.treatment_desalination = list(train["desalination"])
+    st.session_state.treatment_posttreatment = list(train["posttreatment"])
+    st.session_state.treatment_brine = list(train["brine"])
+    st.session_state.treatment_train = train
+    st.session_state.treatment_train_scenario_signature = scenario_signature
+
+    # System Design keeps edited removals per unit sequence (1-based across all stages).
+    overrides = {}
+    for item in config.get("removal_overrides") or []:
+        try:
+            position = int(item.get("position"))
+        except (TypeError, ValueError):
+            continue
+        values = {}
+        for parameter, value in (item.get("removal_efficiencies") or {}).items():
+            try:
+                values[str(parameter)] = max(0.0, min(float(value), 1.0))
+            except (TypeError, ValueError):
+                continue
+        if values:
+            overrides[str(position)] = values
+    st.session_state.unit_removal_overrides = overrides
+    for key in [k for k in st.session_state.keys() if str(k).startswith("removal_efficiencies_")]:
+        del st.session_state[key]
+
+    clear_tea_results_cache()
+    st.session_state.reset_counter = st.session_state.get("reset_counter", 0) + 1
+    st.session_state.train_explorer_applied = True
+
+
+if st.session_state.pop("train_explorer_applied", False):
+    st.toast("Treatment train and removal efficiencies applied from the Treatment Train Explorer.")
+
+if st.session_state.pop("open_train_explorer", False):
+    open_train_explorer(_train_explorer_context(), on_apply=_apply_train_explorer)

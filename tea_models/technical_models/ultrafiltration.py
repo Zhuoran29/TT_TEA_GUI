@@ -1,12 +1,19 @@
+"""Ultrafiltration technical model (NMSU UF model; KBH TEA workbook basis).
+
+Removal of particles, emulsified oil and part of the organics by the removal table.
+Water lost to backwash and cleaning is set by the recovery (KBH: 0.9603 / 0.97 = 0.99).
+Feed pump power:
+  P = Q_gpm x TDH / 3960 x 0.7457 / (pump eff x motor eff x VFD factor)     kW
+Sodium bisulfite (dechlorination after CEB) is tracked for the cost model.
+"""
+
 from tea_models.technical_models.template_units import run_template
 
 
 DEFAULTS = {
-    "unit_kind": "uf",
-    "recovery": 0.96,
+    "unit_kind": "membrane_filtration",
+    "recovery": 0.99,
     "energy_intensity": 0.0,
-    "membrane_flux": 45.0,
-    "backwash_fraction": 0.04,
     "sodium_bisulfite_dose_mg_l": 5.0,
     "pump_tdh_ft": 50.0,
     "pump_efficiency": 0.75,
@@ -49,7 +56,12 @@ def run(unit_process, technical_inputs, stream):
         "sodium_bisulfite_dose_mg_l",
         DEFAULTS["sodium_bisulfite_dose_mg_l"],
     ) / 1000.0
-    template_inputs = {**technical_inputs, "chemical_dose": chemical_dose}
+    template_inputs = {
+        key: val
+        for key, val in technical_inputs.items()
+        if key not in {"membrane_flux", "backwash_fraction", "energy_intensity", "chemical_dose"}
+    }
+    template_inputs["chemical_dose"] = chemical_dose
     outputs = run_template(unit_process, template_inputs, stream, DEFAULTS)
 
     inlet_flow = _value(outputs, "inlet_flow")
@@ -67,6 +79,7 @@ def run(unit_process, technical_inputs, stream):
         "pump_efficiency": _result(pump_eff, "fraction"),
         "motor_efficiency": _result(motor_eff, "fraction"),
         "vfd_factor": _result(vfd_factor, "factor"),
+        "backwash_flow": _result(_value(outputs, "brine_flow"), "m3/day"),
         "sodium_bisulfite_dose": _result(chemical_dose * 1000.0, "mg/L"),
         "sodium_bisulfite_consumption": _result(chemical_dose * inlet_flow, "kg/day"),
     })

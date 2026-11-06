@@ -13,7 +13,7 @@ WATER_QUALITY_REQUIREMENTS = {
         "Chloride": {"unit": "mg/L", "limit": 250.0},
         "Hardness": {"unit": "mg/L as CaCO3", "limit": 150.0},
         "BTEX": {"unit": "mg/L", "limit": 2.0},
-        "PAHs": {"unit": "mg/L", "limit": 0.2},
+        "Naphthalene": {"unit": "mg/L", "limit": 0.2},
         "Gross Alpha": {"unit": "pCi/L", "limit": 15.0},
         "Gross Beta": {"unit": "pCi/L", "limit": 15.0},
         "Notes": "Screening targets for surface-water discharge are anchored to the latest NMED suggestions. Clean Water Act / NPDES framework, EPA water quality standards, and oil-and-gas effluent serve as guideline context. Actual discharge limits are permit-specific and may combine technology-based limits with receiving-water-based criteria. These values are therefore planning targets, not a substitute for NPDES/TPDES permit review.",
@@ -345,7 +345,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
                 "brine": "Brine disposal"
             },
             "Surface water discharge": {
-                "pretreatment": ["3-phase separator","DAF", "Ultrafiltration"],
+                "pretreatment": ["3-phase separator","DAF", "Walnut shell filtration"],
                 "desalination": ["MVC"],
                 "posttreatment": ["GAC", "Zeolite"],
                 "brine": "Brine disposal"
@@ -468,7 +468,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             "Agricultural use": {
                 "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Chemical softening", "Antiscalant / pH adjustment"],
                 "desalination": ["BWRO"],
-                "posttreatment": ["Boron-selective IX", "Blending / remineralization", "pH adjustment"],
+                "posttreatment": ["Blending / remineralization", "pH adjustment"],
                 "brine": "Brine valorization"
             },
             "Powerplant cooling water": {
@@ -520,7 +520,7 @@ def get_treatment_train_config(ffp_scenario, desal_type, water_type="Produced wa
             "Agricultural use": {
                 "pretreatment": ["3-phase separator", "DAF", "Ultrafiltration", "Chemical softening", "Antiscalant / pH adjustment"],
                 "desalination": ["LSRRO"],
-                "posttreatment": ["Boron-selective IX", "Blending / remineralization", "pH adjustment"],
+                "posttreatment": ["Blending / remineralization", "pH adjustment"],
                 "brine": "Brine valorization"
             },
             "Powerplant cooling water": {
@@ -591,7 +591,7 @@ ALL_WATER_QUALITY_PARAMS = {
     "Sulfate": {"unit": "mg/L", "limit": 50.0},
     "Bicarbonate": {"unit": "mg/L", "limit": 300.0},
     "BTEX": {"unit": "mg/L", "limit": 0.1},
-    "PAHs": {"unit": "mg/L", "limit": 0.01},
+    "Naphthalene": {"unit": "mg/L", "limit": 0.01},
     "Gross Alpha": {"unit": "pCi/L", "limit": 15.0},
     "Gross Beta": {"unit": "pCi/L", "limit": 50.0},
     "Radium-226": {"unit": "pCi/L", "limit": 50.0},
@@ -654,10 +654,10 @@ UNIT_REMOVAL_RATES = {
     },
 
     "Ultrafiltration": {
-        "TSS": "99%+",
-        "Turbidity": "99%+",
-        "Oil": "50-90%",
-        "TOC": "20-50%"
+        "TSS": "95%",
+        "Turbidity": "95%",
+        "Oil": "90%",
+        "TOC": "35%"
     },
 
     "Well pumping": {},
@@ -680,14 +680,19 @@ UNIT_REMOVAL_RATES = {
         "Sulfate": "42%"
     },
 
-    # NMSU EC removal table, only the values traceable to Al-Ajmi et al. 2025 (Water 17, 23),
-    # Table 2 after 30 min of EC (TSS from the text). Untraceable V1 values are left out.
+    # NMSU EC removal table. Values traceable to Al-Ajmi et al. 2025 (Water 17, 23), Table 2
+    # after 30 min of EC (TSS from the text); hardness, Ca, Mg and alkalinity are NMSU (V1)
+    # assumptions (literature: 70-86% hardness removal, Lugo et al. 2025 Table 1).
     "Electrocoagulation": {
         "BTEX": "98%",
         "Oil": "77%",
+        "Alkalinity": "60%",
         "TSS": "58%",
         "TOC": "53%",
         "Barium": "44%",
+        "Hardness": "42%",
+        "Calcium": "42%",
+        "Magnesium": "42%",
         "Silica": "34%",
         "Chloride": "16%",
         "Boron": "6%",
@@ -729,6 +734,7 @@ UNIT_REMOVAL_RATES = {
         "Iron": "99.9%+",
         "Manganese": "99.9%+",
         "Calcium": "99.9%+",
+        "Magnesium": "99.9%+",
         "Barium": "99.9%+",
         "Lithium": "90-99%",
         "Strontium": "99.9%+",
@@ -737,7 +743,7 @@ UNIT_REMOVAL_RATES = {
         "Sulfate": "99.9%+",
         "Bicarbonate": "90-99%",
         "BTEX": "50-90%",
-        "PAHs": "50-90%",
+        "Naphthalene": "50-90%",
         "Gross Alpha": "99.9%",
         "Gross Beta": "99.9%",
         "Radium-226": "99%",
@@ -762,6 +768,7 @@ UNIT_REMOVAL_RATES = {
         "Iron": "95-99%",
         "Manganese": "95-99%",
         "Calcium": "95-99%",
+        "Magnesium": "95-99%",
         "Barium": "95-99%",
         "Lithium": "80-95%",
         "Strontium": "95-99%",
@@ -805,7 +812,7 @@ UNIT_REMOVAL_RATES = {
         "Radium-228": "99.82%",
         "Oil": "72.75%",
         "TPH": "94.08%",
-        "PAHs": "91.55%",
+        "Naphthalene": "91.55%",
         "BTEX": "Regression"
     },
 
@@ -867,6 +874,10 @@ UNIT_REMOVAL_RATES = {
         "Conductivity": "90-99%",
         "TDS": "90-99%",
         "Hardness": "90-99%",
+        "Calcium": "90-99%",
+        "Magnesium": "90-99%",
+        "Barium": "90-99%",
+        "Strontium": "90-99%",
         "Alkalinity": "60-90%",
         "TOC": "20-60%",
         "Ammonia nitrogen": "90%",
@@ -907,7 +918,7 @@ UNIT_REMOVAL_RATES = {
         "TOC": "74.98%",
         "Oil": "74.98%",
         "BTEX": "74.98%",
-        "PAHs": "74.98%"
+        "Naphthalene": "74.98%"
     },
     "Zeolite": {
         "Ammonia nitrogen": "95%"
@@ -935,31 +946,53 @@ UNIT_REMOVAL_RATES = {
         "Radium-226": "99%",
         "Radium-228": "99%"
     },
+    # Selective IX (NaCl-regenerated): the targets set here pick the beds. Cation targets
+    # (Na-form SAC) are on by default; anion targets (Cl-form SBA: sulfate, alkalinity,
+    # As, Se, U) are off until a removal is entered. Na, Cl and TDS are not removed.
     "Ion exchange": {
-        "Conductivity": "99%",
-        "TDS": "99%",
-        "Hardness": "99%",
-        "Ammonia nitrogen": "99%",
-        "Boron": "99%",
-        "Sodium": "99%",
-        "Chloride": "99%",
-        "Sulfate": "99%",
-        "Bicarbonate": "99%",
-        "Calcium": "99%",
-        "Magnesium": "99%",
-        "Barium": "99%",
-        "Strontium": "99%",
-        "Arsenic": "99%",
-        "Selenium": "99%",
-        "Fluoride": "99%",
-        "Uranium": "99%",
-        "Gross Alpha": "99%",
-        "Gross Beta": "99%",
-        "Radium-226": "99%",
-        "Radium-228": "99%"
+        "Hardness": "95%",
+        "Calcium": "95%",
+        "Magnesium": "95%",
+        "Barium": "95%",
+        "Strontium": "95%",
+        "Manganese": "95%",
+        "Radium-226": "95%",
+        "Radium-228": "95%",
+        "Gross Alpha": "95%",
+        "Sulfate": "0%",
+        "Bicarbonate": "0%",
+        "Alkalinity": "0%",
+        "Arsenic": "0%",
+        "Selenium": "0%",
+        "Uranium": "0%"
     },
-    "Boron-selective IX": {
-        "Boron": "95-99%"
+    # Demineralization (H-form SAC + OH-form SBA): one removal for all ions (TDS entry)
+    "Ion exchange (demineralization)": {
+        "TDS": "95%",
+        "Conductivity": "95%",
+        "Hardness": "95%",
+        "Alkalinity": "95%",
+        "Calcium": "95%",
+        "Magnesium": "95%",
+        "Barium": "95%",
+        "Strontium": "95%",
+        "Manganese": "95%",
+        "Sodium": "95%",
+        "Lithium": "95%",
+        "Ammonia nitrogen": "95%",
+        "Chloride": "95%",
+        "Sulfate": "95%",
+        "Bicarbonate": "95%",
+        "Fluoride": "95%",
+        "Silica": "95%",
+        "Boron": "95%",
+        "Arsenic": "95%",
+        "Selenium": "95%",
+        "Uranium": "95%",
+        "Radium-226": "95%",
+        "Radium-228": "95%",
+        "Gross Alpha": "95%",
+        "Gross Beta": "95%"
     },
     "ZIX-Zak IX": {
         "TDS": "70-95%",
@@ -1096,7 +1129,7 @@ SIDEBAR_DEFAULTS = {
     "Gross Beta": 1230.0,
     "Radium-226": 970.0,
     "Radium-228": 346.0,
-    "PAHs": 59.0,
+    "Naphthalene": 19.0,
     "BTEX": 10.2,
     },
     "Medium": {
@@ -1122,7 +1155,7 @@ SIDEBAR_DEFAULTS = {
     "Gross Beta": 874.0,
     "Radium-226": 531.0,
     "Radium-228": 231.0,
-    "PAHs": 21.0,
+    "Naphthalene": 16.0,
     "BTEX": 6.1,
     },
     "Low": {
@@ -1148,7 +1181,7 @@ SIDEBAR_DEFAULTS = {
     "Gross Beta": 556.0,
     "Radium-226": 237.0,
     "Radium-228": 89.0,
-    "PAHs": 17.0,
+    "Naphthalene": 11.0,
     "BTEX": 4.5,
     },
     "Brackish groundwater": {

@@ -40,7 +40,7 @@ PARAM_TO_SIDEBAR_KEY = {
     "SAR": "wq_sar",
     "Selenium": "wq_selenium",
     "BTEX": "wq_btex",
-    "PAHs": "wq_pahs",
+    "Naphthalene": "wq_naphthalene",
     "Gross Alpha": "wq_gross_alpha",
     "Gross Beta": "wq_gross_beta",
     "Radium-226": "wq_radium_226",

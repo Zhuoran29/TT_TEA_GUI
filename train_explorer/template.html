@@ -1,0 +1,945 @@
+<title>Treatment Train Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+/* Layout: context bar -> Treatment Chain Design editor (unit library | stage lanes, waste disposal split into two paths)
+   -> constituent bar -> C/C0 chart stacked on the flow schematic (shared x columns)
+   -> unit details + constituent fate | warnings + export. Light theme matched to the app's .streamlit/config.toml. */
+:root{
+  color-scheme: light;
+  --bg:#EAF0F0; --surface:#F7FAFA; --fg:#13242B; --muted:#5A6D74; --line:#C5D1D3; --grid:#DFE7E8;
+  --accent:#0B6E78; --accent-soft:#D2E8E9; --accent-fg:#FFFFFF;
+  --bad:#B0352B; --bad-soft:#F6DEDA; --warn:#8A5A00; --warn-soft:#F6EBD3; --info-soft:#DCE8EE; --ok:#0B6E78; --ok-soft:#D2E8E9;
+  --water-clear:#8ECDE0; --water-murky:#8C6B42; --product:#8FCFE4; --brine:#4F6F8F; --solid:#7E6A50;
+  --band-pre:#E2ECEA; --band-desal:#DEE7EF; --band-post:#E7E7EE;
+  --oil:#C8871A; --tss:#7A573A; --hard:#7B66C2; --tds:#3E7597; --nh3:#3C8C4E; --toc:#5F7A1E; --fe:#B5532A; --btex:#B0448C;
+  --vapor:#93AEBA; --sludge:#6E5B43;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14.5px;line-height:1.5}
+.wrap{padding:14px 14px 24px;display:grid;gap:14px}
+h3{font-family:var(--f-display);font-weight:700;font-size:24px;line-height:1.1;margin:0}
+.label{font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;min-width:0}
+.pad{padding:12px 14px}
+.btn{font-family:var(--f-body);font-size:13px;font-weight:600;padding:5px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.primary.confirm{background:var(--warn);border-color:var(--warn)}
+.btn.small{font-size:12px;padding:3px 9px}
+:is(.btn,.chip,select,input,.x,.sp):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+select,input[type=number],input[type=text]{font-family:var(--f-body);font-size:13px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);min-width:0}
+.hint{font-size:12px;color:var(--muted)}
+
+.ctx{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.ctx .item{font-size:13.5px}
+.ctx .item span{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-right:6px}
+.ctx .btn{margin-left:auto}
+.ctx .sel{display:grid;gap:3px;min-width:0}
+.ctx .sel span{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.ctx select{max-width:300px}
+.phead{display:grid;gap:4px}
+.phead h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,4vw,40px);line-height:1.05;margin:0}
+.phead .note{max-width:90ch}
+
+.editor{display:grid;grid-template-columns:minmax(0,270px) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:820px){.editor{grid-template-columns:minmax(0,1fr)}}
+.lib{display:grid;gap:10px;max-height:470px;overflow:auto;padding-right:4px}
+.libgrp{display:grid;gap:5px}
+.libgrp .chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none;font-size:13px;line-height:1.25;max-width:100%}
+.chip:hover{border-color:var(--accent)}
+.chip .t{font-size:10px;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 4px;white-space:nowrap}
+.chip.generic{border-style:dashed}
+.chip.generic .t{color:var(--muted);border-color:var(--muted)}
+.lanes{display:grid;gap:8px}
+.lane{display:grid;grid-template-columns:minmax(0,175px) minmax(0,1fr);gap:10px;align-items:center;padding:7px 10px;border:1.5px dashed var(--line);border-radius:10px;transition:border-color .12s,background .12s,opacity .12s}
+@media (max-width:560px){.lane{grid-template-columns:minmax(0,1fr)}}
+.lname{font-family:var(--f-display);font-weight:700;font-size:19px;line-height:1.05}
+.lname small{display:block;font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted);letter-spacing:.02em}
+.strip{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:32px}
+.lane.ok{border-color:var(--accent)}
+.lane.over{background:var(--accent-soft)}
+.lane.no{opacity:.4}
+.lane.nohover{border-color:var(--bad);opacity:.75}
+.lane.fixed{border-style:solid;background:var(--surface)}
+.waste{display:grid;gap:7px;padding:7px 10px 9px;border:1px solid var(--line);border-radius:10px}
+.wtitle{font-family:var(--f-display);font-weight:700;font-size:19px}
+.lchip{background:var(--surface)}
+.lchip.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.lchip .n{font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.lchip .ed{width:7px;height:7px;border-radius:50%;background:var(--warn)}
+.rchip{display:inline-flex;gap:6px;align-items:baseline;font-size:12.5px;padding:3px 9px;border-radius:8px;border:1px solid var(--line);background:var(--surface)}
+.rchip span{color:var(--muted);font-size:11.5px}
+.x{border:0;background:transparent;color:var(--muted);font-size:15px;line-height:1;padding:0 3px;cursor:pointer;border-radius:4px}
+.x:hover{color:var(--bad)}
+.slot{width:70px;height:26px;border:2px dashed var(--accent);border-radius:8px;background:var(--accent-soft)}
+.empty{color:var(--muted);font-size:12.5px}
+.ghost{position:fixed;z-index:60;pointer-events:none;opacity:.95;box-shadow:0 8px 22px rgba(0,0,0,.18);margin:0}
+.ghost .gmsg{position:absolute;top:-20px;left:0;font-size:11.5px;white-space:nowrap;color:var(--bad)}
+.recchip{cursor:pointer;align-items:center}
+.recchip:hover{border-color:var(--accent)}
+.recchip b{font-family:var(--f-mono);font-size:11.5px;font-weight:500;color:var(--accent)}
+.recbox{display:grid;gap:7px;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.recrow{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:13px}
+.recrow input[type=range]{width:130px;accent-color:var(--accent);height:18px;background:transparent}
+.recrow input[type=number]{width:62px;font-family:var(--f-mono);font-size:12px;padding:3px 5px}
+.recrow select{max-width:240px}
+.msg{font-size:12.5px;color:var(--bad)}
+.msg:empty{display:none}
+
+.spbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.sps{display:flex;flex-wrap:wrap;gap:6px}
+.sp{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;font-family:var(--f-body)}
+.sp[aria-pressed="true"]{color:var(--fg);border-color:var(--fg)}
+.sp .sw{width:10px;height:10px;display:inline-block}
+.sp[disabled]{opacity:.45;cursor:default}
+.addrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+.stage{overflow:hidden}
+.cwrap{position:relative}
+canvas{display:block;width:100%;height:auto;max-width:100%}
+#chart{aspect-ratio:1200/250}
+#flow{aspect-ratio:1200/370;border-top:1px solid var(--line)}
+.tip{position:absolute;z-index:20;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,.12);min-width:210px;max-width:320px}
+.tip b{font-size:12.5px}
+.tip table{border-collapse:collapse;width:100%;margin-top:4px;font-family:var(--f-mono);font-size:11.5px}
+.tip td{padding:1px 4px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tip td:not(:first-child){text-align:right}
+
+.lower{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:900px){.lower{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:14px;min-width:0}
+.panel{display:grid;gap:9px;align-content:start;min-width:0}
+.meta{display:flex;flex-wrap:wrap;gap:4px 16px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.unote{font-size:12.5px;color:var(--muted);margin:0;padding:6px 9px;border-radius:6px;background:var(--info-soft)}
+.tablewrap{overflow-x:auto}
+.rtable{width:100%;border-collapse:collapse;font-size:13px}
+.rtable th{font-family:var(--f-mono);font-weight:500;font-size:11px;color:var(--muted);text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
+.rtable td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+.rtable td.p{white-space:nowrap}
+.rtable td.raw{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+.rtable .ctl{display:flex;gap:8px;align-items:center;min-width:200px}
+.rtable input[type=range]{flex:1;min-width:90px;accent-color:var(--accent);height:18px;background:transparent}
+.rtable input[type=number]{width:72px;font-family:var(--f-mono);font-size:12px;padding:3px 5px}
+.oor{font-size:10.5px;color:var(--warn);background:var(--warn-soft);border-radius:4px;padding:1px 5px;white-space:nowrap}
+.rg{font-size:11px;color:var(--accent);white-space:nowrap}
+.wlist{display:grid;gap:6px}
+.w{font-size:13px;padding:7px 10px;border-radius:8px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 9px;align-items:baseline}
+.w .k{font-family:var(--f-mono);font-size:10.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;padding:1px 6px;border-radius:4px;white-space:nowrap}
+.w .src{grid-column:2;font-size:11px;color:var(--muted)}
+.w.bad{background:var(--bad-soft)} .w.bad .k{color:var(--bad);border:1px solid var(--bad)}
+.w.warn{background:var(--warn-soft)} .w.warn .k{color:var(--warn);border:1px solid var(--warn)}
+.w.info{background:var(--info-soft)} .w.info .k{color:var(--accent);border:1px solid var(--accent)}
+.w.sug{background:var(--surface);border:1px dashed var(--accent)} .w.sug .k{color:var(--accent-fg);background:var(--accent);border:1px solid var(--accent)}
+.w .act{grid-column:2;display:flex;flex-wrap:wrap;gap:6px}
+.w.ok{background:var(--ok-soft)} .w.ok .k{color:var(--ok);border:1px solid var(--ok)}
+.fate{display:grid;gap:7px}
+.frow{display:grid;grid-template-columns:90px minmax(0,1fr) 258px;gap:10px;align-items:center;font-size:13px}
+.fbar{display:flex;height:14px;border-radius:3px;overflow:hidden;background:var(--grid)}
+.fbar span{display:block;height:100%}
+.fnum{font-family:var(--f-mono);font-size:11px;color:var(--muted);white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+.flegend{display:flex;flex-wrap:wrap;gap:4px 14px;font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.flegend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}
+details summary{cursor:pointer;font-weight:600;font-size:13px}
+textarea{width:100%;box-sizing:border-box;min-height:150px;font-family:var(--f-mono);font-size:12px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px}
+.note{font-size:12px;color:var(--muted);margin:0}
+.ic{display:inline-block;vertical-align:-1px;margin-right:6px;flex:none}
+.sp .ic{margin-right:0}
+@media (prefers-reduced-motion: reduce){.lane{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="phead" id="pageHead" hidden>
+    <div class="label">NMPWRC TEA tool · Treatment train explorer</div>
+    <h1>Treatment Train Explorer</h1>
+    <p class="note">Drag units between stages to build a treatment train and see where each constituent is removed. Removal efficiencies, default trains, feed water quality and Fit-for-Purpose targets come from the TEA app configuration.</p>
+  </header>
+  <section class="ctx" id="ctx" aria-label="Scenario"></section>
+
+  <section class="card pad editor" aria-label="Treatment Chain Design">
+    <div class="lib">
+      <div class="label">Unit library · drag into a stage</div>
+      <div id="libgroups"></div>
+    </div>
+    <div class="lanes">
+      <div class="lane" data-stage="pretreatment"><div class="lname">Pretreatment</div><div class="strip"></div></div>
+      <div class="lane" data-stage="desalination"><div class="lname">Desalination</div><div class="strip"></div></div>
+      <div class="lane" data-stage="posttreatment"><div class="lname">Posttreatment</div><div class="strip"></div></div>
+      <div class="waste">
+        <div class="wtitle">Waste disposal</div>
+        <div class="lane" data-stage="brine"><div class="lname">Brine management<small id="brineCat"></small></div><div class="strip"></div></div>
+        <div class="lane fixed" data-stage="solid"><div class="lname">Sludge / solid waste<small>Collected to waste disposal</small></div><div class="strip" id="solidStrip"></div></div>
+      </div>
+      <div class="lane fixed" data-stage="recycle"><div class="lname">Recycle streams<small>Add in Unit details</small></div><div class="strip" id="recStrip"></div></div>
+      <div class="msg" id="msg" role="alert"></div>
+    </div>
+  </section>
+
+  <section class="card pad spbar" aria-label="Constituents">
+    <div class="label">Animated constituents</div>
+    <div class="sps" id="spAnim"></div>
+    <div class="addrow">
+      <select id="addParam" aria-label="Constituent to add to the chart"></select>
+      <button class="btn small" id="addParamBtn" type="button">Add to chart</button>
+      <button class="btn small" id="addCustomBtn" type="button">New constituent</button>
+    </div>
+    <div class="addrow" id="customRow" hidden>
+      <input type="text" id="cName" placeholder="Name, e.g. Lithium" aria-label="New constituent name">
+      <input type="number" id="cFeed" placeholder="Feed concentration" min="0" step="any" aria-label="Feed concentration">
+      <input type="text" id="cUnit" value="mg/L" aria-label="Unit" style="width:80px">
+      <button class="btn small" id="cAdd" type="button">Add</button>
+      <span class="hint">A new constituent starts with 0% removal in every unit; set removals in Unit details.</span>
+    </div>
+  </section>
+
+  <section class="card stage">
+    <div class="cwrap" id="cwrap">
+      <canvas id="chart" role="img" aria-label="Log-scale step chart of the remaining fraction of each constituent along the treatment train"></canvas>
+      <canvas id="flow" role="img" aria-label="Flow schematic with particles removed to brine management or to sludge and solid waste"></canvas>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+  </section>
+
+  <div class="lower">
+    <div class="col">
+      <section class="card pad panel" id="detail" aria-live="polite"></section>
+      <section class="card pad panel">
+        <div class="label">Where feed mass goes</div>
+        <div class="flegend"><span><i style="background:var(--product)"></i>Product water</span><span><i style="background:var(--brine)"></i>Brine management</span><span><i style="background:var(--solid)"></i>Sludge / solid waste</span></div>
+        <div class="fate" id="fate"></div>
+      </section>
+    </div>
+    <div class="col">
+      <section class="card pad panel">
+        <div class="label">Warnings and suggestions</div>
+        <div class="wlist" id="warns"></div>
+      </section>
+      <section class="card pad panel" id="applyCard">
+        <div class="label">Apply configuration</div>
+        <p class="note" id="applySummary"></p>
+        <div class="addrow"><button class="btn primary" id="applyBtn" type="button">Apply to Treatment Train</button><span class="hint" id="applyMsg"></span></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<p class="note" id="snapNote" hidden style="padding:0 14px 18px"></p>
+<script type="application/json" id="payload">__PAYLOAD__</script>
+<script>
+(function(){
+const P = JSON.parse(document.getElementById("payload").textContent);
+const U = P.units;
+const $ = id => document.getElementById(id);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const smooth=t=>t*t*(3-2*t);
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+const EDIT = ["pretreatment","desalination","posttreatment","brine"];
+const MAIN = ["pretreatment","desalination","posttreatment"];
+const STAGE_NAME = {pretreatment:"Pretreatment",desalination:"Desalination",posttreatment:"Posttreatment",brine:"Brine management"};
+
+/* ---------- constituents ---------- */
+const SPEC = {
+  "Oil":{tok:"--oil",shape:"circle",r:3.3}, "TSS":{tok:"--tss",shape:"square",r:2.9},
+  "Hardness":{tok:"--hard",shape:"diamond",r:3.1}, "TDS":{tok:"--tds",shape:"dot",r:1.7},
+  "Ammonia nitrogen":{tok:"--nh3",shape:"tri",r:3.3,short:"NH3-N"}, "TOC":{tok:"--toc",shape:"ring",r:3.0},
+  "Iron":{tok:"--fe",shape:"trid",r:3.3}, "BTEX":{tok:"--btex",shape:"plus",r:3.4}
+};
+const ANIM_DEFAULT=["Oil","TSS","Hardness","TDS","Ammonia nitrogen","TOC"], ANIM_OPTIONAL=["Iron","BTEX"];
+const CHART_PALETTE=["#5B8C9E","#9A6FB0","#6E8B3D","#B06A3B","#3D7AA8","#A84D6A","#7A7F2E","#4E6E58"];
+const shortName=p=>(SPEC[p]&&SPEC[p].short)||p;
+
+/* ---------- state ---------- */
+let keySeq=0, selKey=null, train={};
+const mkInst=u=>({key:"k"+(++keySeq), unit:u, edits:{}});
+function loadPageTrain(){
+  EDIT.forEach(s=>train[s]=(P.train[s]||[]).filter(u=>U[u]).map(mkInst)); selKey=null; RECYCLES=[];
+  const ov=P.removal_overrides||{}; let seq=0;   // System Design numbers units 1..n across all stages
+  EDIT.forEach(s=>train[s].forEach(inst=>{ seq++; const v=ov[String(seq)]; if(v&&inst.unit!=="LSRRO"&&MAIN.includes(s)) Object.entries(v).forEach(([p,x])=>{ if(typeof x==="number") inst.edits[p]=clamp(x,0,1); }); }));
+}
+let animOn=new Set(ANIM_DEFAULT), chartExtra=[], custom={};
+let feed={}, feedPH=null;
+function setFeed(src,ph){ feed={}; Object.entries(src||{}).forEach(([k,v])=>{ if(v>0) feed[k]=v; }); Object.entries(custom).forEach(([k,c])=>feed[k]=c.feed); feedPH=ph; }
+setFeed(P.feed,P.feed_ph);
+let model=null;
+function mainList(){ const out=[]; MAIN.forEach(s=>train[s].forEach(i=>{ i.stage=s; out.push(i); })); return out; }
+function findInst(k){ for(const s of EDIT){ const i=train[s].find(x=>x.key===k); if(i) return {inst:i,stage:s}; } return null; }
+const unitOf=p=>P.params[p]||(custom[p]&&custom[p].unit)||"";
+
+/* ---------- removal model (tea_models.water_quality.get_default_removal_efficiencies) ---------- */
+function lsrroRemoval(p,x){
+  const R=P.lsrro.regression[p], A=P.lsrro.average[p];
+  if(R){ let v=R[0]+R[1]*x+R[2]*x*x; if(v<0&&A!=null) return {r:A,how:"Average removal (regression < 0)"}; v=Math.max(v,0); return {r:x>0?clamp(1-v/x,0,1):0,how:"Regression"}; }
+  if(A!=null) return {r:A,how:"Average removal"};
+  return {r:0,how:"Not modeled"};
+}
+function dafToc(fe){ const T=P.daf_toc; if(!T) return null; if(fe<=T[0][0]) return T[0][1]; for(let i=1;i<T.length;i++){ if(fe<=T[i][0]){ const [x0,y0]=T[i-1],[x1,y1]=T[i]; return y0+(y1-y0)*(fe-x0)/(x1-x0); } } return T[T.length-1][1]; }
+function rateFor(inst,p,cin){
+  if(inst.edits[p]!=null) return {r:inst.edits[p],how:"Edited"};
+  if(inst.unit==="LSRRO") return lsrroRemoval(p,cin[p]||0);
+  if(inst.unit==="DAF"&&p==="TOC"){ const r=dafToc(cin.Iron||0); if(r!=null) return {r,how:"DAF model"}; }
+  const rm=U[inst.unit].removals[p];
+  if(!rm||rm.default==null) return {r:0,how:rm?"Not modeled":"No removal"};
+  return {r:rm.default,how:"Default"};
+}
+/* ---------- recycle streams (explorer only; the TEA engine runs once-through) ----------
+   A recycle returns a fraction of one unit's product or reject stream to the inlet of the same or an upstream unit.
+   Steady state is found by successive substitution on the recycle (tear) streams; concentration-dependent
+   removals (LSRRO regression, DAF TOC from iron) are re-evaluated at the mixed inlet on every pass. */
+let RECYCLES=[], recSeq=0;
+const REC_MAX=3, REC_FMAX=0.9, REC_TOL=1e-10, REC_IT=3000;
+const recRejectOK=u=>u.mech!=="strip"&&u.mech!=="dose"&&u.recovery<0.999;
+const lc=t=>/^[A-Z][a-z]/.test(t)?t[0].toLowerCase()+t.slice(1):t;
+const recStreamName=(u,stream)=>stream==="product"?"Product":(u.residual||"Reject");
+function simulate(list){
+  const params=Object.keys(feed), n=list.length, pos=new Map(list.map((x,i)=>[x.key,i]));
+  const recs=RECYCLES.map(r=>({r,f:pos.get(r.from),t:pos.get(r.to)}))
+    .filter(x=>x.f!=null&&x.t!=null&&x.t<=x.f&&(x.r.stream==="product"||recRejectOK(U[list[x.f].unit])));
+  let RS=recs.map(()=>({q:0,m:{}})), C,Q,Cin,Qin,QP,QR,R,RES, err=0, it=0;
+  const maxIt=recs.length?REC_IT:1;
+  for(it=1; it<=maxIt; it++){
+    C=[Object.assign({},feed)]; Q=[1]; Cin=[]; Qin=[]; QP=[]; QR=[]; R=[]; RES=[];
+    const nxt=recs.map(()=>({q:0,m:{}}));
+    for(let i=0;i<n;i++){
+      const inst=list[i], u=U[inst.unit]; let q=Q[i]; const m={};
+      for(const p of params) m[p]=q*(C[i][p]||0);
+      recs.forEach((x,k)=>{ if(x.t!==i) return; q+=RS[k].q; for(const p of params) m[p]+=RS[k].m[p]||0; });
+      const cin={}; for(const p of params) cin[p]=q>0?m[p]/q:0;
+      const qp=q*clamp(u.recovery,0,1), qr=q-qp, cout={}, rr={}, rej={};
+      for(const p of params){ const x=rateFor(inst,p,cin); rr[p]=x; cout[p]=cin[p]*(1-x.r); rej[p]=Math.max(0,m[p]-qp*cout[p]); }
+      let fP=0, fR=0;
+      recs.forEach((x,k)=>{ if(x.f!==i) return; const fr=clamp(x.r.frac,0,REC_FMAX);
+        if(x.r.stream==="product"){ fP+=fr; nxt[k].q=qp*fr; for(const p of params) nxt[k].m[p]=qp*cout[p]*fr; }
+        else { fR+=fr; nxt[k].q=qr*fr; for(const p of params) nxt[k].m[p]=rej[p]*fr; } });
+      const res={}; for(const p of params) res[p]=rej[p]*(1-fR);   // mass leaving to waste disposal
+      Cin.push(cin); Qin.push(q); QP.push(qp); QR.push(qr); C.push(cout); Q.push(qp*(1-fP)); R.push(rr); RES.push(res);
+    }
+    err=0; nxt.forEach((s,k)=>{ const o=RS[k]; err=Math.max(err,Math.abs(s.q-o.q)); for(const p of params) err=Math.max(err,Math.abs((s.m[p]||0)-(o.m[p]||0))/(feed[p]||1)); });
+    RS=nxt; if(err<REC_TOL) break;
+  }
+  const PH=[feedPH]; list.forEach((inst,i)=>PH.push(U[inst.unit].ph_target!=null?U[inst.unit].ph_target:PH[i]));
+  const rec=recs.map((x,k)=>({r:x.r,f:x.f,t:x.t,q:RS[k].q,m:RS[k].m}));
+  return {list,C,Q,Cin,Qin,QP,QR,R,RES,PH,rec,iterations:Math.min(it,maxIt),converged:!recs.length||err<REC_TOL};
+}
+function purgeRecycles(){
+  const L=mainList(), pos=new Map(L.map((x,i)=>[x.key,i])), n0=RECYCLES.length;
+  RECYCLES=RECYCLES.filter(r=>{ const f=pos.get(r.from), t=pos.get(r.to); return f!=null&&t!=null&&t<=f&&(r.stream==="product"||recRejectOK(U[L[f].unit])); });
+  if(RECYCLES.length<n0) flash("A recycle stream was removed: its units were removed or the return point is no longer upstream.");
+}
+function compute(){
+  const m=simulate(mainList()), params=Object.keys(feed), fate={};
+  for(const p of params){ const m0=feed[p]; let b=0,o=0; m.list.forEach((inst,i)=>{ const v=m.RES[i][p]/m0; U[inst.unit].path==="brine"?b+=v:o+=v; }); fate[p]={product:m.Q[m.list.length]*m.C[m.list.length][p]/m0,brine:b,solid:o}; }
+  m.fate=fate; model=m;
+}
+
+/* ---------- context ---------- */
+/* Standalone mode: a snapshot of the app configuration with scenario selectors instead of the page state. */
+let SC=P.standalone?Object.assign({},P.standalone.start):null;
+function loadScenario(){
+  const A=P.standalone, lv=A.feeds[SC.water]||{}; if(!lv[SC.level]) SC.level=Object.keys(lv)[0];
+  const f=lv[SC.level]||{}; setFeed(f.feed,f.ph);
+  P.targets=A.targets[SC.ffp]||{};
+  const t=A.default_trains[`${SC.water}|${SC.ffp}|${SC.desal}`]||{}; P.train=t; P.brine_category=t.brine_category||"";
+  P.scenario={influent:SC.water,conc_level:SC.level,ffp:SC.ffp,desal:SC.desal};
+  loadPageTrain();
+}
+function renderCtx(){
+  if(P.standalone){
+    const A=P.standalone, opt=(id,label,list,val)=>`<label class="sel" for="${id}"><span>${label}</span><select id="${id}">${list.map(o=>`<option${o===val?" selected":""}>${esc(o)}</option>`).join("")}</select></label>`;
+    $("ctx").innerHTML=opt("scWater","Water type",Object.keys(A.feeds),SC.water)+opt("scLevel","Concentration level",Object.keys(A.feeds[SC.water]||{}),SC.level)
+      +opt("scFfp","Fit-for-Purpose",A.ffps,SC.ffp)+opt("scDesal","Primary desalination",A.desal_types,SC.desal)+`<button class="btn small" id="resetTrain" type="button">Reset to default train</button>`;
+    const on=(id,key)=>$(id).onchange=e=>{ SC[key]=e.target.value; loadScenario(); renderCtx(); rebuild(); };
+    on("scWater","water"); on("scLevel","level"); on("scFfp","ffp"); on("scDesal","desal");
+    $("resetTrain").onclick=()=>{ loadScenario(); rebuild(); };
+    $("brineCat").textContent=P.brine_category||""; return;
+  }
+  const s=P.scenario||{};
+  $("ctx").innerHTML=[["Water type",s.influent],["Concentration level",s.conc_level],["Fit-for-Purpose",s.ffp],["Primary desalination",s.desal]]
+    .filter(x=>x[1]).map(([k,v])=>`<div class="item"><span>${k}</span>${esc(v)}</div>`).join("")+`<button class="btn small" id="resetTrain" type="button">Reset to page train</button>`;
+  $("resetTrain").onclick=()=>{ loadPageTrain(); rebuild(); };
+  $("brineCat").textContent=P.brine_category||"";
+}
+
+/* ---------- library ---------- */
+function chipHTML(name,attrs){
+  return `<div class="chip" role="button" tabindex="0" ${attrs} title="${esc(name)}">${esc(U[name].label)}</div>`;
+}
+function renderLib(){
+  $("libgroups").innerHTML=EDIT.map(s=>{ const names=P.library[s]||[]; if(!names.length) return "";
+    return `<div class="libgrp"><div class="label">${STAGE_NAME[s]}</div><div class="chips">${names.map(n=>chipHTML(n,`data-src="lib" data-unit="${esc(n)}" data-from="${s}"`)).join("")}</div></div>`; }).join("");
+}
+
+/* ---------- lanes ---------- */
+const laneEl=s=>document.querySelector(`.lane[data-stage="${s}"]`);
+function renderLanes(){
+  for(const s of EDIT){
+    const strip=laneEl(s).querySelector(".strip"), hide=drag&&drag.active&&drag.src==="lane"?drag.key:null;
+    const list=train[s].filter(i=>i.key!==hide), slot=drag&&drag.active&&drag.over===s&&drag.ok?drag.idx:null;
+    let h="";
+    list.forEach((inst,i)=>{ if(slot===i) h+='<span class="slot"></span>';
+      const u=U[inst.unit], edited=Object.keys(inst.edits).length>0, idx=MAIN.includes(s)&&model?model.list.indexOf(inst)+1:0;
+      h+=`<div class="chip lchip${inst.key===selKey?" sel":""}${u.has_model?"":" generic"}" role="button" tabindex="0" data-src="lane" data-key="${inst.key}" title="${esc(inst.unit)}">${idx?`<span class="n">${idx}</span>`:""}${esc(u.label)}${u.has_model?"":'<span class="t">generic model</span>'}${edited?'<span class="ed" title="Removal edited"></span>':""}<button class="x" type="button" data-rm="${inst.key}" aria-label="Remove ${esc(u.label)}">×</button></div>`; });
+    if(slot!==null&&slot>=list.length) h+='<span class="slot"></span>';
+    if(!list.length&&slot===null) h+=`<span class="empty">${s==="brine"?"No brine management unit":"Drag units here"}</span>`;
+    strip.innerHTML=h;
+  }
+  const res=model?model.list.filter(i=>U[i.unit].path==="solid"&&U[i.unit].residual):[];
+  $("solidStrip").innerHTML=res.length?res.map(i=>`<span class="rchip">${esc(U[i.unit].residual)}<span>${esc(U[i.unit].label)}</span></span>`).join(""):'<span class="empty">No sludge or solid residuals in this train</span>';
+  const L=model?model.list:[], idx=k=>L.findIndex(x=>x.key===k);
+  $("recStrip").innerHTML=RECYCLES.map(r=>{ const f=idx(r.from), t=idx(r.to); if(f<0||t<0) return "";
+    const uf=U[L[f].unit], ut=U[L[t].unit], name=recStreamName(uf,r.stream);
+    return `<span class="rchip recchip" role="button" tabindex="0" data-recsel="${r.from}" title="Select ${esc(uf.label)} to edit this recycle"><b>↺ ${Math.round(r.frac*100)}%</b>${f+1}. ${esc(uf.label)} ${esc(lc(name))} → ${t===f?"own inlet":`${t+1}. ${esc(ut.label)}`}<button class="x" type="button" data-recrm="${r.id}" aria-label="Remove recycle">×</button></span>`; }).join("")
+    ||'<span class="empty">No recycle streams. Select a unit and add one in Unit details.</span>';
+}
+$("recStrip").addEventListener("click",e=>{ const x=e.target.closest("[data-recrm]"); if(x){ RECYCLES=RECYCLES.filter(r=>r.id!==x.dataset.recrm); rebuild(); return; }
+  const c=e.target.closest("[data-recsel]"); if(c){ selKey=c.dataset.recsel; rebuild(true); } });
+$("recStrip").addEventListener("keydown",e=>{ const c=e.target.closest("[data-recsel]"); if(c&&(e.key==="Enter"||e.key===" ")&&!e.target.closest(".x")){ e.preventDefault(); selKey=c.dataset.recsel; rebuild(true); } });
+
+/* ---------- drag ---------- */
+let drag=null, ghost=null;
+function flash(t){ if(!$("msg")) return; $("msg").textContent=t; clearTimeout(flash.h); flash.h=setTimeout(()=>$("msg").textContent="",3500); }
+function laneAt(x,y){ for(const s of EDIT){ const r=laneEl(s).getBoundingClientRect(); if(x>=r.left-6&&x<=r.right+6&&y>=r.top-6&&y<=r.bottom+6) return s; } return null; }
+function insertionIndex(s,x,y){ let n=0; for(const c of laneEl(s).querySelectorAll(".lchip")){ const r=c.getBoundingClientRect(), cy=r.top+r.height/2, cx=r.left+r.width/2; if(cy<y-r.height/2) n++; else if(Math.abs(cy-y)<=r.height/2&&cx<x) n++; } return n; }
+function onDown(e){
+  if(e.button!==0) return; const chip=e.target.closest(".chip"); if(!chip||e.target.closest(".x")) return;
+  const f=chip.dataset.src==="lane"?findInst(chip.dataset.key):null;
+  drag={chip,src:chip.dataset.src,unit:f?f.inst.unit:chip.dataset.unit,key:chip.dataset.key,from:chip.dataset.from,x0:e.clientX,y0:e.clientY,active:false,over:null,ok:false,idx:null};
+  document.addEventListener("pointermove",onMove); document.addEventListener("pointerup",onUp); document.addEventListener("pointercancel",onCancel);
+}
+function onMove(e){
+  if(!drag) return;
+  if(!drag.active){ if(Math.hypot(e.clientX-drag.x0,e.clientY-drag.y0)<5) return;
+    drag.active=true; const r=drag.chip.getBoundingClientRect();
+    ghost=drag.chip.cloneNode(true); ghost.classList.add("ghost"); ghost.classList.remove("sel"); ghost.style.width=r.width+"px";
+    const m=document.createElement("span"); m.className="gmsg"; ghost.appendChild(m);
+    drag.dx=drag.x0-r.left; drag.dy=drag.y0-r.top; document.body.appendChild(ghost);
+    const al=P.allowed[drag.unit]||[]; EDIT.forEach(s=>laneEl(s).classList.add(al.includes(s)?"ok":"no")); renderLanes(); }
+  e.preventDefault();
+  ghost.style.left=(e.clientX-drag.dx)+"px"; ghost.style.top=(e.clientY-drag.dy)+"px";
+  const s=laneAt(e.clientX,e.clientY), ok=!!s&&(P.allowed[drag.unit]||[]).includes(s), idx=ok?insertionIndex(s,e.clientX,e.clientY):null;
+  EDIT.forEach(t=>{ laneEl(t).classList.toggle("over",t===s&&ok); laneEl(t).classList.toggle("nohover",t===s&&!ok); });
+  ghost.querySelector(".gmsg").textContent=s&&!ok?`Not allowed in ${STAGE_NAME[s]}`:(!s&&drag.src==="lane"?"Release to remove":"");
+  if(s!==drag.over||ok!==drag.ok||idx!==drag.idx){ drag.over=s; drag.ok=ok; drag.idx=idx; renderLanes(); }
+}
+function finish(){ document.removeEventListener("pointermove",onMove); document.removeEventListener("pointerup",onUp); document.removeEventListener("pointercancel",onCancel);
+  if(ghost){ ghost.remove(); ghost=null; } EDIT.forEach(s=>laneEl(s).classList.remove("ok","no","over","nohover")); }
+function homeStage(unit,from){ const al=P.allowed[unit]||[]; return al.includes(from)?from:al[0]; }
+function onUp(){
+  const d=drag; finish(); drag=null; if(!d) return;
+  if(!d.active){ if(d.src==="lib"){ const i=mkInst(d.unit); train[homeStage(d.unit,d.from)].push(i); selKey=i.key; rebuild(); } else { selKey=d.key; rebuild(); } return; }
+  if(d.over&&!d.ok){ flash(`${d.unit} cannot be placed in ${STAGE_NAME[d.over]}. Allowed: ${(P.allowed[d.unit]||[]).map(s=>STAGE_NAME[s]).join(", ")}.`); renderLanes(); return; }
+  if(d.src==="lib"){ if(d.ok){ const i=mkInst(d.unit); train[d.over].splice(d.idx,0,i); selKey=i.key; rebuild(); } else renderLanes(); return; }
+  const f=findInst(d.key); if(!f){ renderLanes(); return; }
+  train[f.stage]=train[f.stage].filter(i=>i.key!==d.key);
+  if(d.ok){ train[d.over].splice(d.idx,0,f.inst); selKey=d.key; } else if(selKey===d.key) selKey=null;
+  rebuild();
+}
+function onCancel(){ finish(); drag=null; renderLanes(); }
+$("libgroups").addEventListener("pointerdown",onDown);
+document.querySelector(".lanes").addEventListener("pointerdown",onDown);
+document.querySelector(".lanes").addEventListener("click",e=>{ const b=e.target.closest(".x"); if(!b) return; const f=findInst(b.dataset.rm); if(f){ train[f.stage]=train[f.stage].filter(i=>i.key!==b.dataset.rm); if(selKey===b.dataset.rm) selKey=null; rebuild(); } });
+$("libgroups").addEventListener("keydown",e=>{ const c=e.target.closest(".chip"); if(!c) return; if(e.key==="Enter"||e.key===" "){ e.preventDefault(); const i=mkInst(c.dataset.unit); train[homeStage(c.dataset.unit,c.dataset.from)].push(i); selKey=i.key; rebuild(); } });
+document.querySelector(".lanes").addEventListener("keydown",e=>{
+  const c=e.target.closest(".lchip"); if(!c||e.target.closest(".x")) return; const f=findInst(c.dataset.key); if(!f) return; const arr=train[f.stage], i=arr.indexOf(f.inst);
+  if(e.shiftKey&&(e.key==="ArrowLeft"||e.key==="ArrowRight")){ e.preventDefault(); const j=clamp(i+(e.key==="ArrowLeft"?-1:1),0,arr.length-1); if(j!==i){ arr.splice(i,1); arr.splice(j,0,f.inst); rebuild(); refocus(f.inst.key); } }
+  else if(e.key==="Delete"||e.key==="Backspace"){ e.preventDefault(); const nx=arr[i+1]||arr[i-1]; arr.splice(i,1); if(selKey===f.inst.key) selKey=null; rebuild(); if(nx) refocus(nx.key); }
+  else if(e.key==="Enter"||e.key===" "){ e.preventDefault(); selKey=f.inst.key; rebuild(); refocus(f.inst.key); } });
+function refocus(k){ const el=document.querySelector(`.lchip[data-key="${k}"]`); if(el) el.focus(); }
+
+/* ---------- constituent bar ---------- */
+const chartColorMap={};
+function colorOf(p){ if(SPEC[p]) return colors[SPEC[p].tok]; if(!chartColorMap[p]) chartColorMap[p]=CHART_PALETTE[Object.keys(chartColorMap).length%CHART_PALETTE.length]; return chartColorMap[p]; }
+const swatch=p=>SPEC[p]?`var(${SPEC[p].tok})`:colorOf(p);
+function icon(p){ // same marker as the particle in the flow schematic; chart-only constituents get a line
+  const c=SPEC[p]?colors[SPEC[p].tok]:colorOf(p), sh=SPEC[p]?SPEC[p].shape:"line";
+  const body={square:`<rect x="2" y="2" width="8" height="8" fill="${c}"/>`, diamond:`<path d="M6 0.5 L10.5 6 L6 11.5 L1.5 6Z" fill="${c}"/>`,
+    tri:`<path d="M6 1 L11 10.5 L1 10.5Z" fill="${c}"/>`, trid:`<path d="M6 11 L11 1.5 L1 1.5Z" fill="${c}"/>`,
+    ring:`<circle cx="6" cy="6" r="4" fill="none" stroke="${c}" stroke-width="1.8"/>`, plus:`<path d="M1.5 6H10.5M6 1.5V10.5" stroke="${c}" stroke-width="2"/>`,
+    dot:`<circle cx="6" cy="6" r="2.4" fill="${c}"/>`, line:`<path d="M0.5 6H11.5" stroke="${c}" stroke-width="2.4"/>`}[sh]||`<circle cx="6" cy="6" r="4.2" fill="${c}"/>`;
+  return `<svg class="ic" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">${body}</svg>`;
+}
+function chartSpecies(){ const out=[...ANIM_DEFAULT,...ANIM_OPTIONAL].filter(p=>animOn.has(p)&&feed[p]); chartExtra.forEach(p=>{ if(feed[p]&&!out.includes(p)) out.push(p); }); return out; }
+function renderSpecies(){
+  $("spAnim").innerHTML=[...ANIM_DEFAULT,...ANIM_OPTIONAL].map(p=>{ const has=!!feed[p], on=animOn.has(p)&&has;
+    return `<button class="sp" type="button" data-sp="${esc(p)}" aria-pressed="${on}" ${has?"":"disabled title=\"Not in the feed water quality\""}>${icon(p)}${esc(shortName(p))}</button>`; }).join("");
+  $("spAnim").innerHTML+=chartExtra.map(p=>`<button class="sp" type="button" data-rmchart="${esc(p)}" aria-pressed="true" title="Chart only · click to remove">${icon(p)}${esc(p)} ×</button>`).join("");
+  const opts=Object.keys(feed).filter(p=>!SPEC[p]&&!chartExtra.includes(p)).sort();
+  $("addParam").innerHTML=opts.map(p=>`<option>${esc(p)}</option>`).join(""); $("addParamBtn").disabled=!opts.length;
+}
+$("spAnim").addEventListener("click",e=>{ const b=e.target.closest("[data-sp]"); if(!b||b.disabled) return; const p=b.dataset.sp; animOn.has(p)?animOn.delete(p):animOn.add(p); rebuild(true); });
+$("spAnim").addEventListener("click",e=>{ const b=e.target.closest("[data-rmchart]"); if(!b) return; chartExtra=chartExtra.filter(p=>p!==b.dataset.rmchart); rebuild(true); });
+$("addParamBtn").onclick=()=>{ const p=$("addParam").value; if(p&&!chartExtra.includes(p)){ chartExtra.push(p); rebuild(true); } };
+$("addCustomBtn").onclick=()=>{ $("customRow").hidden=!$("customRow").hidden; if(!$("customRow").hidden) $("cName").focus(); };
+$("cAdd").onclick=()=>{ const n=$("cName").value.trim(), f=parseFloat($("cFeed").value);
+  if(!n){ flash("Enter a name for the new constituent."); return; } if(!(f>0)){ flash("Feed concentration must be a positive number."); return; }
+  if(feed[n]&&!custom[n]){ flash(`${n} is already in the feed water quality; add it from the list.`); return; }
+  custom[n]={feed:f,unit:$("cUnit").value.trim()||"mg/L"}; feed[n]=f; if(!chartExtra.includes(n)) chartExtra.push(n);
+  $("cName").value=""; $("cFeed").value=""; $("customRow").hidden=true; rebuild(true); };
+
+/* ---------- number formats ---------- */
+function pct(r,d){ if(r==null) return "–"; const v=r*100; if(d!=null) return v.toFixed(d)+"%"; return (v>=99.9&&v<100?v.toFixed(3):v>=99?v.toFixed(2):v.toFixed(1))+"%"; }
+function fmt(v){ if(v==null||isNaN(v)) return "–"; if(v>=1000) return Math.round(v).toLocaleString("en-US"); if(v>=10) return v.toFixed(0); if(v>=1) return v.toFixed(1); if(v>=0.01) return v.toFixed(2); if(v>=0.0001) return v.toFixed(4); return v>0?v.toExponential(1):"0"; }
+
+/* ---------- unit details ---------- */
+function renderDetail(){
+  const el=$("detail"), f=selKey&&findInst(selKey);
+  if(!f){ el.innerHTML=`<div class="label">Unit details</div><h3>Select a unit</h3><p class="note">Click a unit in the stages above or in the schematic to see its removal efficiencies, the value in the app's removal table and its range, and to adjust them for this exploration.</p>`; return; }
+  const {inst,stage}=f, u=U[inst.unit], main=MAIN.includes(stage), i=model.list.indexOf(inst);
+  let h=`<div class="label">Unit details · ${STAGE_NAME[stage]}</div><h3>${esc(inst.unit)}</h3>
+   <div class="meta"><span>Default recovery ${pct(u.recovery,1)}</span>${main&&u.residual?`<span>Reject stream: ${esc(u.residual)} → ${u.path==="brine"?"Brine management":"Sludge / solid waste"}</span>`:""}${u.ph_target!=null?`<span>pH target ${u.ph_target}</span>`:""}</div>`;
+  if(!u.has_model) h+=`<p class="unote">This unit has no dedicated technical model and runs on the generic unit template.</p>`;
+  if(u.note) h+=`<p class="unote">${esc(u.note)}</p>`;
+  if(!main){ h+=`<p class="note">Brine management units receive the brine and concentrate streams. They are not part of the product water calculation.</p>`; el.innerHTML=h; return; }
+  if(!u.has_data) h+=`<p class="note">No removal efficiencies in UNIT_REMOVAL_RATES; no removal is assumed.</p>`;
+  const ro=inst.unit==="LSRRO", dis=ro?" disabled":"";
+  if(ro) h+=`<p class="unote">LSRRO removals are calculated by the LSRRO model and cannot be edited, the same as on System Design.</p>`;
+  h+=recycleHTML(inst,i);
+  const cs=chartSpecies(), rows=[...new Set([...cs,...Object.keys(u.removals).filter(p=>feed[p])])];
+  h+=`<div class="tablewrap"><table class="rtable"><thead><tr><th>Constituent</th><th>Removal table</th><th>Removal efficiency</th><th>Inlet → outlet</th></tr></thead><tbody>`;
+  for(const p of rows){
+    const rm=u.removals[p], cur=model.R[i][p], lo=rm&&rm.low!=null?rm.low:null, hi=rm&&rm.high!=null?rm.high:null, val=cur?cur.r:0, edited=inst.edits[p]!=null;
+    const out=edited&&lo!=null&&(val<lo-1e-9||val>hi+1e-9);
+    const band=lo!=null?`background:linear-gradient(to right,transparent ${lo*100}%,var(--accent-soft) ${lo*100}%,var(--accent-soft) ${hi*100}%,transparent ${hi*100}%)`:"";
+    h+=`<tr><td class="p">${icon(p)}${esc(shortName(p))}</td><td class="raw">${rm?esc(rm.raw):"—"}</td>
+      <td><div class="ctl"><input type="range" min="0" max="100" step="0.1" value="${(val*100).toFixed(1)}" data-edit="${esc(p)}" aria-label="${esc(p)} removal efficiency" style="${band}"${dis}>
+      <input type="number" min="0" max="100" step="any" value="${+(val*100).toFixed(3)}" data-editn="${esc(p)}" aria-label="${esc(p)} removal efficiency, percent"${dis}>${edited?`<button class="btn small" type="button" data-reset="${esc(p)}">Reset</button>`:""}</div>
+      <div>${out?'<span class="oor">Outside range</span>':""} <span class="hint">${esc(cur?cur.how:"")}</span></div></td>
+      <td class="raw">${fmt(model.Cin[i][p])} → ${fmt(model.C[i+1][p])} ${esc(unitOf(p))}</td></tr>`;
+  }
+  h+=`</tbody></table></div>`;
+  if(Object.keys(inst.edits).length) h+=`<div><button class="btn small" type="button" data-resetall="1">Reset all to default</button> <span class="hint">Use Apply to Treatment Train to send edits to System Design.</span></div>`;
+  el.innerHTML=h;
+}
+const fq=v=>v>=10?v.toFixed(1):v>=1?v.toFixed(3):v>=1e-4?String(+v.toPrecision(2)):v>0?v.toExponential(1):"0";
+function recFlowText(i){ const u=U[model.list[i].unit];
+  return `Inlet ${fq(model.Qin[i])} · Product ${fq(model.QP[i])} · ${esc(recStreamName(u,"reject"))} ${fq(model.QR[i])} × feed flow`; }
+function recycleHTML(inst,i){
+  const u=U[inst.unit], L=model.list;
+  let h=`<div class="recbox"><div class="label">Recycle</div><div class="meta" data-recflows="1">${recFlowText(i)}</div>`;
+  for(const stream of ["product","reject"]){
+    const r=RECYCLES.find(x=>x.from===inst.key&&x.stream===stream), name=recStreamName(u,stream);
+    if(r){ const x=model.rec.find(o=>o.r===r), v=Math.round(r.frac*100);
+      h+=`<div class="recrow"><span>↺ <b>${esc(name)}</b></span>
+        <input type="range" min="1" max="${REC_FMAX*100}" step="1" value="${v}" data-recfrac="${r.id}" aria-label="Fraction of the ${esc(lc(name))} stream recycled">
+        <input type="number" min="1" max="${REC_FMAX*100}" step="1" value="${v}" data-recfracn="${r.id}" aria-label="Fraction recycled, percent"><span>% returned to</span>
+        <select data-recto="${r.id}" aria-label="Recycle return point">${L.slice(0,i+1).map((y,j)=>`<option value="${y.key}"${y.key===r.to?" selected":""}>${j+1}. ${esc(U[y.unit].label)}${j===i?" (own inlet)":""}</option>`).join("")}</select>
+        <button class="btn small" type="button" data-recrm="${r.id}">Remove</button>
+        <span class="hint" data-recq="${r.id}">${x?fq(x.q):"0"} × feed flow</span></div>`; }
+    else if(stream==="reject"&&!recRejectOK(u)){ /* no reject water to return */ }
+    else h+=`<div class="recrow"><button class="btn small" type="button" data-recadd="${stream}"${RECYCLES.length>=REC_MAX?" disabled":""}>Recycle part of the ${esc(lc(name))}</button></div>`;
+  }
+  h+=`<p class="note">Flows are fractions of the feed flow at steady state, with recycles mixed into the unit inlets. ${RECYCLES.length>=REC_MAX?`Up to ${REC_MAX} recycle streams. `:""}Recycles are explored here only; TEA runs use once-through flows.</p></div>`;
+  return h;
+}
+function addRecycle(inst,stream){
+  if(RECYCLES.length>=REC_MAX) return; const L=model.list, u=U[inst.unit];
+  // Defaults: product recirculation to the own inlet (e.g. DAF pressurized recycle, 20%);
+  // backwash and other solids residuals back to the head of the train; concentrate recirculation to the own inlet.
+  const to=stream==="reject"&&u.path==="solid"?L[0].key:inst.key;
+  RECYCLES.push({id:"r"+(++recSeq),from:inst.key,stream,frac:stream==="product"?0.2:0.5,to});
+}
+function recHints(){
+  const f=selKey&&findInst(selKey), i=f?model.list.indexOf(f.inst):-1; if(i<0) return;
+  const fl=$("detail").querySelector("[data-recflows]"); if(fl) fl.textContent=recFlowText(i).replace(/&amp;/g,"&");
+  for(const x of model.rec){ const el=$("detail").querySelector(`[data-recq="${x.r.id}"]`); if(el) el.textContent=`${fq(x.q)} × feed flow`; }
+}
+$("detail").addEventListener("input",e=>{ const rc=e.target.closest("[data-recfrac]");
+  if(rc){ const r=RECYCLES.find(x=>x.id===rc.dataset.recfrac); if(!r) return; r.frac=clamp(+rc.value/100,0.01,REC_FMAX); const nn=rc.parentElement.querySelector("[data-recfracn]"); if(nn) nn.value=rc.value; compute(); renderSide(); recHints(); return; }
+  const r=e.target.closest("[data-edit]"); if(!r) return; const f=findInst(selKey); if(!f) return;
+  f.inst.edits[r.dataset.edit]=clamp(+r.value/100,0,1); const n=r.parentElement.querySelector("[data-editn]"); if(n) n.value=r.value; compute(); renderSide(); });
+$("detail").addEventListener("change",e=>{ if(e.target.closest("[data-edit]")){ renderDetail(); renderLanes(); return; }
+  if(e.target.closest("[data-recfrac]")){ rebuild(true); return; }
+  const rn=e.target.closest("[data-recfracn]"), rt=e.target.closest("[data-recto]");
+  if(rn){ const r=RECYCLES.find(x=>x.id===rn.dataset.recfracn), v=parseFloat(rn.value); if(r&&!isNaN(v)){ r.frac=clamp(v/100,0.01,REC_FMAX); rebuild(true); } return; }
+  if(rt){ const r=RECYCLES.find(x=>x.id===rt.dataset.recto); if(r){ r.to=rt.value; rebuild(); } return; }
+  const n=e.target.closest("[data-editn]"); const f=findInst(selKey); if(n&&f){ const v=parseFloat(n.value); if(!isNaN(v)){ f.inst.edits[n.dataset.editn]=clamp(v/100,0,1); rebuild(true); } } });
+$("detail").addEventListener("click",e=>{ const f=findInst(selKey); if(!f) return;
+  const ra=e.target.closest("[data-recadd]"), rm=e.target.closest("[data-recrm]");
+  if(ra){ addRecycle(f.inst,ra.dataset.recadd); rebuild(); return; }
+  if(rm){ RECYCLES=RECYCLES.filter(x=>x.id!==rm.dataset.recrm); rebuild(); return; } const r=e.target.closest("[data-reset]"); if(r){ delete f.inst.edits[r.dataset.reset]; rebuild(true); } if(e.target.closest("[data-resetall]")){ f.inst.edits={}; rebuild(true); } });
+
+/* ---------- warnings ---------- */
+function ruleHit(rule,c){ const v=c[rule.param]; const present=v!=null&&v>0;
+  if(rule.test==="missing") return feed[rule.param]==null||!present ? {v:0} : null;
+  if(!present) return null;
+  if(rule.test==="gt") return v>rule.value?{v}:null;
+  if(rule.test==="outside") return (v<rule.range[0]||v>rule.range[1])?{v}:null; return null; }
+function sameAsOpened(){ const cur=model.list.map(i=>i.unit), op=P.scaling.train||[]; return !model.rec.length&&cur.length===op.length&&cur.every((u,i)=>u===op[i])&&model.list.every(i=>!Object.keys(i.edits).length); }
+function mineralText(m){ return `${esc(m.mineral)} (Ω=${m.omega!=null?(+m.omega).toPrecision(3):"–"}, SI=${m.si!=null?(+m.si).toFixed(2):"–"})`; }
+function renderWarnings(){
+  const W=[], L=model.list, n=L.length;
+  // Fit-for-Purpose targets (same comparison as Potential water quality gaps on page 02)
+  let gaps=0;
+  for(const [p,t] of Object.entries(P.targets||{})){
+    if(p==="pH"){ const ph=model.PH[n]; if(ph!=null&&t.range&&(ph<t.range[0]||ph>t.range[1])){ gaps++; W.push(["bad","May exceed target",`<b>pH</b> estimated product ${ph}, target ${t.range[0]}–${t.range[1]}`]); } continue; }
+    if(feed[p]==null) continue; const v=model.C[n][p];
+    if(t.limit!=null&&v>t.limit){ gaps++; W.push(["bad","May exceed target",`<b>${esc(p)}</b> estimated product ${fmt(v)} ${esc(t.unit||"")}, target ${fmt(t.limit)}`]); }
+    if(t.range&&(v<t.range[0]||v>t.range[1])){ gaps++; W.push(["bad","May exceed target",`<b>${esc(p)}</b> estimated product ${fmt(v)} ${esc(t.unit||"")}, target ${t.range[0]}–${t.range[1]}`]); }
+  }
+  if(!gaps) W.push(["ok","Targets","No target exceedances estimated for the listed fit-for-purpose requirements."]);
+  // Scaling tendency (Reaktoro), computed for the train as opened
+  if(P.standalone){ /* no Reaktoro in the standalone page */ }
+  else if(sameAsOpened()){
+    for(const row of P.scaling.rows||[]){ const tag=`<b>${row.position}. ${esc(U[row.unit]?U[row.unit].label:row.unit)}</b> concentrate (recovery ${pct(row.recovery,0)})`;
+      if(row.error) W.push(["info","Scaling",`${tag}: scaling check unavailable (${esc(row.error)}).`]);
+      else if(row.likely.length) W.push(["warn","Scaling",`${tag}: scaling likely for ${row.likely.map(mineralText).join(", ")}.`+(row.near.length?` Near saturation: ${row.near.map(mineralText).join(", ")}.`:""),"tea_models/scaling_tendency.py (Reaktoro, Pitzer, 25 °C)"]);
+      else if(row.near.length) W.push(["info","Scaling",`${tag}: near saturation for ${row.near.map(mineralText).join(", ")}.`,"tea_models/scaling_tendency.py (Reaktoro, Pitzer, 25 °C)"]);
+      else W.push(["ok","Scaling",`${tag}: no scaling expected.`,"tea_models/scaling_tendency.py (Reaktoro, Pitzer, 25 °C)"]); }
+  } else if((P.scaling.rows||[]).length || L.some(i=>i.stage==="desalination")) {
+    W.push(["info","Scaling",model.rec.length&&model.list.every((x,i)=>x.unit===(P.scaling.train||[])[i])&&model.list.length===(P.scaling.train||[]).length
+      ?"Scaling tendency was checked with Reaktoro for this train without recycle streams; recycles change the concentrate composition and are not checked."
+      :"Scaling tendency is checked with Reaktoro for the train as it was when the explorer opened. Apply changes on the Treatment Train page and reopen the explorer to check this train."]);
+  }
+  // Operational rules (model ranges and membrane feed guidelines)
+  L.forEach((inst,i)=>{ for(const rule of P.rules||[]){ if(!rule.units.includes(inst.unit)) continue; const hit=ruleHit(rule,model.Cin[i]); if(!hit) continue;
+    W.push(["warn",rule.kind,`<b>${i+1}. ${esc(U[inst.unit].label)}</b>: ${esc(rule.message.replace("{value}",fmt(hit.v)))}`,rule.source]); } });
+  // Waste disposal
+  const brineUsed=L.some(i=>U[i.unit].path==="brine"&&U[i.unit].recovery<1);
+  if(brineUsed&&!train.brine.length) W.push(["warn","Waste disposal","Units in this train send brine or concentrate to brine management, but no brine management unit is selected."]);
+  // Generic units and edits
+  L.forEach((inst,i)=>{ const u=U[inst.unit];
+    if(!u.has_model) W.push(["info","Model",`<b>${i+1}. ${esc(u.label)}</b> runs on the generic unit template (no dedicated technical model).`]);
+    for(const [p,v] of Object.entries(inst.edits)){ const rm=u.removals[p]; if(rm&&rm.low!=null&&(v<rm.low-1e-9||v>rm.high+1e-9)&&!(P.literature||[]).some(l=>l.unit===inst.unit&&l.param===p&&Math.abs(l.value-v)<1e-9)) W.push(["warn","Edited removal",`<b>${i+1}. ${esc(u.label)}</b> ${esc(p)} removal set to ${pct(v)}, outside the removal-table value ${esc(rm.raw)}.`]); } });
+  if(!train.desalination.length) W.push(["info","Train","The desalination stage is empty."]);
+  // Recycle streams: inlet flow and build-up at each receiving unit
+  if(model.rec.length){
+    if(!model.converged) W.push(["warn","Recycle",`The recycle mass balance did not converge in ${REC_IT} iterations; flows and concentrations are approximate.`]);
+    L.forEach((inst,i)=>{ const ins=model.rec.filter(x=>x.t===i); if(!ins.length) return;
+      const from=ins.map(x=>`${pct(x.r.frac,0)} of ${x.f===i?"its own":`<b>${x.f+1}. ${esc(U[L[x.f].unit].label)}</b>`} ${esc(lc(recStreamName(U[L[x.f].unit],x.r.stream)))} (${fq(x.q)} × feed)`).join(" and ");
+      const up=chartSpecies().filter(p=>model.C[i][p]>0).map(p=>[p,model.Cin[i][p]/model.C[i][p]]).filter(([,f])=>f>1.1).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      const down=chartSpecies().filter(p=>model.C[i][p]>0).map(p=>[p,model.Cin[i][p]/model.C[i][p]]).filter(([,f])=>f<0.9).sort((a,b)=>a[1]-b[1]).slice(0,3);
+      W.push(["info","Recycle",`<b>${i+1}. ${esc(U[inst.unit].label)}</b> inlet flow is ${fq(model.Qin[i])} × feed: ${fq(model.Q[i])} from upstream plus ${from}.`
+        +(up.length?` Mixing raises ${up.map(([p,f])=>`${esc(shortName(p))} ${f.toFixed(f<10?2:0)}×`).join(", ")} at the inlet.`:"")
+        +(down.length?` Mixing dilutes ${down.map(([p,f])=>`${esc(shortName(p))} to ${f.toFixed(2)}×`).join(", ")}.`:"")]); });
+    W.push(["info","Recycle","Recycle streams are explored here only. Apply to Treatment Train does not send them, and TEA runs use once-through flows."]);
+  }
+  const S=buildSuggestions();
+  $("warns").innerHTML=W.map(([c,k,t,src])=>`<div class="w ${c}"><span class="k">${esc(k)}</span><span>${t}</span>${src?`<span class="src">Source: ${esc(src)}</span>`:""}</div>`).join("")
+    +S.map((s,i)=>`<div class="w sug"><span class="k">Suggestion</span><span>${s.text}</span>${s.actions&&s.actions.length?`<span class="act">${s.actions.map((a,j)=>`<button class="btn small" type="button" data-sug="${i}:${j}">${esc(a.label)}</button>`).join("")}</span>`:""}${s.src?`<span class="src">Basis: ${esc(s.src)}</span>`:""}</div>`).join("");
+  SUGGESTIONS=S;
+}
+
+/* ---------- suggestions (computed from the app's removal table) ---------- */
+let SUGGESTIONS=[];
+const virt=(unit,stage)=>({unit,edits:{},stage,virtual:true});
+function withInsert(unit,stage){ const out=[]; MAIN.forEach(s=>{ train[s].forEach(i=>out.push(i)); if(s===stage) out.push(virt(unit,s)); }); return out; }
+function withEdits(map){ return mainList().map(i=>map.has(i)?{key:i.key,unit:i.unit,stage:i.stage,edits:Object.assign({},i.edits,map.get(i))}:i); }
+const productOf=(list,p)=>{ const m=simulate(list); return m.C[m.list.length][p]; };
+function addCandidates(test,stages){ // library units that pass test(list) when appended to a stage
+  const out=[];
+  for(const s of stages) for(const unit of (P.library[s]||[])){ const r=test(withInsert(unit,s)); if(r!=null) out.push({unit,stage:s,val:r}); }
+  out.sort((a,b)=>a.val-b.val); const seen=new Set(); return out.filter(c=>!seen.has(c.unit)&&seen.add(c.unit));
+}
+function buildSuggestions(){
+  const S=[], L=model.list, n=L.length;
+  // 1. Fit-for-Purpose gaps: raise removal within the table range, or add a unit
+  for(const [p,t] of Object.entries(P.targets||{})){
+    if(t.limit==null||feed[p]==null||!(model.C[n][p]>t.limit)) continue;
+    const lim=t.limit, u=unitOf(p);
+    const rangeUnits=L.filter(i=>i.unit!=="LSRRO"&&i.edits[p]==null&&U[i.unit].removals[p]&&U[i.unit].removals[p].high!=null&&U[i.unit].removals[p].high>(U[i.unit].removals[p].default||0)+1e-9);
+    const single=rangeUnits.map(i=>({i,val:productOf(withEdits(new Map([[i,{[p]:U[i.unit].removals[p].high}]])),p)})).filter(x=>x.val<=lim).sort((a,b)=>a.val-b.val);
+    if(single.length){ const x=single[0], rm=U[x.i.unit].removals[p];
+      S.push({text:`<b>${esc(p)}</b>: raising the removal in <b>${esc(U[x.i.unit].label)}</b> to ${pct(rm.high,1)}, the upper end of its removal-table range (${esc(rm.raw)}), brings the product to ${fmt(x.val)} ${esc(u)} (target ${fmt(lim)}).`,
+        actions:[{label:`Set ${U[x.i.unit].label} ${shortName(p)} to ${pct(rm.high,1)}`,run:()=>{ x.i.edits[p]=rm.high; }}],src:"UNIT_REMOVAL_RATES range"}); }
+    else if(rangeUnits.length){ const map=new Map(rangeUnits.map(i=>[i,{[p]:U[i.unit].removals[p].high}])), v=productOf(withEdits(map),p);
+      if(v<=lim) S.push({text:`<b>${esc(p)}</b>: raising the removal to the upper end of the removal-table range in ${rangeUnits.map(i=>`<b>${esc(U[i.unit].label)}</b>`).join(" and ")} brings the product to ${fmt(v)} ${esc(u)} (target ${fmt(lim)}).`,
+        actions:[{label:"Set all to upper end",run:()=>{ rangeUnits.forEach(i=>{ i.edits[p]=U[i.unit].removals[p].high; }); }}],src:"UNIT_REMOVAL_RATES range"}); }
+    for(const lit of (P.literature||[]).filter(l=>l.param===p)){
+      const hits=L.filter(i=>i.unit===lit.unit&&i.edits[p]==null&&lit.value>((model.R[L.indexOf(i)][p]||{}).r||0)+1e-9); if(!hits.length) continue;
+      const v=productOf(withEdits(new Map(hits.map(i=>[i,{[p]:lit.value}]))),p), cur=(model.R[L.indexOf(hits[0])][p]||{}).r||0;
+      S.push({text:`<b>${esc(p)}</b>: <b>${esc(U[lit.unit].label)}</b> uses ${pct(cur,1)} from the removal table. ${esc(lit.note||"")} A literature value of ${pct(lit.value,0)} brings the product to ${fmt(v)} ${esc(u)} (target ${fmt(lim)})${v<=lim?"":", still above the target"}.`,
+        actions:[{label:`Set ${U[lit.unit].label} ${shortName(p)} to ${pct(lit.value,0)}`,run:()=>{ hits.forEach(i=>{ i.edits[p]=lit.value; }); }}],src:lit.source});
+    }
+    const adds=addCandidates(list=>{ const v=productOf(list,p); return v<=lim?v:null; },["posttreatment","pretreatment"]).slice(0,2);
+    if(adds.length) S.push({text:`<b>${esc(p)}</b>: adding ${adds.map(c=>`<b>${esc(U[c.unit].label)}</b> to ${STAGE_NAME[c.stage]} (product ≈ ${fmt(c.val)} ${esc(u)})`).join(" or ")} meets the target of ${fmt(lim)} with default removals.`,
+      actions:adds.map(c=>({label:`Add ${U[c.unit].label}`,run:()=>{ const i=mkInst(c.unit); train[c.stage].push(i); selKey=i.key; }})),src:"UNIT_REMOVAL_RATES defaults"});
+  }
+  // 2. RO feed guidelines: pretreatment that brings the RO inlet under the guideline
+  L.forEach((inst,i)=>{ for(const rule of P.rules||[]){ if(rule.kind!=="Membrane feed"||!rule.units.includes(inst.unit)) continue; const hit=ruleHit(rule,model.Cin[i]); if(!hit) continue;
+    if(inst.stage==="pretreatment") continue;
+    const adds=addCandidates(list=>{ const m=simulate(list), k=m.list.indexOf(inst); const v=m.Cin[k][rule.param]||0; return v<=rule.value?v:null; },["pretreatment"]).slice(0,2);
+    if(adds.length) S.push({text:`<b>${esc(rule.param)}</b> entering <b>${esc(U[inst.unit].label)}</b>: adding ${adds.map(c=>`<b>${esc(U[c.unit].label)}</b> (≈ ${fmt(c.val)})`).join(" or ")} to Pretreatment brings it under the ${fmt(rule.value)} guideline.`,
+      actions:adds.map(c=>({label:`Add ${U[c.unit].label}`,run:()=>{ const x=mkInst(c.unit); train.pretreatment.push(x); selKey=x.key; }})),src:"UNIT_REMOVAL_RATES defaults; RO vendor feed guideline"}); } });
+  // 3. Scale control upstream of desalination
+  const anti=Object.keys(U).find(u=>/antiscalant/i.test(u)&&(P.allowed[u]||[]).includes("pretreatment"));
+  L.forEach((inst,i)=>{ const u=U[inst.unit]; if(inst.stage!=="desalination"||!["membrane","thermal"].includes(u.mech)) return;
+    const upstream=L.slice(0,i).some(x=>/antiscalant|scale/i.test(x.unit));
+    const row=sameAsOpened()?(P.scaling.rows||[]).find(r=>r.position===i+1):null, minerals=row&&row.likely?row.likely.map(m=>m.mineral):[];
+    const soft=L.slice(0,i).some(x=>x.unit==="Chemical softening"), softU=U["Chemical softening"];
+    if(upstream&&!minerals.length) return;
+    let text=minerals.length?`Reaktoro predicts ${minerals.map(esc).join(", ")} scaling in the <b>${esc(u.label)}</b> concentrate.`:`No antiscalant is dosed upstream of <b>${esc(u.label)}</b>.`;
+    text+=` ${u.mech==="thermal"?"Evaporator":"Membrane"} feeds normally receive antiscalant dosing to control mineral scaling${!soft&&softU&&model.Cin[i].Hardness>0?`; Chemical softening (hardness ${esc((softU.removals.Hardness||{}).raw||"")} in the removal table) also lowers the hardness reaching it (${fmt(model.Cin[i].Hardness)} ${esc(unitOf("Hardness"))} now)`:""}. The effect of antiscalant on scaling is not modeled here.`;
+    const actions=[]; if(anti&&!upstream) actions.push({label:`Add ${U[anti].label}`,run:()=>{ const x=mkInst(anti); train.pretreatment.push(x); selKey=x.key; }});
+    if(!soft&&softU&&(P.allowed["Chemical softening"]||[]).includes("pretreatment")&&model.Cin[i].Hardness>0) actions.push({label:"Add Chemical softening",run:()=>{ const x=mkInst("Chemical softening"); train.pretreatment.push(x); selKey=x.key; }});
+    S.push({text,actions,src:minerals.length?"tea_models/scaling_tendency.py":""}); });
+  // 4. Edited removals outside the table range
+  const isLit=(unit,p,v)=>(P.literature||[]).some(l=>l.unit===unit&&l.param===p&&Math.abs(l.value-v)<1e-9);
+  L.forEach(inst=>{ const u=U[inst.unit]; for(const [p,v] of Object.entries(inst.edits)){ const rm=u.removals[p]; if(rm&&rm.low!=null&&(v<rm.low-1e-9||v>rm.high+1e-9)&&!isLit(inst.unit,p,v))
+    S.push({text:`<b>${esc(u.label)}</b> ${esc(p)} removal ${pct(v)} is outside the removal-table value ${esc(rm.raw)}; keep it within ${pct(rm.low,1)}–${pct(rm.high,1)} unless you have site data.`,
+      actions:[{label:"Reset to default",run:()=>{ delete inst.edits[p]; }}]}); } });
+  return S;
+}
+$("warns").addEventListener("click",e=>{ const b=e.target.closest("[data-sug]"); if(!b) return; const [i,j]=b.dataset.sug.split(":").map(Number); const a=SUGGESTIONS[i]&&SUGGESTIONS[i].actions[j]; if(a){ a.run(); rebuild(); } });
+
+/* ---------- fate & export ---------- */
+function renderFate(){
+  $("fate").innerHTML=chartSpecies().map(p=>{ const f=model.fate[p]; if(!f) return ""; const t=(f.product+f.brine+f.solid)||1, a=f.product/t*100, b=f.brine/t*100, o=f.solid/t*100;
+    return `<div class="frow"><span>${icon(p)}${esc(shortName(p))}</span>
+      <div class="fbar" title="Product ${a.toFixed(2)}% · Brine ${b.toFixed(1)}% · Sludge / solid waste ${o.toFixed(1)}%"><span style="width:${a}%;background:var(--product)"></span><span style="width:${b}%;background:var(--brine)"></span><span style="width:${o}%;background:var(--solid)"></span></div>
+      <span class="fnum">Product ${a>0&&a<0.01?"<0.01":a.toFixed(a<1?2:1)}% · Brine ${b.toFixed(0)}% · Sludge ${o.toFixed(0)}%</span></div>`; }).join("")||'<span class="hint">No constituents to show.</span>';
+}
+function buildConfig(){
+  const cfg={pretreatment:[],desalination:[],posttreatment:[],brine_category:P.brine_category,brine:train.brine.map(i=>i.unit),removal_overrides:[]};
+  MAIN.forEach(s=>cfg[s]=train[s].map(i=>i.unit));
+  mainList().forEach((inst,i)=>{ if(inst.unit==="LSRRO") return;
+    const vals=Object.fromEntries(Object.entries(inst.edits).filter(([k])=>P.feed[k]!=null).map(([k,v])=>[k,+v.toFixed(6)]));
+    if(Object.keys(vals).length) cfg.removal_overrides.push({position:i+1,stage:inst.stage,unit:inst.unit,removal_efficiencies:vals}); });
+  return cfg;
+}
+function renderExport(){
+  const cfg=buildConfig(), n=cfg.removal_overrides.length;
+  $("applySummary").textContent=`Replaces the train on the Treatment Train page (${model.list.length} units, ${cfg.brine.length} brine management) and the removal efficiencies on System Design (${n} unit${n===1?"":"s"} edited). TEA results are cleared and need to be recalculated.`+(Object.keys(custom).length?" New constituents are not in the feed water quality and are not applied.":"")
+    +(RECYCLES.length?` Recycle streams (${RECYCLES.length}) are not applied; the TEA engine does not model recycles yet.`:"");
+}
+let applyArmed=false, applyTimer=null;
+$("applyBtn").onclick=()=>{
+  const b=$("applyBtn");
+  if(!applyArmed){ applyArmed=true; b.classList.add("confirm"); b.textContent="Click again to replace the page train"; clearTimeout(applyTimer);
+    applyTimer=setTimeout(()=>{ applyArmed=false; b.classList.remove("confirm"); b.textContent="Apply to Treatment Train"; },5000); return; }
+  clearTimeout(applyTimer); b.disabled=true; b.textContent="Applying…";
+  try{ window.parent.postMessage({type:"tea-train-explorer-apply",config:buildConfig()},"*"); $("applyMsg").textContent="Sent to the app. The dialog closes when the page updates."; }
+  catch(e){ b.disabled=false; b.textContent="Apply to Treatment Train"; $("applyMsg").textContent="Could not reach the app. Close the dialog and try again."; }
+  applyArmed=false; b.classList.remove("confirm");
+};
+
+/* ---------- colors ---------- */
+const colors={};
+["--surface","--fg","--muted","--f-display","--line","--grid","--accent","--bad","--water-clear","--water-murky","--brine","--solid","--band-pre","--band-desal","--band-post","--oil","--tss","--hard","--tds","--nh3","--toc","--fe","--btex","--vapor","--sludge","--f-mono","--f-body"]
+  .forEach(k=>colors[k]=getComputedStyle(document.documentElement).getPropertyValue(k).trim()||"#888888");
+function rgb(h){ h=h.replace("#",""); if(h.length===3) h=h.split("").map(c=>c+c).join(""); const n=parseInt(h,16); return [n>>16&255,n>>8&255,n&255]; }
+function rgba(h,a){ const A=rgb(h); return `rgba(${A[0]},${A[1]},${A[2]},${a})`; }
+function mix(a,b,t,al){ const A=rgb(a),B=rgb(b); const c=A.map((v,i)=>Math.round(v+(B[i]-v)*t)); return `rgba(${c[0]},${c[1]},${c[2]},${al==null?1:al})`; }
+
+/* ---------- shared geometry ---------- */
+const W=1200, FEEDZ=96, OUTZ=150; let GAP=22;
+let G={units:[]};
+function layout(){
+  GAP=model.rec.length?32:22;   // wider gaps leave room for recycle risers
+  const n=model.list.length, area=W-FEEDZ-OUTZ, w=n?Math.min(168,(area-GAP*(n-1))/n):0, total=n?n*w+GAP*(n-1):0, start=FEEDZ+(area-total)/2;
+  G.units=model.list.map((inst,i)=>{ const x0=start+i*(w+GAP); return {inst,u:U[inst.unit],i,x0,x1:x0+w,w,mx:x0+w*0.58}; });
+  G.start=n?G.units[0].x0:FEEDZ; G.end=n?G.units[n-1].x1:W-OUTZ;
+}
+function stageBands(c,y0,y1){ const tok={pretreatment:"--band-pre",desalination:"--band-desal",posttreatment:"--band-post"};
+  for(const s of MAIN){ const us=G.units.filter(g=>g.inst.stage===s); if(!us.length) continue; const a=us[0].x0-GAP/2+2, b=us[us.length-1].x1+GAP/2-2; c.fillStyle=colors[tok[s]]; c.fillRect(a,y0,b-a,y1-y0); } }
+function fit(c,text,maxW){ if(c.measureText(text).width<=maxW) return text; let t=text; while(t.length>1&&c.measureText(t+"…").width>maxW) t=t.slice(0,-1); return t+"…"; }
+function wrap2(c,text,maxW){ if(c.measureText(text).width<=maxW) return [text]; const words=text.split(" "); let a="";
+  for(let k=0;k<words.length;k++){ const t=a?a+" "+words[k]:words[k]; if(c.measureText(t).width>maxW&&a){ return [a, fit(c,words.slice(k).join(" "),maxW)]; } a=t; } return [fit(c,a,maxW)]; }
+
+/* ---------- chart ---------- */
+const TICKS=["100%","10%","1%","0.1%","≤0.01%"];
+const cv=$("chart"), cx=cv.getContext("2d"), CH=250, PT=40, PB=222, LMIN=-4;
+const yOf=f=>PT+(PB-PT)*clamp(-(f>0?Math.log10(f):LMIN)/(-LMIN),0,1);
+function drawChart(){
+  const C=colors, n=model.list.length; cx.fillStyle=C["--surface"]; cx.fillRect(0,0,W,CH);
+  stageBands(cx,PT-8,PB+8);
+  cx.font=`11px ${C["--f-mono"]}`; cx.textBaseline="middle";
+  for(let d=0;d>=LMIN;d--){ const y=yOf(Math.pow(10,d)); cx.strokeStyle=C["--grid"]; cx.lineWidth=1; cx.beginPath(); cx.moveTo(FEEDZ-8,y+.5); cx.lineTo(W-14,y+.5); cx.stroke(); cx.fillStyle=C["--muted"]; cx.textAlign="right"; cx.fillText(TICKS[-d],FEEDZ-12,y); }
+  cx.textAlign="left"; cx.textBaseline="alphabetic"; cx.fillStyle=C["--fg"]; cx.font=`700 18px ${C["--f-display"]}`; cx.fillText("Remaining fraction C/C₀",14,23);
+  const tw=cx.measureText("Remaining fraction C/C₀").width; cx.fillStyle=C["--muted"]; cx.font=`11px ${C["--f-mono"]}`; cx.fillText((P.standalone?"Log scaled":"log scale · columns line up with the units below · red ring = may exceed target")+(model.rec.length?" · step at ↺ = recycle mixing at the inlet":""),14+tw+16,22);
+  const sel=G.units.find(g=>g.inst.key===selKey); if(sel){ cx.fillStyle=rgba(C["--accent"],0.07); cx.fillRect(sel.x0,PT-8,sel.w,PB-PT+16); }
+  if(model.rec.length){ cx.save(); cx.setLineDash([3,4]); cx.strokeStyle=rgba(C["--accent"],0.55); cx.lineWidth=1.2; cx.font=`10.5px ${C["--f-mono"]}`; cx.fillStyle=C["--accent"]; cx.textAlign="left";
+    G.units.forEach((g,k)=>{ if(!(model.Qin[k]>model.Q[k]+1e-9)) return; cx.beginPath(); cx.moveTo(g.x0+.5,PT-8); cx.lineTo(g.x0+.5,PB+8); cx.stroke(); cx.fillText("↺ mix",g.x0+4,PT-1); }); cx.restore(); }
+  const endX=W-OUTZ+30, labels=[];
+  chartSpecies().forEach(p=>{ const col=colorOf(p), c0=feed[p]; if(!c0) return;
+    const pts=[[FEEDZ-6,1]]; for(let k=0;k<n;k++){ const g=G.units[k]; pts.push([g.x0,model.C[k][p]/c0]); if(model.Qin[k]>model.Q[k]+1e-9) pts.push([g.x0,model.Cin[k][p]/c0]); pts.push([g.x1,model.C[k+1][p]/c0]); } pts.push([endX,model.C[n][p]/c0]);
+    cx.lineJoin="round"; cx.strokeStyle=col; cx.lineWidth=2.2; cx.beginPath(); pts.forEach(([x,f],i)=>{ const y=yOf(f); i?cx.lineTo(x,y):cx.moveTo(x,y); }); cx.stroke();
+    const last=pts[pts.length-1], ly=yOf(last[1]); cx.fillStyle=col; cx.beginPath(); cx.arc(last[0],ly,3.6,0,6.283); cx.fill();
+    const t=(P.targets||{})[p];
+    if(t&&t.limit!=null&&model.C[n][p]>t.limit){ cx.strokeStyle=C["--bad"]; cx.lineWidth=2; cx.beginPath(); cx.arc(last[0],ly,7.5,0,6.283); cx.stroke(); }
+    labels.push({y:ly,text:shortName(p),col}); });
+  labels.sort((a,b)=>a.y-b.y); let lastY=-99; for(const L of labels){ L.y=Math.max(L.y,lastY+12); lastY=L.y; }
+  cx.font=`11px ${C["--f-mono"]}`; cx.textAlign="left"; cx.textBaseline="middle"; for(const L of labels){ cx.fillStyle=L.col; cx.fillText(fit(cx,L.text,OUTZ-52),endX+12,Math.min(L.y,CH-8)); } cx.textBaseline="alphabetic";
+}
+
+/* ---------- flow schematic ---------- */
+const fv=$("flow"), fx=fv.getContext("2d"), FH=370, CY=150, UH=56, PIPE=11, CH_S=296, CH_B=336, BOXW=168, REC_LANES=[238,254,270];
+let parts=[], vapor=[], time=0, rates={}, acc={};
+function setupFlow(){
+  const old={}; (G.units||[]).forEach(g=>old[g.inst.key]=g.load||0); layout();
+  for(const g of G.units){ g.oy=g.u.path==="brine"?CH_B:CH_S; g.ox=g.u.mech==="membrane"?g.mx-8:(g.u.mech==="float"?g.x1+6:g.x0+g.w*0.5); g.load=old[g.inst.key]||0; g.gran=[];
+    if(g.u.mech==="media"){ let s=g.i*97+13; const rnd=()=>{ s=(s*9301+49297)%233280; return s/233280; }; for(let k=0;k<Math.round(g.w*0.5);k++) g.gran.push([g.x0+6+rnd()*(g.w-12),CY-UH*0.4+rnd()*UH*1.28,1.8+rnd()*2.2]); } }
+  // Recycle pipes: product leaves the forward pipe right of the unit, reject branches off the unit's waste drop;
+  // both run left along a lane under the units and rise into the pipe just left of the receiving unit.
+  G.rec=[]; const top=CY+PIPE+3;
+  model.rec.map(x=>({x,gf:G.units[x.f],gt:G.units[x.t]})).sort((a,b)=>(a.gf.x1-a.gt.x0)-(b.gf.x1-b.gt.x0)).forEach((o,k)=>{
+    const ly=REC_LANES[Math.min(k,REC_LANES.length-1)], prod=o.x.r.stream==="product", tx=o.gt.x0-GAP*0.62, sx=prod?o.gf.x1+GAP*0.72:o.gf.ox;
+    G.rec.push({r:o.x.r,fi:o.x.f,ti:o.x.t,gf:o.gf,gt:o.gt,ly,sx,tx,prod,top,path:prod?[[sx,top],[sx,ly],[tx,ly],[tx,CY]]:[[sx,ly],[tx,ly],[tx,CY]],
+      col:prod?colors["--accent"]:(o.gf.u.path==="brine"?colors["--brine"]:colors["--solid"])}); });
+  const sp=[...ANIM_DEFAULT,...ANIM_OPTIONAL].filter(p=>animOn.has(p)&&feed[p]), total=reduce?30:90, w={}; let sum=0;
+  for(const p of sp){ w[p]=Math.log10(feed[p]/0.1+1); sum+=w[p]; }
+  rates={}; for(const p of sp){ rates[p]=sum?total*w[p]/sum:0; if(acc[p]==null) acc[p]=Math.random(); }
+  parts=parts.filter(p=>rates[p.s]);
+}
+function insideT(x){ for(const g of G.units){ if(x>=g.x0&&x<=g.x1){ return smooth(Math.min(1,Math.min(x-g.x0,g.x1-x)/22)); } } return 0; }
+function spawn(s){ parts.push({s,x:-4,y:CY,u:(Math.random()*2-1)*0.9,vx:(92+Math.random()*34)*(reduce?0.6:1),ph:Math.random()*6.28,st:"flow",next:0,remAt:null,g:null,t:0,a:1,vy:0}); }
+function decide(p,g){ if(p.remAt!==null) return; const r=((model.R[g.i]||{})[p.s]||{}).r||0; if(Math.random()<r){ p.g=g; p.remAt=g.u.mech==="membrane"?g.mx-3:g.x0+g.w*(0.18+Math.random()*0.55); } }
+function startRec(p,gr){ p.st="rec"; p.gr=gr; p.path=gr.path; p.seg=1; p.off=(Math.random()*2-1)*2.2; p.x=gr.path[0][0]+p.off; p.y=gr.path[0][1]; p.rcy=undefined; p.a=1; }
+function update(dt){
+  time+=dt;
+  for(const s in rates){ acc[s]+=rates[s]*dt; while(acc[s]>=1){ acc[s]-=1; if(parts.length<2600) spawn(s); } }
+  for(const g of G.units) g.load=Math.max(0,g.load-dt*0.02);
+  for(const p of parts){ const g=p.g;
+    switch(p.st){
+      case "flow":{ const t=insideT(p.x), x0=p.x; p.x+=p.vx*(1-0.5*t)*dt;
+        while(p.next<G.units.length&&p.x>=G.units[p.next].x0){ decide(p,G.units[p.next]); p.next++; }
+        if(p.remAt===null){ const gr=G.rec.find(r=>r.prod&&x0<r.sx&&p.x>=r.sx); if(gr&&Math.random()<gr.r.frac){ startRec(p,gr); break; } }
+        p.y=CY+p.u*(PIPE+(UH*0.8-PIPE)*t)+(reduce?0:Math.sin(time*2.3+p.ph)*1.2);
+        if(p.remAt!==null&&p.x>=p.remAt){ p.t=0; p.vy=0; const m=g.u.mech; p.st=m==="float"?"rise":m==="strip"?"gas":m==="settle"?"settle":m==="media"?"hold":"toout"; }
+        if(p.x>W+6) p.dead=true; break; }
+      case "hold": p.t+=dt; if(p.t>0.9){ p.st="toout"; g.load=Math.min(1,g.load+0.004); } break;
+      case "settle":{ const floor=CY+UH-4-g.load*12; p.vy+=160*dt; p.y+=p.vy*dt; if(p.y>=floor){ p.y=floor; p.st="toout"; g.load=Math.min(1,g.load+0.005); } break; }
+      case "rise":{ p.y-=70*dt; if(p.y<=CY-UH+5){ p.y=CY-UH+5; p.st="skim"; } break; }
+      case "skim":{ p.x+=55*dt; if(p.x>=g.x1+6){ p.x=g.x1+6; p.st="drop"; } break; }
+      case "gas":{ p.y-=60*dt; p.x+=Math.sin(time*3+p.ph)*8*dt; if(p.y<CY-UH-6) p.a=Math.max(0,p.a-dt*1.4); if(p.a<=0) p.dead=true; break; }
+      case "toout":{ p.x+=(g.ox-p.x)*Math.min(1,dt*4); p.y+=70*dt; if(p.y>=CY+UH){ p.x=g.ox; p.st="drop"; } break; }
+      case "drop":{ p.y+=95*dt;
+        if(p.rcy===undefined){ const gr=G.rec.find(r=>!r.prod&&r.fi===g.i); p.rcy=gr&&Math.random()<gr.r.frac?gr:null; }
+        if(p.rcy&&p.y>=p.rcy.ly){ startRec(p,p.rcy); break; }
+        if(p.y>=g.oy){ p.y=g.oy+(Math.random()*2-1)*3; p.st="chan"; p.vx=70+Math.random()*25; } break; }
+      case "rec":{ let d=120*dt*(reduce?0.6:1);
+        while(d>0&&p.st==="rec"){ const last=p.seg===p.path.length-1, tx=p.path[p.seg][0]+p.off, ty=p.path[p.seg][1]+(last?0:p.off), dx=tx-p.x, dy=ty-p.y, L=Math.hypot(dx,dy);
+          if(L<=d){ p.x=tx; p.y=ty; d-=L; p.seg++; if(p.seg>=p.path.length){ p.st="flow"; p.next=p.gr.ti; p.remAt=null; p.g=null; p.rcy=undefined; p.u=(Math.random()*2-1)*0.9; } }
+          else { p.x+=dx/L*d; p.y+=dy/L*d; d=0; } } break; }
+      case "chan":{ p.x+=p.vx*dt*(reduce?0.6:1); if(p.x>W-BOXW-6){ p.a=Math.max(0,p.a-dt*2.2); if(p.a<=0) p.dead=true; } break; }
+    } }
+  parts=parts.filter(p=>!p.dead);
+  for(const g of G.units) if(g.u.mech==="thermal"&&Math.random()<dt*(reduce?4:9)) vapor.push({x:g.x0+g.w*(0.2+Math.random()*0.6),y:CY-8,t:0,r:2+Math.random()*2});
+  for(const v of vapor){ v.t+=dt; v.y-=24*dt; } vapor=vapor.filter(v=>v.t<2);
+}
+function murk(c){ const g=s=>c[s]||0, gf=s=>feed[s]||0;
+  return clamp(0.7*(g("Oil")+g("TSS"))/((gf("Oil")+gf("TSS"))||1)+0.3*Math.sqrt((g("TDS")+g("Hardness"))/((gf("TDS")+gf("Hardness"))||1)),0,1); }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function drawFlow(){
+  const C=colors, c=fx, n=G.units.length; c.fillStyle=C["--surface"]; c.fillRect(0,0,W,FH);
+  c.strokeStyle=C["--grid"]; c.lineWidth=1; c.beginPath(); for(let x=0;x<=W;x+=24){ c.moveTo(x+.5,0); c.lineTo(x+.5,FH); } for(let y=0;y<=FH;y+=24){ c.moveTo(0,y+.5); c.lineTo(W,y+.5); } c.stroke();
+  stageBands(c,CY-UH-66,CY+UH+12);
+  c.font=`500 10.5px ${C["--f-mono"]}`; c.textAlign="center"; c.fillStyle=C["--muted"];
+  for(const s of MAIN){ const us=G.units.filter(g=>g.inst.stage===s); if(us.length) c.fillText(STAGE_NAME[s].toUpperCase(),(us[0].x0+us[us.length-1].x1)/2,CY-UH-54); }
+  // waste channels
+  for(const [path,y,lab] of [["solid",CH_S,"Sludge / solid waste"],["brine",CH_B,"Brine management"]]){
+    const col=path==="brine"?C["--brine"]:C["--solid"], has=G.units.some(g=>g.u.path===path);
+    c.fillStyle=rgba(col,has?0.14:0.05); c.fillRect(FEEDZ-40,y-8,W-BOXW-(FEEDZ-40)-6,16);
+    c.strokeStyle=rgba(col,has?0.7:0.3); c.lineWidth=1.2; c.beginPath(); c.moveTo(FEEDZ-40,y-8); c.lineTo(W-BOXW-6,y-8); c.moveTo(FEEDZ-40,y+8); c.lineTo(W-BOXW-6,y+8); c.stroke();
+    c.fillStyle=col; c.font=`500 11px ${C["--f-mono"]}`; c.textAlign="left"; c.fillText(lab,8,y-12);
+    const bx=W-BOXW, missing=path==="brine"&&!train.brine.length;
+    rr(c,bx,y-13,BOXW-10,26,6); c.fillStyle=C["--surface"]; c.fill(); c.setLineDash(missing?[4,3]:[]); c.strokeStyle=missing?C["--bad"]:col; c.lineWidth=1.4; c.stroke(); c.setLineDash([]);
+    c.fillStyle=missing?C["--bad"]:C["--fg"]; c.font=`11.5px ${C["--f-body"]}`; c.textAlign="center";
+    const txt=path==="brine"?(train.brine.length?train.brine.map(i=>U[i.unit].label).join(" + "):"No unit selected"):"Waste disposal";
+    c.fillText(fit(c,txt,BOXW-20),bx+(BOXW-10)/2,y+4);
+  }
+  // recycle pipes (under the main pipe and units)
+  for(const r of G.rec){ c.lineJoin="round"; c.lineCap="butt";
+    const pth=()=>{ c.beginPath(); r.path.forEach(([x,y],k)=>{ const yy=k===r.path.length-1?r.top:y; k?c.lineTo(x,yy):c.moveTo(x,yy); }); };
+    pth(); c.strokeStyle=rgba(r.col,0.16); c.lineWidth=8; c.stroke();
+    pth(); c.strokeStyle=rgba(r.col,0.85); c.lineWidth=1.4; c.setLineDash([6,5]); c.lineDashOffset=reduce?0:-time*28; c.stroke(); c.setLineDash([]); c.lineDashOffset=0; }
+  // main pipe
+  const segs=[]; if(!n) segs.push([0,W,0]); else { segs.push([0,G.units[0].x0,0]); for(let i=0;i<n-1;i++) segs.push([G.units[i].x1,G.units[i+1].x0,i+1]); segs.push([G.units[n-1].x1,W,n]); }
+  for(const [a,b,k] of segs){ c.fillStyle=mix(C["--water-clear"],C["--water-murky"],murk(model.C[k]),0.5); c.fillRect(a,CY-PIPE-3,b-a,2*(PIPE+3));
+    c.strokeStyle=rgba(C["--fg"],0.45); c.lineWidth=1.4; c.beginPath(); c.moveTo(a,CY-PIPE-3); c.lineTo(b,CY-PIPE-3); c.moveTo(a,CY+PIPE+3); c.lineTo(b,CY+PIPE+3); c.stroke(); }
+  c.font=`12px ${C["--f-body"]}`; c.fillStyle=C["--muted"]; c.textAlign="left"; c.fillText("Influent",8,CY-PIPE-10);
+  { const px=(n?G.end:FEEDZ)+10; c.fillText("Product water",px,CY-PIPE-26); c.fillText(`${(model.Q[n]*100).toFixed(0)}% of feed flow`,px,CY-PIPE-10); }
+  if(!n){ c.textAlign="center"; c.font=`15px ${C["--f-body"]}`; c.fillText("The treatment train is empty. Drag units from the library.",W/2,CY-50); }
+  for(const g of G.units){
+    const top=CY-UH, bot=CY+UH, u=g.u, col=u.path==="brine"?C["--brine"]:C["--solid"], sel=g.inst.key===selKey;
+    if(u.mech!=="strip"&&u.mech!=="dose"){ c.strokeStyle=rgba(col,0.7); c.lineWidth=1.3; c.beginPath();
+      if(u.mech==="float"){ c.moveTo(g.x1,top+4); c.lineTo(g.x1+6,top+4); c.lineTo(g.x1+6,g.oy-8); } else { c.moveTo(g.ox-4,bot); c.lineTo(g.ox-4,g.oy-8); c.moveTo(g.ox+4,bot); c.lineTo(g.ox+4,g.oy-8); } c.stroke(); }
+    rr(c,g.x0,top,g.w,UH*2,8); c.fillStyle=mix(C["--water-clear"],C["--water-murky"],murk(model.Cin[g.i]),0.22); c.fill();
+    c.setLineDash(u.has_model?[]:[5,4]); c.lineWidth=sel?2.6:1.7; c.strokeStyle=sel?C["--fg"]:C["--accent"]; c.stroke(); c.setLineDash([]);
+    const ink=C["--accent"];
+    if(u.mech==="media"){ c.fillStyle=rgba(C["--sludge"],0.25+g.load*0.5); for(const q of g.gran){ c.beginPath(); c.arc(q[0],q[1],q[2],0,6.283); c.fill(); } }
+    else if(u.mech==="settle"){ const h=5+g.load*12,a=g.x0+g.w*0.1,b=g.x1-g.w*0.1; c.beginPath(); c.moveTo(a,bot-2); c.quadraticCurveTo((a+b)/2,bot-2-h*2,b,bot-2); c.closePath(); c.fillStyle=rgba(C["--sludge"],0.7); c.fill();
+      c.strokeStyle=rgba(C["--muted"],0.7); c.lineWidth=1.2; c.beginPath(); c.moveTo(g.x0+g.w*0.22,top+8); c.lineTo(g.x0+g.w*0.22,CY); c.stroke(); }
+    else if(u.mech==="membrane"){ const ro=/RO$/.test(u.label); c.setLineDash(ro?[]:[3,4]); c.lineWidth=ro?3.5:2.6; c.strokeStyle=ink; c.beginPath(); c.moveTo(g.mx,top+7); c.lineTo(g.mx,bot-7); c.stroke(); c.setLineDash([]); }
+    else if(u.mech==="thermal"){ c.strokeStyle=ink; c.lineWidth=1.5; c.beginPath(); const y=top+14,a=g.x0+g.w*0.14,b=g.x1-g.w*0.14; for(let x=a;x<=b;x+=2){ const yy=y+Math.sin((x-a)/6)*2.6; x===a?c.moveTo(x,yy):c.lineTo(x,yy);} c.stroke(); }
+    else if(u.mech==="float"){ c.fillStyle=rgba(C["--oil"],0.18+g.load*0.3); c.fillRect(g.x0+2,top+2,g.w-4,9);
+      if(u.name==="DAF"){ c.strokeStyle=rgba(C["--fg"],0.25); c.lineWidth=1; for(let k=0;k<6;k++){ const bx=g.x0+g.w*(0.2+0.12*k), by=bot-8-((time*30+k*17)%(UH*1.6)); c.beginPath(); c.arc(bx,by,1.8,0,6.283); c.stroke(); } } }
+    else if(u.mech==="strip"){ c.strokeStyle=ink; c.lineWidth=1.2; for(let k=0;k<4;k++){ const y=top+16+k*(UH*1.6/4); c.beginPath(); c.moveTo(g.x0+6,y); c.lineTo(g.x1-6,y+6); c.stroke(); } }
+    else if(u.mech==="dose"){ c.fillStyle=ink; for(let k=0;k<3;k++){ const yy=top+((time*40+k*20)%30); c.beginPath(); c.arc(g.x0+g.w*(0.35+0.15*k),yy,2,0,6.283); c.fill(); } }
+    c.textAlign="center"; c.fillStyle=C["--fg"]; c.font=`700 ${g.w<90?14:17}px ${C["--f-display"]}`;
+    const lines=wrap2(c,u.label,g.w+GAP-6); lines.forEach((t,k)=>c.fillText(t,g.x0+g.w/2,top-(lines.length===2?34:22)+k*15));
+    c.font=`11px ${C["--f-mono"]}`; c.fillStyle=C["--muted"]; const qin=model.Qin[g.i], mixed=qin>model.Q[g.i]+1e-9; c.fillStyle=mixed?C["--accent"]:C["--muted"];
+    c.fillText(fit(c,`R ${(u.recovery*100).toFixed(u.recovery>0.99?1:0)}%`+(mixed?` · Qin ${fq(qin)}×`:""),g.w+GAP-6),g.x0+g.w/2,top-6);
+    if(u.residual){ const t=fit(c,u.residual,g.w+GAP-6), lx=u.mech==="float"?g.x0+g.w/2:g.ox, tw=c.measureText(t).width; c.fillStyle=C["--surface"]; c.fillRect(lx-tw/2-3,bot+6,tw+6,14); c.fillStyle=C["--muted"]; c.fillText(t,lx,bot+16); }
+  }
+  // recycle split points, return arrows and labels
+  for(const r of G.rec){ const [sx,sy]=r.path[0];
+    c.fillStyle=r.col; c.beginPath(); c.arc(sx,sy,3.2,0,6.283); c.fill();
+    c.beginPath(); c.moveTo(r.tx-5,r.top+9); c.lineTo(r.tx+5,r.top+9); c.lineTo(r.tx,r.top+1); c.closePath(); c.fill();
+  }
+  for(const p of parts){ const sp=SPEC[p.s]; c.fillStyle=C[sp.tok]; c.strokeStyle=C[sp.tok]; c.globalAlpha=p.a; drawShape(c,sp.shape,p.x,p.y,sp.r); }
+  c.globalAlpha=1;
+  for(const r of G.rec){
+    const x=model.rec.find(o=>o.r===r.r), name=lc(recStreamName(r.gf.u,r.r.stream));
+    c.font=`10.5px ${C["--f-mono"]}`; const t=`↺ ${Math.round(r.r.frac*100)}% of ${name} · ${x?fq(x.q):"0"}× feed`, tw=c.measureText(t).width;
+    const lx=clamp((Math.min(r.sx,r.tx)+Math.max(r.sx,r.tx))/2-tw/2-5,4,W-BOXW-tw-16);
+    rr(c,lx,r.ly-7,tw+10,14,4); c.fillStyle=C["--surface"]; c.fill(); c.strokeStyle=rgba(r.col,0.8); c.lineWidth=1; c.stroke();
+    c.fillStyle=r.col; c.textAlign="left"; c.textBaseline="middle"; c.fillText(t,lx+5,r.ly+0.5); c.textBaseline="alphabetic"; }
+
+  c.globalAlpha=1; c.strokeStyle=C["--vapor"]; c.lineWidth=1.1;
+  for(const v of vapor){ c.globalAlpha=Math.max(0,1-v.t/2)*0.9; c.beginPath(); c.arc(v.x,v.y,v.r,0,6.283); c.stroke(); } c.globalAlpha=1;
+  let lx=W-14; c.textAlign="right"; c.font=`11px ${C["--f-mono"]}`;
+  [...ANIM_DEFAULT,...ANIM_OPTIONAL].filter(p=>rates[p]).reverse().forEach(p=>{ const t=shortName(p); c.fillStyle=C["--muted"]; c.fillText(t,lx,20); lx-=c.measureText(t).width+12; c.fillStyle=C[SPEC[p].tok]; c.strokeStyle=C[SPEC[p].tok]; drawShape(c,SPEC[p].shape,lx,16,SPEC[p].r); lx-=16; });
+}
+function drawShape(c,shape,x,y,r){
+  switch(shape){
+    case "square": c.fillRect(x-r,y-r,r*2,r*2); break;
+    case "diamond": c.beginPath(); c.moveTo(x,y-r*1.3); c.lineTo(x+r,y); c.lineTo(x,y+r*1.3); c.lineTo(x-r,y); c.fill(); break;
+    case "tri": c.beginPath(); c.moveTo(x,y-r*1.15); c.lineTo(x+r,y+r*0.8); c.lineTo(x-r,y+r*0.8); c.fill(); break;
+    case "trid": c.beginPath(); c.moveTo(x,y+r*1.15); c.lineTo(x+r,y-r*0.8); c.lineTo(x-r,y-r*0.8); c.fill(); break;
+    case "ring": c.lineWidth=1.6; c.beginPath(); c.arc(x,y,r,0,6.283); c.stroke(); break;
+    case "plus": c.lineWidth=1.8; c.beginPath(); c.moveTo(x-r,y); c.lineTo(x+r,y); c.moveTo(x,y-r); c.lineTo(x,y+r); c.stroke(); break;
+    default: c.beginPath(); c.arc(x,y,r,0,6.283); c.fill();
+  }
+}
+
+/* ---------- hover & click on canvases ---------- */
+const tip=$("tip");
+function colAt(xl){ for(const g of G.units){ if(xl>=g.x0-GAP/2&&xl<=g.x1+GAP/2) return {k:g.i+1,g}; } return {k:(!G.units.length||xl<G.start)?0:G.units.length}; }
+function onHover(e,canvas){
+  const r=canvas.getBoundingClientRect(), {k,g}=colAt((e.clientX-r.left)/r.width*W), sp=chartSpecies(); if(!sp.length){ tip.hidden=true; return; }
+  let h=`<b>${g?`${g.i+1}. ${esc(g.inst.unit)} outlet`:(k===0?"Feed":"Product water")}</b><table>`;
+  for(const p of sp){ const v=model.C[k][p], f=v/feed[p], x=g?model.R[g.i][p]:null;
+    h+=`<tr><td><span style="color:${swatch(p)}">■</span> ${esc(shortName(p))}</td><td>${fmt(v)}</td><td>${f*100<0.01&&f>0?"<0.01":(f*100).toFixed(f<0.1?2:0)}%</td>${g?`<td>−${pct(x?x.r:0,1)}</td>`:""}</tr>`; }
+  const mixed=g&&model.Qin[g.i]>model.Q[g.i]+1e-9;
+  tip.innerHTML=h+`</table>${mixed?`<div class="hint">Inlet after recycle mixing: ${fq(model.Qin[g.i])} × feed flow</div>`:""}${g?'<div class="hint">Click for unit details</div>':""}`; tip.hidden=false;
+  const wr=$("cwrap").getBoundingClientRect(); let left=e.clientX-wr.left+14, top=e.clientY-wr.top+12;
+  if(left+tip.offsetWidth>wr.width-6) left=e.clientX-wr.left-tip.offsetWidth-14; if(top+tip.offsetHeight>wr.height-6) top=wr.height-tip.offsetHeight-6;
+  tip.style.left=Math.max(4,left)+"px"; tip.style.top=Math.max(4,top)+"px"; canvas.style.cursor=g?"pointer":"default";
+}
+for(const cvs of [cv,fv]){
+  cvs.addEventListener("pointermove",e=>{ if(e.pointerType==="mouse") onHover(e,cvs); });
+  cvs.addEventListener("pointerleave",()=>tip.hidden=true);
+  cvs.addEventListener("click",e=>{ const r=cvs.getBoundingClientRect(), {g}=colAt((e.clientX-r.left)/r.width*W); if(g){ selKey=g.inst.key; rebuild(true); } });
+}
+
+/* ---------- rebuild & loop ---------- */
+function renderSide(){ renderWarnings(); renderFate(); renderExport(); }
+function rebuild(keepParticles){
+  purgeRecycles(); compute(); setupFlow();
+  if(!keepParticles){ parts=[]; vapor=[]; for(let t=0;t<14;t+=0.05) update(0.05); }
+  renderLanes(); renderSpecies(); renderDetail(); renderSide();
+}
+function size(canvas,ctx,h){ const w=canvas.getBoundingClientRect().width; if(!w) return; const dpr=Math.min(2,window.devicePixelRatio||1); canvas.width=Math.round(w*dpr); canvas.height=Math.round(w*dpr*h/W); ctx.setTransform(canvas.width/W,0,0,canvas.height/h,0,0); }
+new ResizeObserver(()=>{ size(cv,cx,CH); size(fv,fx,FH); }).observe($("cwrap"));
+let last=performance.now();
+function frame(now){ const dt=Math.min(0.05,(now-last)/1000); last=now; update(dt); drawChart(); drawFlow(); requestAnimationFrame(frame); }
+window.__explorer={get model(){ return model; }, get train(){ return train; }, get recycles(){ return RECYCLES; }, set recycles(v){ RECYCLES=v; rebuild(); }, get parts(){ return parts; }, simulate:l=>simulate(l||mainList())};
+if(P.standalone){ $("applyCard").hidden=true; $("pageHead").hidden=false; $("snapNote").hidden=false; $("snapNote").textContent=P.standalone.note||""; loadScenario(); } else loadPageTrain();
+renderCtx(); renderLib(); rebuild(); size(cv,cx,CH); size(fv,fx,FH); drawChart(); drawFlow(); requestAnimationFrame(frame);
+})();
+</script>

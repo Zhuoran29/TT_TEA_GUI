@@ -18,14 +18,8 @@ MVC,Compressor,comp_eff,0.8,,Compressor efficiency,WaterTAP MVC,Open source docu
 MVC,Evaporator,evap_coeff,3000,W/K-m2,Evaporator heat transfer coefficient,WaterTAP MVC,Open source documentation
 Vacuum membrane distillation (VMD),Feed,feed_temperature,25,deg C,Feed temperature,MD Design Model (Surrogate) worksheet,Workbook model
 Vacuum membrane distillation (VMD),Hydraulics,recovery,0.5,fraction,Permeate recovery from VMD feed,MD Design Model (Surrogate) worksheet,Workbook model
-LSRRO,Hydraulics,recovery,0.5,fraction,Recovery rate,NMPWRC LSRRO TEA assumption,Model input
-LSRRO,Design basis,reference_flow_bbl_day,50000,bbl/day,Reference LSRRO flow basis for scaling model inputs,NMPWRC LSRRO experimental design basis,Experimental data
-LSRRO,Energy,gross_pump_power_kw,3534,kW,Gross pump power at the reference flow,NMPWRC LSRRO experimental design basis,Experimental data
-LSRRO,Energy recovery,energy_recovery_fraction,0.3,fraction,Fraction of gross pump power recovered by the ERD,NMPWRC LSRRO TEA assumption,Model input
-LSRRO,Membrane,membrane_flux,18,L/m2-h,Average membrane operating flux,WaterTAP LSRRO flowsheet context and membrane design screening assumption,Open source documentation
-LSRRO,Membrane,pressure_override_psi,0,psi,Optional operating-pressure override; 0 uses TDS lookup,Atia et al. 2023 and WaterTAP PBSE design-point lookup,Model source
-LSRRO,Membrane,stage_override,0,count,Optional stage-count override; 0 uses TDS lookup,Atia et al. 2023 and WaterTAP PBSE design-point lookup,Model source
-LSRRO,Water quality,clip_negative_permeate,1,0/1,Clip negative regression-predicted permeate concentrations to zero,NMPWRC empirical water-quality regression post-processing option,Empirical
+LSRRO,Hydraulics,recovery,0,fraction,Recovery; 0 uses the recovery correlation,NMSU assumptions: recovery correlation (SI Eq. B5-1) fit to WaterTAP PBSE design points with hardness and silica correction; a positive value overrides it,Model input
+LSRRO,Water quality,clip_negative_permeate,1,0/1,Clip negative regression-predicted permeate concentrations to zero,NMSU assumptions: water-quality regression post-processing option,Empirical
 3-phase separator,Hydraulics,recovery,0.995,fraction,Fraction of inlet flow recovered after oil/water separation,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
 3-phase separator,Hydraulics,hydraulic_retention_time,30,min,Separator hydraulic retention time,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
 3-phase separator,Hydraulics,design_factor,1.2,fraction,Oversizing factor applied to separator volume,US EPA SPCC Chapter 5 Oil/Water Separators and API separator design guidance,Technical report
@@ -38,12 +32,12 @@ DAF,Chemicals,h2o2_to_iron_ratio,1.75,mg H2O2/mg Fe,H2O2 dose per mg of feed iro
 DAF,Chemicals,ach_aluminum_content,0.124,fraction,Aluminum mass fraction of the ACH product (converts mg Al/L to product mass),"Typical ACH product, 23-24% Al2O3 (12.4% Al)",Vendor data
 DAF,Water quality,cod_to_toc_ratio,4,mg COD/mg TOC,COD to TOC ratio (used only to report COD),NMSU assumptions,Model input
 DAF,Residuals,float_solids_content,0.03,fraction,Dry solids mass fraction of the skimmed float; sets float volume and water recovery,Engineering estimate: mechanically skimmed DAF float typically 2-5% dry solids,Engineering estimate
-Chemical softening,Hydraulics,recovery,0.97,fraction,Fraction of inlet flow recovered after softening clarification,NMPWRC chemical-softening model input,Model input
-Chemical softening,Chemicals,lime_dose_mg_l,10,mg/L,Lime dose as Ca(OH)2 product,KBH/NMPWRC chemical-softening TEA workbook basis,Model input
-Chemical softening,Chemicals,soda_ash_dose_mg_l,4301,mg/L,Soda ash dose as Na2CO3 product,KBH/NMPWRC chemical-softening TEA workbook basis,Model input
+Chemical softening,Chemicals,lime_dose_mg_l,10,mg/L,Lime dose as Ca(OH)2 product,NMSU assumptions: average-TDS case of the NMSU CS model (SI Table S4); dose depends on the feed,Model input
+Chemical softening,Chemicals,soda_ash_dose_mg_l,4301,mg/L,Soda ash dose as Na2CO3 product,NMSU assumptions: average-TDS case of the NMSU CS model (SI Table S4); dose depends on the feed,Model input
 Chemical softening,Conditioning,target_neutral_pH,8,-,Target pH after acid neutralization,NMPWRC Reaktoro chemical-softening simulator target neutralization pH,Model input
 Chemical softening,Chemicals,acid_dose_override_mg_l,0,mg/L,Optional H2SO4 dose override; 0 auto-calculates to target pH,NMPWRC Reaktoro chemical-softening simulator optional user override,Model input
-Chemical softening,Energy,energy_intensity,0.223,kWh/m3 feed,Chemical-softening electricity demand,KBH/NMPWRC chemical-softening workbook electricity basis,Model input
+Chemical softening,Energy,energy_intensity,0.223,kWh/m3,Electricity demand per cubic meter treated,"NMSU assumptions; KBH TEA workbook (O&M_Summary): 307,042 kWh/yr at 1 MGD for softening, UF, IX and degasifier pumping",Model input
+Chemical softening,Residuals,sludge_solids_content,0.1,fraction,Dry solids mass fraction of the sludge; sets sludge volume and water recovery,Engineering estimate: lime softening clarifier sludge typically a few to about 15% solids; 10% used; sets sludge volume and water recovery,Engineering estimate
 Electrocoagulation,Hydraulics,hydraulic_retention_time,30,min,EC treatment time (sets electrode area and Al dose),"NMSU assumptions: 30 min EC treatment time, Al-Ajmi et al. 2025, Water 17, 23",Publication
 Electrocoagulation,Electrodes,current_density_mA_cm2,20,mA/cm2,EC aluminum-electrode current density,"NMSU assumptions: 20 mA/cm2 (2.0 A/dm2), Al-Ajmi et al. 2025, Water 17, 23",Publication
 Electrocoagulation,Electrodes,electrode_gap_m,0.02,m,Electrode gap used in solution-resistance estimate,NMSU assumptions; Lugo et al. 2025 (WaterTAP EC model input),Publication
@@ -51,14 +45,12 @@ Electrocoagulation,Energy,energy_intensity,0,kWh/m3 feed,Calculated from conduct
 Electrocoagulation,Residuals,sludge_solids_content,0.025,fraction,Dry solids mass fraction of the sludge; sets sludge volume and water recovery,"Al-Ajmi et al. 2025, Water 17, 23: EC sludge 2.41-2.62% dry solids",Publication
 Walnut shell filtration,Hydraulics,recovery,0.99,fraction,Fraction of inlet flow recovered; the rest leaves as backwash,NMSU assumptions,Model input
 Walnut shell filtration,Energy,energy_intensity,0.17,kWh/m3 feed,"Electricity for feed, backwash and media scrubbing","NMSU assumptions; US DOE final report DE-FE0031851 (Drover 2022), WSF vendor electricity",Technical report
-Ultrafiltration,Hydraulics,recovery,0.96,fraction,Net UF filtrate recovery after backwash,WaterTAP Ultra Filtration ZO documentation and membrane treatment literature,Open source documentation
-Ultrafiltration,Membrane,membrane_flux,45,L/m2-h,Average UF operating flux,Wang et al. 2024 DWPR report and KBH/NMPWRC UF workbook basis,Technical report
-Ultrafiltration,Membrane,backwash_fraction,0.04,fraction,Backwash and cleaning waste fraction,WaterTAP Ultra Filtration ZO documentation and membrane treatment literature,Open source documentation
-Ultrafiltration,Chemicals,sodium_bisulfite_dose_mg_l,5,mg/L,Sodium bisulfite dose at UF,KBH/NMPWRC UF workbook sodium bisulfite dosing basis,Model input
-Ultrafiltration,Pumping,pump_tdh_ft,50,ft,UF pump total dynamic head,KBH/NMPWRC UF workbook pump TDH basis,Model input
-Ultrafiltration,Pumping,pump_efficiency,0.75,fraction,Pump efficiency,KBH/NMPWRC UF workbook pump efficiency basis,Model input
-Ultrafiltration,Pumping,motor_efficiency,0.95,fraction,Motor efficiency,KBH/NMPWRC UF workbook motor efficiency basis,Model input
-Ultrafiltration,Pumping,vfd_factor,0.98,factor,VFD or constant motor factor,KBH/NMPWRC UF workbook VFD factor basis,Model input
+Ultrafiltration,Hydraulics,recovery,0.99,fraction,Filtrate recovery after backwash and cleaning,KBH TEA Appendix: UF filtrate 0.9603 MGD from 0.97 MGD feed,Technical report
+Ultrafiltration,Chemicals,sodium_bisulfite_dose_mg_l,5,mg/L,Sodium bisulfite dose at UF,KBH TEA Appendix (Chemical Details): sodium bisulfite 5 mg/L at UF,Model input
+Ultrafiltration,Pumping,pump_tdh_ft,50,ft,UF pump total dynamic head,"KBH TEA Appendix (Power Load Details): Pump for MU/UF, TDH 50 ft",Model input
+Ultrafiltration,Pumping,pump_efficiency,0.75,fraction,Pump efficiency,"KBH TEA Appendix (Power Load Details): Pump for MU/UF, pump efficiency 0.75",Model input
+Ultrafiltration,Pumping,motor_efficiency,0.95,fraction,Motor efficiency,"KBH TEA Appendix (Power Load Details): Pump for MU/UF, motor efficiency 0.95",Model input
+Ultrafiltration,Pumping,vfd_factor,0.98,factor,VFD or constant motor factor,"KBH TEA Appendix (Power Load Details): Pump for MU/UF, VFD factor 0.98",Model input
 pH adjustment,Hydraulics,recovery,1,fraction,Fraction of inlet flow recovered after pH adjustment,WaterTAP zero-order chemical dosing convention and site-specific engineering defaults,Open source documentation
 pH adjustment,Conditioning,target_pH,7.5,-,Target outlet pH set by the pH adjustment unit,Water Technologies Handbook precipitation softening and pH adjustment practice,Industrial reference
 pH adjustment,Chemicals,chemical_dose,0.004,kg/m3,Chemical dose per cubic meter treated for pH adjustment,Water Technologies Handbook and site-specific dose testing guidance,Industrial reference
@@ -106,3 +98,37 @@ BWRO,Pumps,piping_loss_bar,0.5,bar,High-pressure piping loss allowance,SEDAT Des
 BWRO,Energy recovery,has_erd,0,0/1,Enable concentrate energy recovery device,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
 BWRO,Energy recovery,erd_efficiency,0.95,fraction,Energy recovery device efficiency,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
 BWRO,Energy,pretreatment_energy_intensity,0.0,kWh/m3 product,BWRO-island pretreatment energy not modeled in upstream units,SEDAT DesalinationModels/BWRO.py and BWRO_cost.py; BW30 PRO-400/34 membrane defaults,model source
+Ion exchange,Pumping,pump_head,10,m,Total dynamic head across the IX beds and piping,"Engineering estimate of pressure-vessel bed, underdrain and piping head loss (same basis as GAC and zeolite)",Engineering estimate
+Ion exchange,Pumping,pump_efficiency,0.7,fraction,Pump wire-to-water efficiency,Planning-level pump wire-to-water efficiency (EPA WBS pump energy method),Engineering estimate
+Ion exchange,Performance,bed_removal,0.99,fraction,Removal of the target ions in the water passing through the beds; the rest of the flow bypasses,NMSU assumptions: 99% removal through the beds; lower targets are met by bypass,Model input
+Ion exchange,Cation bed,cation_empty_bed_contact_time,2.5,min,Empty bed contact time of the cation bed,"US EPA WBS cation exchange model (2023 release): standard designs, EBCT 2.5 min (range 1.5-7.5)",Technical report
+Ion exchange,Cation bed,cation_capacity,1.24,eq/L resin,Usable exchange capacity of the cation resin at the regenerant dose,US EPA WBS cation exchange model (2023 release): usable capacity 27 kgr as CaCO3/ft3 (1.24 eq/L) at 15 lb NaCl/ft3,Technical report
+Ion exchange,Cation bed,cation_regenerant_dose,240,g/L resin,"Regenerant applied per regeneration (NaCl, or HCl for demineralization)",US EPA WBS cation exchange model (2023 release): salt dose 15 lb NaCl/ft3 (240 g/L),Technical report
+Ion exchange,Cation bed,cation_regenerant_concentration,107.8,g/L,Regenerant solution concentration; sets the regenerant volume,US EPA WBS cation exchange model (2023 release): brine 0.9 lb/gal (108 g/L),Technical report
+Ion exchange,Cation bed,cation_rinse_bed_volumes,12,bed volumes,Slow and fast rinse volume per regeneration,US EPA WBS cation exchange model (2023 release): slow rinse 2 BV and fast rinse 10 BV,Technical report
+Ion exchange,Cation bed,cation_backwash_bed_volumes,3,bed volumes,Backwash volume per regeneration,"US EPA WBS cation exchange model (2023 release): backwash 6 gpm/ft2 for 15 min, about 3 BV for a 4 ft bed",Technical report
+Ion exchange,Cation bed,cation_max_bed_volumes,1000,bed volumes,Maximum run length between regenerations,"US EPA WBS cation exchange model (2023 release): 100-1,000 BV before regeneration",Technical report
+Ion exchange,Anion bed,anion_empty_bed_contact_time,2,min,Empty bed contact time of the anion bed,"US EPA WBS anion exchange model (2023 release): standard designs, EBCT 2.0 min (range 1.5-7)",Technical report
+Ion exchange,Anion bed,anion_capacity,0.8,eq/L resin,Usable exchange capacity of the anion resin at the regenerant dose,US EPA WBS anion exchange model (2023 release): bed life BV = -606 ln(SO4) + 3150 (Chen et al. 1999) implies 0.75-0.81 eq/L at 50-100 mg/L sulfate,Technical report
+Ion exchange,Anion bed,anion_regenerant_dose,128,g/L resin,"Regenerant applied per regeneration (NaCl, or NaOH for demineralization)",US EPA WBS anion exchange model (2023 release): salt dose 8 lb NaCl/ft3 (128 g/L),Technical report
+Ion exchange,Anion bed,anion_regenerant_concentration,59.9,g/L,Regenerant solution concentration; sets the regenerant volume,US EPA WBS anion exchange model (2023 release): brine 0.5 lb/gal (60 g/L),Technical report
+Ion exchange,Anion bed,anion_rinse_bed_volumes,7,bed volumes,Slow and fast rinse volume per regeneration,US EPA WBS anion exchange model (2023 release): slow rinse 2 BV and fast rinse 5 BV,Technical report
+Ion exchange,Anion bed,anion_backwash_bed_volumes,1.2,bed volumes,Backwash volume per regeneration,"US EPA WBS anion exchange model (2023 release): backwash 3 gpm/ft2 for 12 min, about 1.2 BV for a 4 ft bed",Technical report
+Ion exchange,Anion bed,anion_max_bed_volumes,3000,bed volumes,Maximum run length between regenerations,"US EPA WBS anion exchange model (2023 release): 300-3,000 BV before regeneration",Technical report
+Ion exchange (demineralization),Pumping,pump_head,10,m,Total dynamic head across the IX beds and piping,"Engineering estimate of pressure-vessel bed, underdrain and piping head loss (same basis as GAC and zeolite)",Engineering estimate
+Ion exchange (demineralization),Pumping,pump_efficiency,0.7,fraction,Pump wire-to-water efficiency,Planning-level pump wire-to-water efficiency (EPA WBS pump energy method),Engineering estimate
+Ion exchange (demineralization),Performance,bed_removal,0.99,fraction,Removal of the target ions in the water passing through the beds; the rest of the flow bypasses,NMSU assumptions: 99% removal through the beds; lower targets are met by bypass,Model input
+Ion exchange (demineralization),Cation bed,cation_empty_bed_contact_time,2.5,min,Empty bed contact time of the cation bed,US EPA WBS cation exchange model (2023 release): EBCT 2.5 min,Technical report
+Ion exchange (demineralization),Cation bed,cation_capacity,1,eq/L resin,Usable exchange capacity of the cation resin at the regenerant dose,Lenntech demineralization plant data: indicative cation operating capacity 1 eq/L at 500 mg/L TDS,Industrial reference
+Ion exchange (demineralization),Cation bed,cation_regenerant_dose,100,g/L resin,"Regenerant applied per regeneration (NaCl, or HCl for demineralization)","Woolley 2012 (SCI ion exchange course): 60-160 g acid/L resin, 3-6% HCl; 100 g/L used",Industrial reference
+Ion exchange (demineralization),Cation bed,cation_regenerant_concentration,51,g/L,Regenerant solution concentration; sets the regenerant volume,Woolley 2012: 3-6% HCl; 5% used,Industrial reference
+Ion exchange (demineralization),Cation bed,cation_rinse_bed_volumes,7,bed volumes,Slow and fast rinse volume per regeneration,US EPA WBS anion exchange model (2023 release): slow rinse 2 BV and fast rinse 5 BV,Technical report
+Ion exchange (demineralization),Cation bed,cation_backwash_bed_volumes,1.2,bed volumes,Backwash volume per regeneration,US EPA WBS anion exchange model (2023 release): backwash about 1.2 BV,Technical report
+Ion exchange (demineralization),Cation bed,cation_max_bed_volumes,1000,bed volumes,Maximum run length between regenerations,"US EPA WBS cation exchange model (2023 release): 100-1,000 BV before regeneration",Technical report
+Ion exchange (demineralization),Anion bed,anion_empty_bed_contact_time,2,min,Empty bed contact time of the anion bed,US EPA WBS anion exchange model (2023 release): EBCT 2.0 min,Technical report
+Ion exchange (demineralization),Anion bed,anion_capacity,0.5,eq/L resin,Usable exchange capacity of the anion resin at the regenerant dose,Lenntech demineralization plant data: indicative anion operating capacity 0.5 eq/L at 500 mg/L TDS,Industrial reference
+Ion exchange (demineralization),Anion bed,anion_regenerant_dose,100,g/L resin,"Regenerant applied per regeneration (NaCl, or NaOH for demineralization)","Woolley 2012: 60-160 g NaOH/L resin, 3-6% NaOH; 100 g/L used",Industrial reference
+Ion exchange (demineralization),Anion bed,anion_regenerant_concentration,42,g/L,Regenerant solution concentration; sets the regenerant volume,Woolley 2012: 3-6% NaOH; 4% used,Industrial reference
+Ion exchange (demineralization),Anion bed,anion_rinse_bed_volumes,7,bed volumes,Slow and fast rinse volume per regeneration,US EPA WBS anion exchange model (2023 release): slow rinse 2 BV and fast rinse 5 BV,Technical report
+Ion exchange (demineralization),Anion bed,anion_backwash_bed_volumes,1.2,bed volumes,Backwash volume per regeneration,US EPA WBS anion exchange model (2023 release): backwash about 1.2 BV,Technical report
+Ion exchange (demineralization),Anion bed,anion_max_bed_volumes,1000,bed volumes,Maximum run length between regenerations,NMSU assumptions: same limit as the cation bed,Model input

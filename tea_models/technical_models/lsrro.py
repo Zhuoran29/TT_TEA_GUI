@@ -1,15 +1,21 @@
-"""LSRRO technical model adapted from the NMSU PW membrane model files."""
+"""LSRRO technical model (NMSU LSRRO model with a WaterTAP design table).
+
+Recovery (NMSU assumptions, SI Eq. B5-1, fit to WaterTAP PBSE design points):
+  R(%) = -0.0002 TDS^2 - 0.3816 TDS + 84.01 - 3.69e-4 Hardness - 1e-4 Silica      TDS in g/L
+  used when the recovery input is 0; a positive input overrides it.
+Energy and design (WaterTAP LSRRO flowsheet, Atia et al. 2023, lowest-LCOW design per point):
+  SEC (kWh/m3 product, net of energy recovery), membrane area and equipment costs are interpolated in
+  feed TDS and recovery from data/model_tables/lsrro_watertap_table.csv, between designs with the same
+  stage count (lsrro_core.lookup_design).
+  energy = SEC x recovery                                                         kWh/m3 feed
+Permeate quality: NMSU regression and average-removal model (lsrro_core.predict_water_quality).
+"""
 
 from __future__ import annotations
 
 from tea_models.lsrro_core import (
-    BBL_TO_M3,
-    DEFAULT_ERD_FRACTION,
-    PSI_TO_BAR,
-    REFERENCE_FLOW_BBL_DAY,
-    REFERENCE_GROSS_PUMP_POWER_KW,
     calculate_recovery_fraction,
-    lookup_stage_pressure,
+    lookup_design,
     predict_water_quality,
     tds_mg_l,
 )
@@ -33,9 +39,14 @@ def run(unit_process, technical_inputs, stream):
         raise ValueError("LSRRO inlet flow must be positive.")
 
     water_quality_in = stream.get("water_quality", {}) or {}
-    auto_recovery, warnings = calculate_recovery_fraction(water_quality_in)
-    recovery = min(max(_number(technical_inputs, "recovery", 0.50), 0.01), 0.90)
-    recovery_basis = "manual input"
+    calculated_recovery, warnings = calculate_recovery_fraction(water_quality_in)
+    recovery_input = _number(technical_inputs, "recovery", 0.0)
+    if recovery_input > 0.0:
+        recovery = min(max(recovery_input, 0.01), 0.90)
+        recovery_basis = "manual input"
+    else:
+        recovery = calculated_recovery
+        recovery_basis = "recovery correlation"
 
     outlet_flow = inlet_flow * recovery
     brine_flow = max(inlet_flow - outlet_flow, 0.0)
@@ -45,10 +56,6 @@ def run(unit_process, technical_inputs, stream):
         water_quality_in,
         clip_negative,
     )
-    outlet_stream = {
-        "flow_m3_day": outlet_flow,
-        "water_quality": water_quality_out,
-    }
     brine_quality = calculate_brine_quality(
         water_quality_in,
         water_quality_out,
@@ -58,73 +65,33 @@ def run(unit_process, technical_inputs, stream):
     )
 
     feed_tds_g_l = tds_mg_l(water_quality_in) / 1000.0
-    stages, pressure_psi = lookup_stage_pressure(feed_tds_g_l)
-    stage_override = int(round(_number(technical_inputs, "stage_override", 0.0)))
-    pressure_override_psi = _number(technical_inputs, "pressure_override_psi", 0.0)
-    if stage_override > 0:
-        stages = stage_override
-    if pressure_override_psi > 0.0:
-        pressure_psi = pressure_override_psi
-
-    reference_flow_bbl_day = _number(
-        technical_inputs,
-        "reference_flow_bbl_day",
-        REFERENCE_FLOW_BBL_DAY,
-    )
-    reference_gross_power = _number(
-        technical_inputs,
-        "gross_pump_power_kw",
-        REFERENCE_GROSS_PUMP_POWER_KW,
-    )
-    erd_fraction = min(max(_number(
-        technical_inputs,
-        "energy_recovery_fraction",
-        DEFAULT_ERD_FRACTION,
-    ), 0.0), 1.0)
-    inlet_bbl_day = inlet_flow / BBL_TO_M3
-    gross_pump_power = (
-        reference_gross_power * inlet_bbl_day / max(reference_flow_bbl_day, 1e-12)
-    )
-    net_pump_power = gross_pump_power * (1.0 - erd_fraction)
-    energy_intensity = net_pump_power * 24.0 / inlet_flow
-
-    membrane_flux = _number(technical_inputs, "membrane_flux", 18.0)
-    membrane_area = outlet_flow * 1000.0 / max(membrane_flux * 24.0, 1e-12)
+    design, design_warnings = lookup_design(feed_tds_g_l, recovery)
+    warnings = list(warnings) + design_warnings
+    sec_product = design["sec_kwh_m3_product"]
+    energy_intensity = sec_product * recovery
 
     return {
         "inlet_flow": _result(inlet_flow, "m3/day"),
         "outlet_flow": _result(outlet_flow, "m3/day"),
         "brine_flow": _result(brine_flow, "m3/day"),
         "water_recovery": _result(recovery, "fraction"),
-        "recovery_percent": _result(recovery * 100.0, "%"),
         "recovery_basis": _result(recovery_basis, ""),
-        "calculated_recovery": _result(auto_recovery, "fraction"),
-        "calculated_recovery_percent": _result(auto_recovery * 100.0, "%"),
+        "calculated_recovery": _result(calculated_recovery, "fraction"),
         "feed_tds": _result(feed_tds_g_l, "g/L"),
-        "hardness": _result(
-            float(water_quality_in.get("Hardness", {}).get("value", 0.0) or 0.0),
-            water_quality_in.get("Hardness", {}).get("unit", "mg/L as CaCO3"),
-        ),
-        "silica": _result(
-            float(water_quality_in.get("Silica", {}).get("value", 0.0) or 0.0),
-            water_quality_in.get("Silica", {}).get("unit", "mg/L"),
-        ),
-        "number_of_stages": _result(stages, "count"),
-        "operating_pressure": _result(pressure_psi * PSI_TO_BAR, "bar"),
-        "operating_pressure_psi": _result(pressure_psi, "psi"),
-        "gross_pump_power": _result(gross_pump_power, "kW"),
-        "net_pump_power": _result(net_pump_power, "kW"),
-        "energy_recovery_fraction": _result(erd_fraction, "fraction"),
+        "number_of_stages": _result(int(round(design["stages"])), "count"),
+        "specific_energy_consumption": _result(sec_product, "kWh/m3 product"),
         "energy_intensity": _result(energy_intensity, "kWh/m3 feed"),
         "thermal_energy_intensity": _result(0.0, "kWh/m3 feed"),
-        "membrane_flux": _result(membrane_flux, "L/m2-h"),
-        "membrane_area": _result(membrane_area, "m2"),
-        "reference_flow": _result(reference_flow_bbl_day, "bbl/day"),
+        "membrane_area": _result(design["membrane_area_m2_per_m3d_product"] * outlet_flow, "m2"),
+        "membrane_equipment_cost_per_feed": _result(design["membrane_capex_usd_per_m3d_feed"], "$(2018)/(m3/day feed)"),
+        "pump_equipment_cost_per_feed": _result(design["pump_capex_usd_per_m3d_feed"], "$(2018)/(m3/day feed)"),
+        "erd_equipment_cost_per_feed": _result(design["erd_capex_usd_per_m3d_feed"], "$(2018)/(m3/day feed)"),
+        "membrane_replacement_per_feed": _result(design["membrane_replacement_usd_yr_per_m3d_feed"], "$(2018)/yr per (m3/day feed)"),
         "removal_efficiencies": removal_efficiencies,
         "prediction_methods": prediction_methods,
         "water_quality_in": water_quality_in,
         "water_quality_out": water_quality_out,
         "brine_water_quality": brine_quality,
-        "outlet_stream": outlet_stream,
-        "design_warnings": _result(warnings, ""),
+        "outlet_stream": {"flow_m3_day": outlet_flow, "water_quality": water_quality_out},
+        "model_warnings": _result(warnings, ""),
     }

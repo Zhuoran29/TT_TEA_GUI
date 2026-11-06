@@ -17,13 +17,13 @@ TECHNICAL_MODEL_DEFAULTS = {
         "design_factor": 1.2,
     },
     "Chemical softening": {
-        "unit_kind": "chemical_clarification",
-        "recovery": 0.97,
+        "unit_kind": "chemical_softening",
         "lime_dose_mg_l": 10.0,
         "soda_ash_dose_mg_l": 4301.0,
         "target_neutral_pH": 8.0,
         "acid_dose_override_mg_l": 0.0,
         "energy_intensity": 0.223,
+        "sludge_solids_content": 0.10,
     },
     "Electrocoagulation": {
         "unit_kind": "electrocoagulation",
@@ -67,10 +67,8 @@ TECHNICAL_MODEL_DEFAULTS = {
         "chemical_dose": 0.003,
     },
     "Ultrafiltration": {
-        "unit_kind": "uf",
-        "recovery": 0.96,
-        "membrane_flux": 45.0,
-        "backwash_fraction": 0.04,
+        "unit_kind": "membrane_filtration",
+        "recovery": 0.99,
         "sodium_bisulfite_dose_mg_l": 5.0,
         "pump_tdh_ft": 50.0,
         "pump_efficiency": 0.75,
@@ -133,13 +131,7 @@ TECHNICAL_MODEL_DEFAULTS = {
     },
     "LSRRO": {
         "unit_kind": "pressure_membrane",
-        "recovery": 0.50,
-        "reference_flow_bbl_day": 50000.0,
-        "gross_pump_power_kw": 3534.0,
-        "energy_recovery_fraction": 0.30,
-        "membrane_flux": 18.0,
-        "pressure_override_psi": 0.0,
-        "stage_override": 0.0,
+        "recovery": 0.0,
         "clip_negative_permeate": 1.0,
     },
     "OARO": {
@@ -241,22 +233,43 @@ TECHNICAL_MODEL_DEFAULTS = {
     },
     "Ion exchange": {
         "unit_kind": "ion_exchange",
-        "recovery": 0.99,
-        "energy_intensity": 0.0,
-        "pressure_drop_psi": 70.0,
+        "bed_removal": 0.99,
+        "cation_empty_bed_contact_time": 2.5,
+        "cation_capacity": 1.24,
+        "cation_regenerant_dose": 240.0,
+        "cation_regenerant_concentration": 107.8,
+        "cation_rinse_bed_volumes": 12.0,
+        "cation_backwash_bed_volumes": 3.0,
+        "cation_max_bed_volumes": 1000.0,
+        "anion_empty_bed_contact_time": 2.0,
+        "anion_capacity": 0.8,
+        "anion_regenerant_dose": 128.0,
+        "anion_regenerant_concentration": 59.9,
+        "anion_rinse_bed_volumes": 7.0,
+        "anion_backwash_bed_volumes": 1.2,
+        "anion_max_bed_volumes": 3000.0,
+        "pump_head": 10.0,
         "pump_efficiency": 0.70,
-        "auxiliary_energy_intensity": 0.11,
-        "empty_bed_contact_time": 5.0,
-        "media_bulk_density": 720.0,
-        "regenerant_dose": 0.02,
     },
-    "Boron-selective IX": {
-        "unit_kind": "ion_exchange",
-        "recovery": 0.99,
-        "energy_intensity": 0.04,
-        "empty_bed_contact_time": 8.0,
-        "media_bulk_density": 700.0,
-        "regenerant_dose": 0.03,
+    "Ion exchange (demineralization)": {
+        "unit_kind": "ion_exchange_demineralization",
+        "bed_removal": 0.99,
+        "cation_empty_bed_contact_time": 2.5,
+        "cation_capacity": 1.0,
+        "cation_regenerant_dose": 100.0,
+        "cation_regenerant_concentration": 51.0,
+        "cation_rinse_bed_volumes": 7.0,
+        "cation_backwash_bed_volumes": 1.2,
+        "cation_max_bed_volumes": 1000.0,
+        "anion_empty_bed_contact_time": 2.0,
+        "anion_capacity": 0.5,
+        "anion_regenerant_dose": 100.0,
+        "anion_regenerant_concentration": 42.0,
+        "anion_rinse_bed_volumes": 7.0,
+        "anion_backwash_bed_volumes": 1.2,
+        "anion_max_bed_volumes": 1000.0,
+        "pump_head": 10.0,
+        "pump_efficiency": 0.70,
     },
     "Solar PV": {
         "unit_kind": "solar_pv",
@@ -366,9 +379,8 @@ COST_MODEL_DEFAULTS = {
         "lime_price": 0.05,
         "soda_ash_price": 0.45,
         "h2so4_price": 0.043,
-        "solid_disposal_cost": 0.11,
-        "labor_fte": 1.0,
-        "labor_cost_per_fte_year": 80000.0,
+        "installation_factor": 1.43,
+        "maintenance_fraction": 0.02,
         "om_contingency_factor": 0.20,
     },
     "Electrocoagulation": {
@@ -398,9 +410,9 @@ COST_MODEL_DEFAULTS = {
         "uf_building_unit_cost": 300.0,
         "reference_building_area_ft2": 2000.0,
         "capex_scaling_exponent": 0.87,
+        "installation_factor": 1.43,
         "sodium_bisulfite_price": 0.25,
-        "labor_fte": 1.0,
-        "labor_cost_per_fte_year": 80000.0,
+        "maintenance_fraction": 0.02,
         "om_contingency_factor": 0.20,
     },
     "Well pumping": {"capex_per_flow": 32.0, "fixed_opex_fraction": 0.03, "variable_opex_per_m3": 0.005},
@@ -424,16 +436,14 @@ COST_MODEL_DEFAULTS = {
     },
     "MVC": {"capex_per_flow": 2100.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.0},
     "LSRRO": {
-        "reference_direct_membrane_capex": 20.5e6,
-        "reference_flow_bbl_day": 50000.0,
+        "reference_flow_m3_day": 7949.36,
         "capex_scaling_exponent": 0.81,
-        "membrane_replacement_factor": 0.20,
+        "installation_factor": 2.0,
+        "maintenance_fraction": 0.02,
         "antiscalant_dose_mg_l": 3.0,
         "antiscalant_unit_price": 61.40,
         "antiscalant_density_kg_l": 1.10,
         "cip_cost_per_m3_product": 0.07,
-        "labor_fte": 1.0,
-        "labor_cost_per_fte_year": 80000.0,
         "om_contingency_factor": 0.20,
     },
     "OARO": {"capex_per_flow": 600.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.12, "media_replacement_price": 50.0, "media_replacement_fraction": 0.12},
@@ -473,8 +483,6 @@ COST_MODEL_DEFAULTS = {
         "installation_factor": 1.15,
         "maintenance_fraction": 0.02,
         "om_contingency_factor": 0.20,
-        "nacl_price": 40.0,
-        "naoh_price": 300.0,
         "zeolite_price": 4.41,
         "media_replacement_fraction_per_cycle": 0.0,
     },
@@ -488,8 +496,35 @@ COST_MODEL_DEFAULTS = {
         "h2o2_price": 1.3986,
     },
     "Ion exchange / EDI": {"capex_per_flow": 440.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.35, "chemical_price": 0.5, "media_replacement_price": 5.0, "media_replacement_fraction": 0.25},
-    "Ion exchange": {"capex_per_flow": 340.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.25, "chemical_price": 0.5, "media_replacement_price": 4.0, "media_replacement_fraction": 0.20},
-    "Boron-selective IX": {"capex_per_flow": 380.0, "column_capex_multiplier": 1.0, "fixed_opex_fraction": 0.05, "variable_opex_per_m3": 0.30, "chemical_price": 0.6, "media_replacement_price": 8.0, "media_replacement_fraction": 0.20},
+    "Ion exchange": {
+        "cation_capex_coefficient": 698.35,
+        "cation_capex_exponent": 0.7478,
+        "anion_capex_coefficient": 673.45,
+        "anion_capex_exponent": 0.7282,
+        "installation_factor": 1.15,
+        "cation_resin_price": 8175.0,
+        "anion_resin_price": 8198.0,
+        "resin_life": 7.0,
+        "annual_resin_loss": 0.045,
+        "salt_price": 230.3,
+        "maintenance_fraction": 0.02,
+        "om_contingency_factor": 0.20,
+    },
+    "Ion exchange (demineralization)": {
+        "cation_capex_coefficient": 698.35,
+        "cation_capex_exponent": 0.7478,
+        "anion_capex_coefficient": 673.45,
+        "anion_capex_exponent": 0.7282,
+        "installation_factor": 1.15,
+        "cation_resin_price": 8175.0,
+        "anion_resin_price": 8198.0,
+        "resin_life": 7.0,
+        "annual_resin_loss": 0.045,
+        "hcl_price": 1085.9,
+        "caustic_price": 940.3,
+        "maintenance_fraction": 0.02,
+        "om_contingency_factor": 0.20,
+    },
     "Solar PV": {"capex_per_flow": 0.0, "capex_per_kw": 480.0, "fixed_opex_fraction": 0.02, "variable_opex_per_m3": 0.0},
     "Chlorination": {"capex_per_flow": 12.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.005, "chemical_price": 1.0},
     "Polishing filter": {"capex_per_flow": 72.0, "fixed_opex_fraction": 0.04, "variable_opex_per_m3": 0.03, "media_replacement_price": 0.15, "media_replacement_fraction": 0.10},
@@ -586,6 +621,21 @@ TECHNICAL_INPUT_SPECS = {
     "has_erd": ("Energy recovery", "0/1", "Enable concentrate energy recovery device"),
     "erd_efficiency": ("Energy recovery", "fraction", "Energy recovery device efficiency"),
     "pretreatment_energy_intensity": ("Energy", "kWh/m3 product", "BWRO-island pretreatment energy not modeled in upstream units"),
+    "bed_removal": ("Performance", "fraction", "Removal of the target ions in the water passing through the beds; the rest of the flow bypasses"),
+    "cation_empty_bed_contact_time": ("Cation bed", "min", "Empty bed contact time of the cation bed"),
+    "cation_capacity": ("Cation bed", "eq/L resin", "Usable exchange capacity of the cation resin at the regenerant dose"),
+    "cation_regenerant_dose": ("Cation bed", "g/L resin", "Regenerant applied per regeneration (NaCl, or HCl for demineralization)"),
+    "cation_regenerant_concentration": ("Cation bed", "g/L", "Regenerant solution concentration; sets the regenerant volume"),
+    "cation_rinse_bed_volumes": ("Cation bed", "bed volumes", "Slow and fast rinse volume per regeneration"),
+    "cation_backwash_bed_volumes": ("Cation bed", "bed volumes", "Backwash volume per regeneration"),
+    "cation_max_bed_volumes": ("Cation bed", "bed volumes", "Maximum run length between regenerations"),
+    "anion_empty_bed_contact_time": ("Anion bed", "min", "Empty bed contact time of the anion bed"),
+    "anion_capacity": ("Anion bed", "eq/L resin", "Usable exchange capacity of the anion resin at the regenerant dose"),
+    "anion_regenerant_dose": ("Anion bed", "g/L resin", "Regenerant applied per regeneration (NaCl, or NaOH for demineralization)"),
+    "anion_regenerant_concentration": ("Anion bed", "g/L", "Regenerant solution concentration; sets the regenerant volume"),
+    "anion_rinse_bed_volumes": ("Anion bed", "bed volumes", "Slow and fast rinse volume per regeneration"),
+    "anion_backwash_bed_volumes": ("Anion bed", "bed volumes", "Backwash volume per regeneration"),
+    "anion_max_bed_volumes": ("Anion bed", "bed volumes", "Maximum run length between regenerations"),
 }
 
 
@@ -595,6 +645,7 @@ COST_INPUT_SPECS = {
     "reference_ec_capex": ("Capital", "$(2024)", "Reference EC CAPEX at the reference capacity"),
     "installation_factor": ("Capital", "-", "Unit-level installation factor (TIC) applied to all direct capital items"),
     "reference_flow_bbl_day": ("Capital", "bbl/day", "Reference flow basis for bbl/day CAPEX scaling"),
+    "reference_flow_m3_day": ("Capital", "m3/day", "Reference flow for CAPEX scaling"),
     "reference_capex_cost_per_bbl": ("Capital", "$(2020)/bbl", "Annualized WSF CAPEX at the reference flow"),
     "reference_opex_cost_per_bbl": ("Variable O&M", "$(2022)/bbl", "Reference WSF operating cost"),
     "reference_uf_flow_gpd": ("Capital", "gpd", "Reference UF flow basis"),
@@ -657,6 +708,17 @@ COST_INPUT_SPECS = {
     "media_cleaning_cost_per_m3": ("Variable O&M", "$(2020)/m3", "Media cleaning chemicals and makeup per m3 treated"),
     "polymer_price": ("Chemicals", "$(2021)/kg", "Polymer price"),
     "h2o2_price": ("Chemicals", "$(2021)/kg", "H2O2 price on a 100% basis"),
+    "cation_capex_coefficient": ("Capital", "$(2021)", "Coefficient a in cation-bed equipment cost = a x Q^b (Q = flow through the bed, m3/day)"),
+    "cation_capex_exponent": ("Capital", "exponent", "Exponent b in cation-bed equipment cost = a x Q^b"),
+    "anion_capex_coefficient": ("Capital", "$(2021)", "Coefficient a in anion-bed equipment cost = a x Q^b (Q = flow through the bed, m3/day)"),
+    "anion_capex_exponent": ("Capital", "exponent", "Exponent b in anion-bed equipment cost = a x Q^b"),
+    "cation_resin_price": ("Resin", "$(2021)/m3", "Cation resin price"),
+    "anion_resin_price": ("Resin", "$(2021)/m3", "Anion resin price"),
+    "resin_life": ("Resin", "years", "Resin useful life before complete replacement"),
+    "annual_resin_loss": ("Resin", "fraction/yr", "Resin lost to attrition and made up each year"),
+    "salt_price": ("Chemicals", "$(2021)/metric tonne", "NaCl regenerant price"),
+    "hcl_price": ("Chemicals", "$(2021)/metric tonne", "HCl price (100% basis)"),
+    "caustic_price": ("Chemicals", "$(2021)/metric tonne", "NaOH price (100% basis)"),
 }
 
 
@@ -781,35 +843,11 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
     },
     "LSRRO": {
         "recovery": (
-            "NMPWRC LSRRO TEA assumption",
+            "0 uses the NMSU recovery correlation (SI Eq. B5-1, fit to WaterTAP PBSE design points with hardness and silica correction); a positive value overrides it",
             "model input",
-        ),
-        "reference_flow_bbl_day": (
-            "NMPWRC LSRRO experimental design basis",
-            "experimental data",
-        ),
-        "gross_pump_power_kw": (
-            "NMPWRC LSRRO experimental design basis",
-            "experimental data",
-        ),
-        "energy_recovery_fraction": (
-            "NMPWRC LSRRO TEA assumption",
-            "model input",
-        ),
-        "membrane_flux": (
-            "WaterTAP LSRRO flowsheet context and membrane design screening assumption",
-            "open source documentation",
-        ),
-        "pressure_override_psi": (
-            "Atia et al. 2023 and WaterTAP PBSE design-point lookup",
-            "model source",
-        ),
-        "stage_override": (
-            "Atia et al. 2023 and WaterTAP PBSE design-point lookup",
-            "model source",
         ),
         "clip_negative_permeate": (
-            "NMPWRC empirical water-quality regression post-processing option",
+            "NMSU assumptions: water-quality regression post-processing option",
             "empirical",
         ),
     },
@@ -853,11 +891,11 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
     },
     "Chemical softening": {
         "lime_dose_mg_l": (
-            "KBH/NMPWRC chemical-softening TEA workbook basis",
+            "NMSU assumptions: average-TDS case of the NMSU CS model (SI Table S4); dose depends on the feed",
             "model input",
         ),
         "soda_ash_dose_mg_l": (
-            "KBH/NMPWRC chemical-softening TEA workbook basis",
+            "NMSU assumptions: average-TDS case of the NMSU CS model (SI Table S4); dose depends on the feed",
             "model input",
         ),
         "target_neutral_pH": (
@@ -869,8 +907,12 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
             "model input",
         ),
         "energy_intensity": (
-            "KBH/NMPWRC chemical-softening workbook electricity basis",
+            "NMSU assumptions; KBH TEA workbook (O&M_Summary): 307,042 kWh/yr at 1 MGD for softening, UF, IX and degasifier pumping",
             "model input",
+        ),
+        "sludge_solids_content": (
+            "Engineering estimate: lime softening clarifier sludge typically a few to about 15% solids; 10% used; sets sludge volume and water recovery",
+            "engineering estimate",
         ),
     },
     "Electrocoagulation": {
@@ -906,32 +948,28 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
         ),
     },
     "Ultrafiltration": {
-        "membrane_flux": (
-            "Wang et al. 2024 DWPR report and KBH/NMPWRC UF workbook basis",
+        "recovery": (
+            "KBH TEA Appendix: UF filtrate 0.9603 MGD from 0.97 MGD feed",
             "technical report",
         ),
-        "backwash_fraction": (
-            "WaterTAP Ultra Filtration ZO documentation and membrane treatment literature",
-            "open source documentation",
-        ),
         "sodium_bisulfite_dose_mg_l": (
-            "KBH/NMPWRC UF workbook sodium bisulfite dosing basis",
+            "KBH TEA Appendix (Chemical Details): sodium bisulfite 5 mg/L at UF",
             "model input",
         ),
         "pump_tdh_ft": (
-            "KBH/NMPWRC UF workbook pump TDH basis",
+            "KBH TEA Appendix (Power Load Details): Pump for MU/UF, TDH 50 ft",
             "model input",
         ),
         "pump_efficiency": (
-            "KBH/NMPWRC UF workbook pump efficiency basis",
+            "KBH TEA Appendix (Power Load Details): Pump for MU/UF, pump efficiency 0.75",
             "model input",
         ),
         "motor_efficiency": (
-            "KBH/NMPWRC UF workbook motor efficiency basis",
+            "KBH TEA Appendix (Power Load Details): Pump for MU/UF, motor efficiency 0.95",
             "model input",
         ),
         "vfd_factor": (
-            "KBH/NMPWRC UF workbook VFD factor basis",
+            "KBH TEA Appendix (Power Load Details): Pump for MU/UF, VFD factor 0.98",
             "model input",
         ),
     },
@@ -1037,86 +1075,6 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
             "engineering estimate",
         ),
     },
-    "Chemical softening": {
-        "reference_direct_cs_capex": (
-            "KBH/NMPWRC chemical-softening TEA workbook direct CAPEX basis; no explicit cost year, treated as 2024",
-            "model input",
-        ),
-        "reference_capacity": (
-            "KBH/NMPWRC chemical-softening TEA workbook 1.0 MGD reference flow",
-            "model input",
-        ),
-        "capex_scaling_exponent": (
-            "NMPWRC chemical-softening TEA scaling assumption",
-            "model input",
-        ),
-        "lime_price": (
-            "KBH/NMPWRC chemical-softening TEA workbook lime price; no explicit cost year, treated as 2024",
-            "model input",
-        ),
-        "soda_ash_price": (
-            "KBH/NMPWRC chemical-softening TEA workbook soda ash price; no explicit cost year, treated as 2024",
-            "model input",
-        ),
-        "h2so4_price": (
-            "KBH/NMPWRC chemical-softening TEA workbook sulfuric-acid price; no explicit cost year, treated as 2024",
-            "model input",
-        ),
-        "solid_disposal_cost": (
-            "NMPWRC solid-waste disposal assumption; no explicit cost year, treated as 2024",
-            "model input",
-        ),
-        "labor_fte": (
-            "Wang et al. 2024 DWPR report TEA labor assumption",
-            "technical report",
-        ),
-        "labor_cost_per_fte_year": (
-            "Wang et al. 2024 DWPR report TEA labor cost assumption",
-            "technical report",
-        ),
-        "om_contingency_factor": (
-            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
-            "technical report",
-        ),
-    },
-    "Ultrafiltration": {
-        "reference_uf_flow_gpd": (
-            "KBH/NMPWRC UF TEA workbook reference flow basis; no explicit cost year, treated as 2024",
-            "model input",
-        ),
-        "uf_equipment_unit_cost": (
-            "KBH/NMPWRC UF TEA workbook equipment unit-cost basis; no explicit cost year, treated as 2024",
-            "model input",
-        ),
-        "uf_building_unit_cost": (
-            "KBH/NMPWRC UF TEA workbook building unit-cost basis; no explicit cost year, treated as 2024",
-            "model input",
-        ),
-        "reference_building_area_ft2": (
-            "KBH/NMPWRC UF TEA workbook building area basis",
-            "model input",
-        ),
-        "capex_scaling_exponent": (
-            "NMPWRC UF TEA scaling assumption",
-            "model input",
-        ),
-        "sodium_bisulfite_price": (
-            "KBH/NMPWRC UF TEA workbook sodium bisulfite price; no explicit cost year, treated as 2024",
-            "model input",
-        ),
-        "labor_fte": (
-            "Wang et al. 2024 DWPR report TEA labor assumption",
-            "technical report",
-        ),
-        "labor_cost_per_fte_year": (
-            "Wang et al. 2024 DWPR report TEA labor cost assumption",
-            "technical report",
-        ),
-        "om_contingency_factor": (
-            "Wang et al. 2024 DWPR report TEA O&M contingency assumption",
-            "technical report",
-        ),
-    },
     "OARO": {
         "recovery": (
             "OARO five-approach brine dewatering study reporting 72 percent recovery at 35 g/L feed",
@@ -1192,32 +1150,48 @@ TECHNICAL_INPUT_METADATA_BY_UNIT = {
         ),
     },
     "Ion exchange": {
-        "empty_bed_contact_time": (
-            "US EPA WBS Ion Exchange PFAS cost model 2024",
-            "technical report",
+        "bed_removal": (
+            "NMSU assumptions: 99% removal through the beds; lower targets are met by bypass",
+            "model input",
         ),
-        "media_bulk_density": (
-            "Ion exchange resin supplier data and US EPA WBS IX model",
-            "vendor data",
-        ),
-        "regenerant_dose": (
-            "Veolia ion exchange handbook and US EPA WBS IX model",
-            "industrial reference",
-        ),
+        "cation_empty_bed_contact_time": ("US EPA WBS cation exchange model (2023 release): standard designs, EBCT 2.5 min (range 1.5-7.5)", "technical report"),
+        "cation_capacity": ("US EPA WBS cation exchange model (2023 release): usable capacity 27 kgr as CaCO3/ft3 (1.24 eq/L) at 15 lb NaCl/ft3", "technical report"),
+        "cation_regenerant_dose": ("US EPA WBS cation exchange model (2023 release): salt dose 15 lb NaCl/ft3 (240 g/L)", "technical report"),
+        "cation_regenerant_concentration": ("US EPA WBS cation exchange model (2023 release): brine 0.9 lb/gal (108 g/L)", "technical report"),
+        "cation_rinse_bed_volumes": ("US EPA WBS cation exchange model (2023 release): slow rinse 2 BV and fast rinse 10 BV", "technical report"),
+        "cation_backwash_bed_volumes": ("US EPA WBS cation exchange model (2023 release): backwash 6 gpm/ft2 for 15 min, about 3 BV for a 4 ft bed", "technical report"),
+        "cation_max_bed_volumes": ("US EPA WBS cation exchange model (2023 release): 100-1,000 BV before regeneration", "technical report"),
+        "anion_empty_bed_contact_time": ("US EPA WBS anion exchange model (2023 release): standard designs, EBCT 2.0 min (range 1.5-7)", "technical report"),
+        "anion_capacity": ("US EPA WBS anion exchange model (2023 release): bed life BV = -606 ln(SO4) + 3150 (Chen et al. 1999) implies 0.75-0.81 eq/L at 50-100 mg/L sulfate", "technical report"),
+        "anion_regenerant_dose": ("US EPA WBS anion exchange model (2023 release): salt dose 8 lb NaCl/ft3 (128 g/L)", "technical report"),
+        "anion_regenerant_concentration": ("US EPA WBS anion exchange model (2023 release): brine 0.5 lb/gal (60 g/L)", "technical report"),
+        "anion_rinse_bed_volumes": ("US EPA WBS anion exchange model (2023 release): slow rinse 2 BV and fast rinse 5 BV", "technical report"),
+        "anion_backwash_bed_volumes": ("US EPA WBS anion exchange model (2023 release): backwash 3 gpm/ft2 for 12 min, about 1.2 BV for a 4 ft bed", "technical report"),
+        "anion_max_bed_volumes": ("US EPA WBS anion exchange model (2023 release): 300-3,000 BV before regeneration", "technical report"),
+        "pump_head": ("Engineering estimate of pressure-vessel bed, underdrain and piping head loss (same basis as GAC and zeolite)", "engineering estimate"),
+        "pump_efficiency": ("Planning-level pump wire-to-water efficiency (EPA WBS pump energy method)", "engineering estimate"),
     },
-    "Boron-selective IX": {
-        "empty_bed_contact_time": (
-            "US EPA WBS Ion Exchange PFAS cost model 2024 and boron-selective resin guidance",
-            "technical report",
+    "Ion exchange (demineralization)": {
+        "bed_removal": (
+            "NMSU assumptions: 99% removal through the beds; lower targets are met by bypass",
+            "model input",
         ),
-        "media_bulk_density": (
-            "Boron-selective ion exchange resin supplier data",
-            "vendor data",
-        ),
-        "regenerant_dose": (
-            "Veolia ion exchange handbook and boron-selective IX regeneration guidance",
-            "industrial reference",
-        ),
+        "cation_empty_bed_contact_time": ("US EPA WBS cation exchange model (2023 release): EBCT 2.5 min", "technical report"),
+        "cation_capacity": ("Lenntech demineralization plant data: indicative cation operating capacity 1 eq/L at 500 mg/L TDS", "industrial reference"),
+        "cation_regenerant_dose": ("Woolley 2012 (SCI ion exchange course): 60-160 g acid/L resin, 3-6% HCl; 100 g/L used", "industrial reference"),
+        "cation_regenerant_concentration": ("Woolley 2012: 3-6% HCl; 5% used", "industrial reference"),
+        "cation_rinse_bed_volumes": ("US EPA WBS anion exchange model (2023 release): slow rinse 2 BV and fast rinse 5 BV", "technical report"),
+        "cation_backwash_bed_volumes": ("US EPA WBS anion exchange model (2023 release): backwash about 1.2 BV", "technical report"),
+        "cation_max_bed_volumes": ("US EPA WBS cation exchange model (2023 release): 100-1,000 BV before regeneration", "technical report"),
+        "anion_empty_bed_contact_time": ("US EPA WBS anion exchange model (2023 release): EBCT 2.0 min", "technical report"),
+        "anion_capacity": ("Lenntech demineralization plant data: indicative anion operating capacity 0.5 eq/L at 500 mg/L TDS", "industrial reference"),
+        "anion_regenerant_dose": ("Woolley 2012: 60-160 g NaOH/L resin, 3-6% NaOH; 100 g/L used", "industrial reference"),
+        "anion_regenerant_concentration": ("Woolley 2012: 3-6% NaOH; 4% used", "industrial reference"),
+        "anion_rinse_bed_volumes": ("US EPA WBS anion exchange model (2023 release): slow rinse 2 BV and fast rinse 5 BV", "technical report"),
+        "anion_backwash_bed_volumes": ("US EPA WBS anion exchange model (2023 release): backwash about 1.2 BV", "technical report"),
+        "anion_max_bed_volumes": ("NMSU assumptions: same limit as the cation bed", "model input"),
+        "pump_head": ("Engineering estimate of pressure-vessel bed, underdrain and piping head loss (same basis as GAC and zeolite)", "engineering estimate"),
+        "pump_efficiency": ("Planning-level pump wire-to-water efficiency (EPA WBS pump energy method)", "engineering estimate"),
     },
     "Dechlorination / activated carbon": {
         "empty_bed_contact_time": (
@@ -1277,6 +1251,82 @@ COST_INPUT_METADATA = {
 
 
 COST_INPUT_METADATA_BY_UNIT = {
+    "Chemical softening": {
+        "reference_direct_cs_capex": (
+            "KBH TEA Appendix (2024-10-24), Capital_Summary at 1 MGD (ENR May 2024, location factor 0.815): lime softening 6.8 $/gpd x 1 MGD = 6.8 M, lime dewatering 11.53 M (scaled by solids load), chemical area 7.5 M (whole-plant lump sum)",
+            "technical report",
+        ),
+        "reference_capacity": (
+            "KBH TEA Appendix: 1.0 MGD reference flow",
+            "technical report",
+        ),
+        "capex_scaling_exponent": (
+            "NMSU assumptions",
+            "model input",
+        ),
+        "installation_factor": (
+            "KBH TEA Appendix, Capital_Summary: site 10% and E&IC 30% on the direct items (1.1 x 1.3 = 1.43)",
+            "technical report",
+        ),
+        "lime_price": (
+            "NMSU assumptions; KBH TEA Appendix (O&M_Summary) lime 0.05 $/lb",
+            "technical report",
+        ),
+        "soda_ash_price": (
+            "NMSU assumptions; KBH TEA Appendix (O&M_Summary) soda ash 0.45 $/lb",
+            "technical report",
+        ),
+        "h2so4_price": (
+            "NMSU assumptions (SI Table S1, 93% sulfuric acid 0.04 $/lb)",
+            "model input",
+        ),
+        "maintenance_fraction": (
+            "KBH TEA Appendix (O&M_Summary): other maintenance (replacements) 2% of system direct cost; labor included",
+            "technical report",
+        ),
+        "om_contingency_factor": (
+            "NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
+        ),
+    },
+    "Ultrafiltration": {
+        "reference_uf_flow_gpd": (
+            "KBH TEA Appendix (Capital_Summary): UF feed 0.97 MGD; 2024 dollars",
+            "technical report",
+        ),
+        "uf_equipment_unit_cost": (
+            "KBH TEA Appendix (Capital_Summary): UF 2 $/gpd; 2024 dollars",
+            "technical report",
+        ),
+        "uf_building_unit_cost": (
+            "KBH TEA Appendix (Capital_Summary): UF building 300 $/ft2; 2024 dollars",
+            "technical report",
+        ),
+        "reference_building_area_ft2": (
+            "KBH TEA Appendix (Capital_Summary): UF building 2,000 ft2",
+            "technical report",
+        ),
+        "capex_scaling_exponent": (
+            "NMSU assumptions",
+            "model input",
+        ),
+        "installation_factor": (
+            "KBH TEA Appendix (Capital_Summary): site 10% and E&IC 30% on the direct items (1.1 x 1.3 = 1.43)",
+            "technical report",
+        ),
+        "sodium_bisulfite_price": (
+            "NMSU assumptions; KBH TEA Appendix (O&M_Summary) sodium bisulfite 0.25 $/lb",
+            "technical report",
+        ),
+        "maintenance_fraction": (
+            "KBH TEA Appendix (O&M_Summary): other maintenance (replacements) 2% of system direct cost; labor and membrane replacement included",
+            "technical report",
+        ),
+        "om_contingency_factor": (
+            "NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
+        ),
+    },
     "Electrocoagulation": {
         "reference_ec_capex": (
             "NMSU EC model: Lugo et al. 2025 (J. Environ. Chem. Eng. 13, 117026) EC-Al cost at 11,356 m3/day, 2024 dollars",
@@ -1388,14 +1438,6 @@ COST_INPUT_METADATA_BY_UNIT = {
             "NMSU assumptions: media regenerated in place, no replacement",
             "model input",
         ),
-        "nacl_price": (
-            "Deng et al. 2014 Environmental Technology (NaCl 40 $/ton)",
-            "publication",
-        ),
-        "naoh_price": (
-            "Deng et al. 2014 Environmental Technology (NaOH 300 $/ton)",
-            "publication",
-        ),
         "om_contingency_factor": (
             "NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption",
             "technical report",
@@ -1442,49 +1484,41 @@ COST_INPUT_METADATA_BY_UNIT = {
         ),
     },
     "LSRRO": {
-        "reference_direct_membrane_capex": (
-            "NMPWRC LSRRO TEA cost basis; no explicit cost year, treated as 2024",
+        "reference_flow_m3_day": (
+            "NMSU assumptions: 50,000 bbl/day reference flow for capital scaling",
             "model input",
         ),
-        "reference_flow_bbl_day": (
-            "NMPWRC LSRRO experimental design basis",
-            "experimental data",
-        ),
         "capex_scaling_exponent": (
-            "NMPWRC empirical LSRRO scale-up correlation",
+            "NMSU assumptions (SI Eq. B5-2)",
             "empirical",
         ),
-        "membrane_replacement_factor": (
-            "WaterTAP open-source water treatment model library 2024",
+        "installation_factor": (
+            "WaterTAP LSRRO flowsheet costing (TIC = 2); equipment costs from the WaterTAP design table",
             "open source documentation",
         ),
+        "maintenance_fraction": (
+            "NMSU assumptions: 2% of direct cost per year, including labor (as for UF and chemical softening)",
+            "model input",
+        ),
         "antiscalant_dose_mg_l": (
-            "NMPWRC LSRRO TEA antiscalant dosing assumption",
+            "NMSU assumptions: LSRRO antiscalant dose",
             "model input",
         ),
         "antiscalant_unit_price": (
-            "Applied Membranes AMI antiscalant product information 2026",
+            "NMSU assumptions; Applied Membranes AMI antiscalant product information 2026",
             "vendor data",
         ),
         "antiscalant_density_kg_l": (
-            "NMPWRC antiscalant density assumption",
+            "NMSU assumptions: antiscalant product density",
             "engineering estimate",
         ),
         "cip_cost_per_m3_product": (
-            "Jafari et al. 2021 reverse-osmosis and nanofiltration fouling cost",
+            "NMSU assumptions; Jafari et al. 2021 reverse-osmosis and nanofiltration fouling cost",
             "publication",
         ),
-        "labor_fte": (
-            "NMPWRC LSRRO TEA labor assumption",
-            "model input",
-        ),
-        "labor_cost_per_fte_year": (
-            "NMPWRC LSRRO TEA labor cost assumption; no explicit cost year, treated as 2024",
-            "model input",
-        ),
         "om_contingency_factor": (
-            "NMPWRC LSRRO TEA O&M contingency assumption",
-            "model input",
+            "NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption",
+            "technical report",
         ),
     },
     "Ammonia stripping": {
@@ -1556,32 +1590,33 @@ COST_INPUT_METADATA_BY_UNIT = {
         ),
     },
     "Ion exchange": {
-        "capex_per_flow": (
-            "US EPA WBS Ion Exchange PFAS cost model 2024",
-            "technical report",
-        ),
-        "variable_opex_per_m3": (
-            "US EPA WBS Ion Exchange PFAS cost model 2024",
-            "technical report",
-        ),
-        "media_replacement_price": (
-            "Ion exchange resin supplier pricing and US EPA WBS IX model",
-            "vendor data",
-        ),
+        "cation_capex_coefficient": ("US EPA WBS cation exchange model (2023 release) standard designs 2-7 (0.124-22.6 MGD, SAC, EBCT 2.5 min, autosized) rerun at NMSU; resin excluded; fit within 30%", "technical report"),
+        "cation_capex_exponent": ("US EPA WBS cation exchange model (2023 release) standard designs 2-7 (0.124-22.6 MGD, SAC, EBCT 2.5 min, autosized) rerun at NMSU; resin excluded; fit within 30%", "technical report"),
+        "anion_capex_coefficient": ("US EPA WBS anion exchange model (2023 release) nitrate standard designs 2-7 (0.124-22.6 MGD) with SBA Type I gel resin, EBCT 2.0 min, autosized, rerun at NMSU; resin excluded; fit within 34%", "technical report"),
+        "anion_capex_exponent": ("US EPA WBS anion exchange model (2023 release) nitrate standard designs 2-7 (0.124-22.6 MGD) with SBA Type I gel resin, EBCT 2.0 min, autosized, rerun at NMSU; resin excluded; fit within 34%", "technical report"),
+        "installation_factor": ("EPA WBS unit costs already include transportation and installation; TIC covers remaining direct items (same basis as GAC and zeolite)", "engineering estimate"),
+        "cation_resin_price": ("US EPA WBS cost data: strong acid polystyrenic macroporous resin 231.49 $/ft3 (2021 $)", "technical report"),
+        "anion_resin_price": ("US EPA WBS cost data: strong base polystyrenic gel Type I resin 232.14 $/ft3 (2021 $)", "technical report"),
+        "resin_life": ("US EPA WBS cation and anion exchange models: resin life 7 years", "technical report"),
+        "annual_resin_loss": ("US EPA WBS cation and anion exchange models: 4.5% annual resin loss", "technical report"),
+        "maintenance_fraction": ("NMSU assumptions: 2% of direct CAPEX per year, including labor (same basis as zeolite)", "model input"),
+        "om_contingency_factor": ("NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption", "technical report"),
+        "salt_price": ("US EPA WBS cost data: sodium chloride, large quantity, 0.104 $/lb (2021 $)", "technical report"),
     },
-    "Boron-selective IX": {
-        "capex_per_flow": (
-            "US EPA WBS Ion Exchange PFAS cost model 2024 and boron-selective IX vendor guidance",
-            "technical report",
-        ),
-        "variable_opex_per_m3": (
-            "US EPA WBS Ion Exchange PFAS cost model 2024 and boron-selective IX vendor guidance",
-            "technical report",
-        ),
-        "media_replacement_price": (
-            "Boron-selective resin supplier pricing assumption",
-            "vendor data",
-        ),
+    "Ion exchange (demineralization)": {
+        "cation_capex_coefficient": ("US EPA WBS cation exchange model (2023 release) standard designs 2-7 (0.124-22.6 MGD, SAC, EBCT 2.5 min, autosized) rerun at NMSU; resin excluded; fit within 30%", "technical report"),
+        "cation_capex_exponent": ("US EPA WBS cation exchange model (2023 release) standard designs 2-7 (0.124-22.6 MGD, SAC, EBCT 2.5 min, autosized) rerun at NMSU; resin excluded; fit within 30%", "technical report"),
+        "anion_capex_coefficient": ("US EPA WBS anion exchange model (2023 release) nitrate standard designs 2-7 (0.124-22.6 MGD) with SBA Type I gel resin, EBCT 2.0 min, autosized, rerun at NMSU; resin excluded; fit within 34%", "technical report"),
+        "anion_capex_exponent": ("US EPA WBS anion exchange model (2023 release) nitrate standard designs 2-7 (0.124-22.6 MGD) with SBA Type I gel resin, EBCT 2.0 min, autosized, rerun at NMSU; resin excluded; fit within 34%", "technical report"),
+        "installation_factor": ("EPA WBS unit costs already include transportation and installation; TIC covers remaining direct items (same basis as GAC and zeolite)", "engineering estimate"),
+        "cation_resin_price": ("US EPA WBS cost data: strong acid polystyrenic macroporous resin 231.49 $/ft3 (2021 $)", "technical report"),
+        "anion_resin_price": ("US EPA WBS cost data: strong base polystyrenic gel Type I resin 232.14 $/ft3 (2021 $)", "technical report"),
+        "resin_life": ("US EPA WBS cation and anion exchange models: resin life 7 years", "technical report"),
+        "annual_resin_loss": ("US EPA WBS cation and anion exchange models: 4.5% annual resin loss", "technical report"),
+        "maintenance_fraction": ("NMSU assumptions: 2% of direct CAPEX per year, including labor (same basis as zeolite)", "model input"),
+        "om_contingency_factor": ("NMSU assumptions; Wang et al. 2024 DWPR report TEA O&M contingency assumption", "technical report"),
+        "hcl_price": ("US EPA WBS cost data: hydrochloric acid, large quantity, 0.493 $/lb (2021 $)", "technical report"),
+        "caustic_price": ("US EPA WBS cost data: sodium hydroxide 50%, large quantity, 0.213 $/lb solution, converted to 100% basis (2021 $)", "technical report"),
     },
     "Solar PV": {
         "capex_per_kw": (
@@ -1685,6 +1720,21 @@ TECHNICAL_INPUT_ORDER = [
     "bv_exponent_b",
     "ammonia_removal",
     "regenerant_dose",
+    "bed_removal",
+    "cation_empty_bed_contact_time",
+    "cation_capacity",
+    "cation_regenerant_dose",
+    "cation_regenerant_concentration",
+    "cation_rinse_bed_volumes",
+    "cation_backwash_bed_volumes",
+    "cation_max_bed_volumes",
+    "anion_empty_bed_contact_time",
+    "anion_capacity",
+    "anion_regenerant_dose",
+    "anion_regenerant_concentration",
+    "anion_rinse_bed_volumes",
+    "anion_backwash_bed_volumes",
+    "anion_max_bed_volumes",
     "power_capacity",
     "capacity_factor",
     "blend_fraction",
@@ -1699,6 +1749,7 @@ COST_INPUT_ORDER = [
     "reference_ec_capex",
     "installation_factor",
     "reference_flow_bbl_day",
+    "reference_flow_m3_day",
     "reference_capex_cost_per_bbl",
     "reference_opex_cost_per_bbl",
     "reference_uf_flow_gpd",
@@ -1708,6 +1759,10 @@ COST_INPUT_ORDER = [
     "equipment_capex_per_gpm",
     "capex_coefficient",
     "capex_exponent",
+    "cation_capex_coefficient",
+    "cation_capex_exponent",
+    "anion_capex_coefficient",
+    "anion_capex_exponent",
     "capex_per_flow",
     "reference_capacity",
     "capex_scaling_exponent",
@@ -1752,6 +1807,13 @@ COST_INPUT_ORDER = [
     "media_replacement_fraction_per_cycle",
     "nacl_price",
     "naoh_price",
+    "salt_price",
+    "hcl_price",
+    "caustic_price",
+    "cation_resin_price",
+    "anion_resin_price",
+    "resin_life",
+    "annual_resin_loss",
     "media_cleaning_cost_per_m3",
     "ach_price",
     "polymer_price",

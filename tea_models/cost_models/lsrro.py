@@ -1,23 +1,49 @@
-"""LSRRO cost model using literature/NMPWRC assumptions and app-level LCOW logic."""
+"""LSRRO cost model (WaterTAP LSRRO unit costs; NMSU O&M structure).
+
+Capital (WaterTAP 2018 $ escalated with CEPCI):
+  c_eq      = membrane + pumps + ERD equipment cost per m3/day feed       WaterTAP design table, TIC removed
+  C_bare    = c_eq x Q_ref x (Q / Q_ref)^n                                Q_ref = 50,000 bbl/day, n = 0.81
+  C_direct  = TIC x C_bare                                                TIC = 2 (WaterTAP)
+  CAPEX     = IF x C_direct                                               system-level investment factor
+Operating:
+  electricity = energy x Q x days x price
+  membranes   = WaterTAP membrane replacement (0.15/yr of membrane cost) per m3/day feed x Q
+  maintenance = f_maint x C_direct                                        includes labor
+  antiscalant = dose x Q x price;  CIP = rate x product
+  OPEX        = (1 + f_contingency) x (electricity + membranes + maintenance + antiscalant + CIP)
+"""
 
 from __future__ import annotations
 
 from tea_models.cost_models.cost_utils import (
     cost_index_factor_to_base,
-    cost_year,
     escalate_cost,
     input_value,
     investment_factor,
     value,
 )
-from tea_models.lsrro_core import BBL_TO_M3, REFERENCE_FLOW_BBL_DAY
+from tea_models.lsrro_core import DESIGN_TABLE_YEAR, REFERENCE_FLOW_M3_DAY
+
+
+DEFAULTS = {
+    "reference_flow_m3_day": REFERENCE_FLOW_M3_DAY,
+    "capex_scaling_exponent": 0.81,
+    "installation_factor": 2.0,
+    "maintenance_fraction": 0.02,
+    "antiscalant_dose_mg_l": 3.0,
+    "antiscalant_unit_price": 61.40,
+    "antiscalant_density_kg_l": 1.10,
+    "cip_cost_per_m3_product": 0.07,
+    "om_contingency_factor": 0.20,
+}
 
 
 def _result(value_, unit):
     return {"value": value_, "unit": unit}
 
 
-def _input(values, name, default):
+def _input(values, name, default=None):
+    default = DEFAULTS[name] if default is None else default
     try:
         return float(values.get(name, default))
     except (TypeError, ValueError):
@@ -33,115 +59,57 @@ def run(unit_process, technical_result, cost_inputs, context):
     operating_days = float(context.get("operating_days_per_year", 330.0))
     annual_feed = inlet_flow * operating_days
     annual_product = outlet_flow * operating_days
-    inlet_bbl_day = inlet_flow / BBL_TO_M3
 
-    reference_direct_capex = input_value(
-        cost_inputs,
-        "reference_direct_membrane_capex",
-        20.5e6,
-    )
-    reference_flow_bbl_day = _input(
-        cost_inputs,
-        "reference_flow_bbl_day",
-        REFERENCE_FLOW_BBL_DAY,
-    )
-    scaling_exponent = _input(cost_inputs, "capex_scaling_exponent", 0.81)
-    direct_cost_factor = cost_index_factor_to_base(
-        context,
-        cost_year(cost_inputs, "reference_direct_membrane_capex"),
-    )
-    if reference_direct_capex < 0.0 or reference_flow_bbl_day <= 0.0:
-        raise ValueError("LSRRO reference CAPEX must be nonnegative and reference flow positive.")
-    if scaling_exponent < 0.0:
-        raise ValueError("LSRRO CAPEX scaling exponent cannot be negative.")
+    reference_flow = _input(cost_inputs, "reference_flow_m3_day")
+    exponent = _input(cost_inputs, "capex_scaling_exponent")
+    tic = _input(cost_inputs, "installation_factor")
+    maintenance_fraction = _input(cost_inputs, "maintenance_fraction")
+    om_contingency_factor = _input(cost_inputs, "om_contingency_factor")
+    if reference_flow <= 0.0 or exponent < 0.0 or tic <= 0.0:
+        raise ValueError("LSRRO reference flow and TIC must be positive and the scaling exponent nonnegative.")
+    index = cost_index_factor_to_base(context, DESIGN_TABLE_YEAR)
+    scale = reference_flow * (inlet_flow / reference_flow) ** exponent
 
-    direct_membrane_capex = (
-        reference_direct_capex
-        * direct_cost_factor
-        * (inlet_bbl_day / reference_flow_bbl_day) ** scaling_exponent
-    )
-    installed_capex = direct_membrane_capex * investment_factor(context)
+    membrane_bare = value(technical_result, "membrane_equipment_cost_per_feed") * index * scale
+    pump_bare = value(technical_result, "pump_equipment_cost_per_feed") * index * scale
+    erd_bare = value(technical_result, "erd_equipment_cost_per_feed") * index * scale
+    bare_capex = membrane_bare + pump_bare + erd_bare
+    direct_capex = tic * bare_capex
+    installed_capex = investment_factor(context) * direct_capex
 
-    electricity_cost = (
-        annual_feed
-        * value(technical_result, "energy_intensity")
-        * float(context.get("electricity_price", 0.0))
-    )
-    membrane_replacement_factor = _input(
-        cost_inputs,
-        "membrane_replacement_factor",
-        0.20,
-    )
-    antiscalant_dose = _input(cost_inputs, "antiscalant_dose_mg_l", 3.0)
+    electricity = annual_feed * value(technical_result, "energy_intensity") * float(context.get("electricity_price", 0.0))
+    membrane_replacement = value(technical_result, "membrane_replacement_per_feed") * index * inlet_flow
+    maintenance = maintenance_fraction * direct_capex
     antiscalant_price = escalate_cost(
-        input_value(cost_inputs, "antiscalant_unit_price", 61.40),
-        cost_inputs,
-        "antiscalant_unit_price",
-        context,
+        input_value(cost_inputs, "antiscalant_unit_price", DEFAULTS["antiscalant_unit_price"]),
+        cost_inputs, "antiscalant_unit_price", context,
     )
-    antiscalant_density = _input(cost_inputs, "antiscalant_density_kg_l", 1.10)
+    kg_per_gal = max(_input(cost_inputs, "antiscalant_density_kg_l") * 3.785411784, 1e-12)
+    antiscalant = _input(cost_inputs, "antiscalant_dose_mg_l") * annual_feed / 1000.0 / kg_per_gal * antiscalant_price
     cip_rate = escalate_cost(
-        input_value(cost_inputs, "cip_cost_per_m3_product", 0.07),
-        cost_inputs,
-        "cip_cost_per_m3_product",
-        context,
+        input_value(cost_inputs, "cip_cost_per_m3_product", DEFAULTS["cip_cost_per_m3_product"]),
+        cost_inputs, "cip_cost_per_m3_product", context,
     )
-    labor_fte = _input(cost_inputs, "labor_fte", 1.0)
-    labor_cost = escalate_cost(
-        input_value(cost_inputs, "labor_cost_per_fte_year", 80000.0),
-        cost_inputs,
-        "labor_cost_per_fte_year",
-        context,
-    )
-    om_contingency_factor = _input(cost_inputs, "om_contingency_factor", 0.20)
-
-    if any(
-        item < 0.0
-        for item in [
-            membrane_replacement_factor,
-            antiscalant_dose,
-            antiscalant_price,
-            antiscalant_density,
-            cip_rate,
-            labor_fte,
-            labor_cost,
-            om_contingency_factor,
-        ]
-    ):
-        raise ValueError("LSRRO cost inputs cannot be negative.")
-
-    membrane_replacement = direct_membrane_capex * membrane_replacement_factor
-
-    antiscalant_kg_year = antiscalant_dose * annual_feed * 1000.0 / 1e6
-    kg_per_gal = max(antiscalant_density * 3.785411784, 1e-12)
-    antiscalant_cost = antiscalant_kg_year / kg_per_gal * antiscalant_price
-    cip_cost = annual_product * cip_rate
-    labor = labor_fte * labor_cost
-
-    opex_before_contingency = (
-        electricity_cost
-        + membrane_replacement
-        + antiscalant_cost
-        + cip_cost
-        + labor
-    )
-    om_contingency = opex_before_contingency * om_contingency_factor
-    total_opex = opex_before_contingency + om_contingency
+    cip = annual_product * cip_rate
+    subtotal = electricity + membrane_replacement + maintenance + antiscalant + cip
+    contingency = om_contingency_factor * subtotal
 
     return {
         "installed_capital_cost": _result(installed_capex, "USD"),
-        "equipment_capital_cost": _result(direct_membrane_capex, "USD"),
-        "reference_direct_membrane_capex": _result(reference_direct_capex, "USD"),
-        "cost_index_factor": _result(direct_cost_factor, "factor"),
-        "capex_scaling_exponent": _result(scaling_exponent, "exponent"),
+        "equipment_capital_cost": _result(direct_capex, "USD"),
+        "bare_equipment_capital_cost": _result(bare_capex, "USD"),
+        "membrane_equipment_cost": _result(membrane_bare, "USD"),
+        "pump_equipment_cost": _result(pump_bare, "USD"),
+        "erd_equipment_cost": _result(erd_bare, "USD"),
+        "installation_factor": _result(tic, "-"),
+        "cost_index_factor": _result(index, "factor"),
+        "capex_scaling_exponent": _result(exponent, "exponent"),
         "investment_factor": _result(investment_factor(context), "-"),
-        "electricity_operating_cost": _result(electricity_cost, "USD/year"),
+        "electricity_operating_cost": _result(electricity, "USD/year"),
         "membrane_replacement_cost": _result(membrane_replacement, "USD/year"),
-        "antiscalant_cost": _result(antiscalant_cost, "USD/year"),
-        "cip_cost": _result(cip_cost, "USD/year"),
-        "labor_cost": _result(labor, "USD/year"),
-        "om_contingency": _result(om_contingency, "USD/year"),
-        "total_annual_operating_cost": _result(total_opex, "USD/year"),
-        "annual_feed_volume": _result(annual_feed, "m3/year"),
-        "annual_product_volume": _result(annual_product, "m3/year"),
+        "maintenance_operating_cost": _result(maintenance, "USD/year"),
+        "antiscalant_cost": _result(antiscalant, "USD/year"),
+        "cip_cost": _result(cip, "USD/year"),
+        "om_contingency": _result(contingency, "USD/year"),
+        "total_annual_operating_cost": _result(subtotal + contingency, "USD/year"),
     }

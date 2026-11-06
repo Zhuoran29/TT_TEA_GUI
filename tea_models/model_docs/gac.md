@@ -19,7 +19,7 @@ Open **Removal efficiencies** for the GAC unit:
 | TOC | 75% | User |
 | Oil and grease | 75% | User |
 | BTEX | 75% | User |
-| PAHs | 75% | User |
+| Naphthalene | 75% | User |
 | Other constituents | 0% | User |
 
 The 75% default is the TOC removal from one NMSU process simulation, applied
